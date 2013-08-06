@@ -1,0 +1,14 @@
+Developers:
+Ang Li
+Nate AItschul
+
+
+Ricardo Quesada
+Rolando Abarca
+    Cocos2d
+
+Bruno Garcia
+    Flambe
+
+Nicolas Cannasse 
+    Haxe 
