@@ -39,7 +39,7 @@ import cc.platform.CCConfig;
 import cc.platform.CCCommon;
 import flambe.display.FillSprite;
 /**
- * ...
+ * Todos:  zOrder
  * @author Ang Li
  */
 class CCNode 
@@ -59,7 +59,8 @@ class CCNode
 	
 	public var actions : Array<CCAction>;
 	
-	var _zOrder : Int = 0;
+	//zOrder is not finished. 
+	var _zOrder : Int = 0;  
 	var _vertextZ : Float = 0;
 	var _rotation : Float = 0;
 	var _scaleX : Float = 1;
@@ -398,7 +399,7 @@ class CCNode
 		
 		child.setParent(this);
 		//trace("parent");
-		entity.addChild(child.entity, true, zOrder);
+		entity.addChild(child.entity);
 		this._children.push(child);
 	}
 	

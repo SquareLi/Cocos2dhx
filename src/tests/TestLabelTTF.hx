@@ -21,7 +21,6 @@
  ****************************************************************************/
 
 package tests;
-import cc.labelnodes.CCLabelTTF;
 import cc.CCDirector;
 import cc.layersscenestransitionsnodes.CCScene;
 import flambe.scene.Scene;
