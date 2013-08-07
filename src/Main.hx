@@ -83,8 +83,8 @@ class Main
 		
 		//var s = CCScene.create();
 		//s.addChild(AboutLayer.create());
-		var director : CCDirector = CCDirector.getInstance();
-		director.runWithScene(SysMenu.scene());
+		//var director : CCDirector = CCDirector.getInstance();
+		//director.runWithScene(SysMenu.scene());
 		//System.root.addChild(SysMenu.create().entity);
     }
 
