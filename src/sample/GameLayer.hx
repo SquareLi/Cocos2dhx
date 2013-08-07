@@ -347,9 +347,9 @@ class GameLayer extends CCLayer
 				this._backSkyRe.setAnchorPoint(new Point(0, 0));
 				this.addChild(this._backSkyRe, -10);
 				//var p : Point = _ship.getPosition();
-				this.removeChild(_ship, false);
-				_ship._parent = null;
-				this.addChild(_ship);
+				//this.removeChild(_ship, false);
+				//_ship._parent = null;
+				//this.addChild(_ship);
 				this._backSkyRe.setPosition(0, winSize.height);
 				this._isBackSkyReload = true;
 				

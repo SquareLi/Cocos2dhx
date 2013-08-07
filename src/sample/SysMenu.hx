@@ -50,12 +50,15 @@ class SysMenu extends CCLayer
 		if (super.init()) {
 			winSize = CCDirector.getInstance().getWinSize();
 			GameLayer.winSize = winSize;
+			var logo = CCSprite.create("Sample/logo");
+			logo.setPosition(0, 100);
+			this.addChild(logo, 10, 2);
+			
+			
 			var sp = CCSprite.create("Sample/loading");
 			this.addChild(sp, 1, 1);
 			
-			var logo = CCSprite.create("Sample/logo");
-			logo.setPosition(0, 100);
-			this.addChild(logo, 10, 1);
+			
 			
 			
 			var newGameNormal = CCSprite.create("Sample/menu", new Rectangle(0, 0, 126, 33));

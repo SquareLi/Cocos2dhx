@@ -10,7 +10,7 @@ class GameConfig
 
 	public static var LIFE : Int = 4;
 	public static var SCORE : Int = 0;
-	public static var SOUND : Bool = true;
+	public static var SOUND : Bool = false;
 	public static var DELTA_X : Int = -100;
 	public static var OFFSET_X = -24;
 	public static var ROT = -5.625;

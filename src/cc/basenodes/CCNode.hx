@@ -399,7 +399,9 @@ class CCNode
 		
 		child.setParent(this);
 		//trace("parent");
-		entity.addChild(child.entity);
+		//trace("CCNode.addChild" + zOrder);
+		entity.addChild(child.entity, true, zOrder);
+		
 		this._children.push(child);
 	}
 	
