@@ -57,7 +57,8 @@ class SettingsLayer extends CCLayer
 			title.setPosition(160, 60);
 			this.addChild(title);
 			
-			//var about =
+			
+			
 			var label : CCLabelBMFont = CCLabelBMFont.create("Go back", "Sample/arial-14");
 			var back : CCMenuItemLabel = CCMenuItemLabel.create(label, this.backCallback, this);
 			var menu : CCMenu = CCMenu.create([back]);

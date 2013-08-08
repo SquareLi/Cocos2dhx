@@ -24,6 +24,8 @@ package sample;
 import cc.labelnodes.CCLabelBMFont;
 import cc.layersscenestransitionsnodes.CCLayer;
 import cc.layersscenestransitionsnodes.CCScene;
+import cc.menunodes.CCMenu;
+import cc.menunodes.CCMenuItem;
 import cc.spritenodes.CCSprite;
 import cc.texture.CCTexture2D;
 import cc.touchdispatcher.CCPointer;
@@ -58,7 +60,7 @@ class GameLayer extends CCLayer
 	var _isBackSkyReload : Bool;
 	var _levelManager : LevelManager;
 	var _lbLife : CCLabelBMFont;
-	//var lbScore :
+	var lbScore : CCLabelBMFont;
 	public static var winSize : CCSize;
 	public var screenRect : Rectangle;
 	
@@ -93,43 +95,34 @@ class GameLayer extends CCLayer
 			this.screenRect = new Rectangle(0, 0, winSize.width, winSize.height);
 			
 			//score
-			
+			this.lbScore = CCLabelBMFont.create("Score: 0", "Sample/arial-14");
+			this.addChild(this.lbScore, 1000);
+			this.lbScore.setPosition(240, 0);
 			
 			//ship life
 			var shipTexture : CCTexture2D = CCTextureCache.getInstance().addImage("Sample/ship01");
 			var life : CCSprite = CCSprite.createWithTexture(shipTexture, new Rectangle(0, 0, 60, 38));
 			life.setScale(0.6);
-			life.setPosition(20, 0);
+			life.setPosition(0, 0);
 			this.addChild(life, 1, 5);
 			
 			//shit life count
 			this._lbLife = CCLabelBMFont.create("0", "Sample/arial-14");
-			this._lbLife.setPosition(60, 0);
+			this._lbLife.setPosition(40, 0);
 			this.addChild(this._lbLife, 1000);
 			
 			
 			//ship
 			_ship = new Ship();
 			this.addChild(this._ship, this._ship.zOrder, UNIT_TAG.PLAYER);
-			//var e : Enemy = new Enemy(EnemyType.ENEMY_TYPE_LIST[5]);
-			//e.setPosition(200, 200);
-			//GameConfig.ENEMIES.push(e);
-			//this.addChild(e);
-			//trace(e.getBoundingBox().toString());
-			//this._levelManager.loadLevelResource(5);
-			//schedule
+
+			//Main Menu
+			var mainMenuButton : CCLabelBMFont = CCLabelBMFont.create("Main Menu", "Sample/arial-14");
+			var mainMenuItem : CCMenuItemLabel = CCMenuItemLabel.create(mainMenuButton, onMainMenu, this);
+			var menu : CCMenu = CCMenu.create([mainMenuItem]);
+			menu.setPosition(240, 450);
+			this.addChild(menu, 1100);
 		    this.schedule(this.scoreCounter, 1);
-			//if (this._ship.getParent() == null) {
-				//trace("nul");
-			//} else {
-				//trace("yes");
-			//}
-			
-			//_ship.shoot();
-			//var s : CCSprite = CCSprite.create("Sample/bullet");
-			//s.setPosition(100, 100);
-			//this.addChild(s);
-			//trace(winSize.height);
 		}
 		
 		return true;
@@ -176,17 +169,8 @@ class GameLayer extends CCLayer
 		this.checkIsCollide();
 		//this.removeInactiveUnit(dt);
 		//this.checkIsReborn();
-		//this.updateUI();
-		//if (this._state == STATE_PLAYING) {
-			//this.checkIsCollide();
-			//_backSky.setPositionY(_backSky.getPositionY() - 2);
-		//}
-		//if (_timer < 0) {
-			//movingBackground();
-			//_timer = 3;
-		//}
-		//
-		//_timer -= dt;
+		this.updateUI();
+
 		
 	}
 	
@@ -307,13 +291,22 @@ class GameLayer extends CCLayer
 	public function checkIsReborn() {
 		if (GameConfig.LIFE > 0 && !this._ship.active) {
 			//ship
+			this._ship = new Ship();
+			this.addChild(this._ship, this._ship.zOrder, UNIT_TAG.PLAYER);
+		} else if (GameConfig.LIFE <= 0 && !this._ship.active) {
+			this._ship = null;
+			//this.runAction(CCSequence.create(
 		}
 	}
 	
 	
 	
 	public function updateUI() {
-		
+		if (this._tmpScore < GameConfig.SCORE) {
+			this._tmpScore += 5;
+		}
+		this._lbLife.setString(Std.string(GameConfig.LIFE));
+		this.lbScore.setString("Score: " + this._tmpScore);
 	}
 	
 	public function collide(a : Rectangle, b : Rectangle) : Bool {
@@ -377,6 +370,11 @@ class GameLayer extends CCLayer
 		
 	}
 	
+	public function onMainMenu() {
+		var scene : CCScene = CCScene.create();
+		scene.addChild(SysMenu.create());
+		CCDirector.getInstance().replaceScene(scene);
+	}
 	public static function create() : GameLayer {
 		var sg = new GameLayer();
 		if (sg != null && sg.init()) {
