@@ -121,14 +121,14 @@ class Ship extends CCSprite
 		GameConfig.PLAYER_BULLETS.push(a);
 		
 		
-		a.setPosition(p.x + offset, p.y + 3 + this.getContentSize().height * 0.3);
+		a.setPosition(p.x + offset, p.y - 10 + this.getContentSize().height * 0.3);
 		//
 		//
 		this.getParent().addChild(a);
 		//
 		//
 		var b : Bullet = new Bullet(bulletSpeed, "W1.png", ENEMY_ATTACK_MODE.NORMAL);
-		b.setPosition(p.x + 3 * offset, p.y + 3 + this.getContentSize().height * 0.3);
+		b.setPosition(p.x + 3 * offset, p.y -10 + this.getContentSize().height * 0.3);
 		this.getParent().addChild(b);
 		GameConfig.PLAYER_BULLETS.push(b);
 	}
