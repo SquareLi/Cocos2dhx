@@ -39,6 +39,7 @@ import cc.CCDirector;
 import cc.texture.CCTextureCache;
 import cc.basenodes.CCNode;
 import sample.config.EnemyType;
+import cc.action.CCActionInstant;
 /**
  * ...
  * @author Ang Li
@@ -96,7 +97,7 @@ class GameLayer extends CCLayer
 			
 			//score
 			this.lbScore = CCLabelBMFont.create("Score: 0", "Sample/arial-14");
-			this.addChild(this.lbScore, 1000);
+			this.addChild(this.lbScore, 4000);
 			this.lbScore.setPosition(240, 0);
 			
 			//ship life
@@ -104,12 +105,12 @@ class GameLayer extends CCLayer
 			var life : CCSprite = CCSprite.createWithTexture(shipTexture, new Rectangle(0, 0, 60, 38));
 			life.setScale(0.6);
 			life.setPosition(0, 0);
-			this.addChild(life, 1, 5);
+			this.addChild(life, 4000, 5);
 			
 			//shit life count
 			this._lbLife = CCLabelBMFont.create("0", "Sample/arial-14");
 			this._lbLife.setPosition(40, 0);
-			this.addChild(this._lbLife, 1000);
+			this.addChild(this._lbLife, 4000);
 			
 			
 			//ship
@@ -121,7 +122,7 @@ class GameLayer extends CCLayer
 			var mainMenuItem : CCMenuItemLabel = CCMenuItemLabel.create(mainMenuButton, onMainMenu, this);
 			var menu : CCMenu = CCMenu.create([mainMenuItem]);
 			menu.setPosition(240, 450);
-			this.addChild(menu, 1100);
+			this.addChild(menu, 4000);
 		    this.schedule(this.scoreCounter, 1);
 		}
 		
@@ -157,7 +158,7 @@ class GameLayer extends CCLayer
 	}
 	
 	public function processEvent(event : CCPointer) {
-		if (this._state == STATE_PLAYING) {
+		if (this._state == STATE_PLAYING && this._ship != null) {
 			this._ship.setPosition(event.getLocation().x, event.getLocation().y);
 		}
 	}
@@ -167,8 +168,8 @@ class GameLayer extends CCLayer
 		super.update(dt);
 		
 		this.checkIsCollide();
-		//this.removeInactiveUnit(dt);
-		//this.checkIsReborn();
+		this.removeInactiveUnit(dt);
+		this.checkIsReborn();
 		this.updateUI();
 
 		
@@ -209,12 +210,15 @@ class GameLayer extends CCLayer
 				}
 			}
 			
-			if (this.collide(selChild.collideRect(), this._ship.collideRect())) {
+			if (this._ship != null) {
+				if (this.collide(selChild.collideRect(), this._ship.collideRect())) {
 				if (this._ship.active) {
 					selChild.hurt();
 					this._ship.hurt();
 				}
 			}
+			}
+			
 			
 			//if (!CCGeometry.rectIntersectsRect(this.screenRect, selChild.getBoundingBox())) {
 				//selChild.destroy();
@@ -243,7 +247,7 @@ class GameLayer extends CCLayer
 			enemyBullet = GameConfig.ENEMY_BULLETS[i];
 			if (enemyBullet != null) {
 				
-				if (this.collide(enemyBullet.collideRect(), this._ship.collideRect())) {
+				if (this._ship != null && this.collide(enemyBullet.collideRect(), this._ship.collideRect())) {
 					if (this._ship.active) {
 						eb.push(i);
 						this._ship.hurt();
@@ -270,22 +274,25 @@ class GameLayer extends CCLayer
 		var bullet : Bullet;
 		var layerChilren : Array<CCNode> = this.getChildren();
 		
-		for (i in layerChilren) {
-			if (i != null) {
-				//selChild = cast (i, CCSprite);
-				if (Std.is(i, Enemy)) {
-					enemy = cast (i, Enemy);
-					if (!enemy.active) {
-						enemy.destroy();
-					}
-				} else if (Std.is(i, Bullet)) {
-					bullet = cast (i, Bullet);
-					if (!bullet.active) {
-						bullet.destroy();
-					}
-				}
-			}
+		if (this._ship != null && !this._ship.active) {
+			this._ship.destroy();
 		}
+		//for (i in layerChilren) {
+			//if (i != null) {
+				//selChild = cast (i, CCSprite);
+				//if (Std.is(i, Enemy)) {
+					//enemy = cast (i, Enemy);
+					//if (!enemy.active) {
+						//enemy.destroy();
+					//}
+				//} else if (Std.is(i, Bullet)) {
+					//bullet = cast (i, Bullet);
+					//if (!bullet.active) {
+						//bullet.destroy();
+					//}
+				//}
+			//}
+		//}
 	}
 	
 	public function checkIsReborn() {
@@ -293,9 +300,12 @@ class GameLayer extends CCLayer
 			//ship
 			this._ship = new Ship();
 			this.addChild(this._ship, this._ship.zOrder, UNIT_TAG.PLAYER);
-		} else if (GameConfig.LIFE <= 0 && !this._ship.active) {
+		} else if (GameConfig.LIFE <= 0 && this._ship != null && !this._ship.active) {
+			
+			this.runAction(CCSequence.create([
+				CCDelayTime.create(0.2),
+				CCCallFunc.create(this.onGameOver, this)]));
 			this._ship = null;
-			//this.runAction(CCSequence.create(
 		}
 	}
 	
@@ -331,18 +341,16 @@ class GameLayer extends CCLayer
 	var _temp : CCSprite;
 	public function movingBackground() {
 		//trace(this._backSkyHeight);
-		this._backSky.runAction(CCMoveBy.create(3, new Point(0, this._backgroundSpeed)));
+		//trace("moving");
+		this._backSky.runAction(CCMoveBy.create(3, new Point(0, -192)));
 		this._backSkyHeight = this._backSkyHeight + this._backgroundSpeed;
+	//	this._backSkyHeight -= 48;
 		
 		if (this._backSkyHeight <= winSize.height) {
 			if (!this._isBackSkyReload) {
 				this._backSkyRe = CCSprite.create("Sample/bg01");
 				this._backSkyRe.setAnchorPoint(new Point(0, 0));
 				this.addChild(this._backSkyRe, -10);
-				//var p : Point = _ship.getPosition();
-				//this.removeChild(_ship, false);
-				//_ship._parent = null;
-				//this.addChild(_ship);
 				this._backSkyRe.setPosition(0, winSize.height);
 				this._isBackSkyReload = true;
 				
@@ -351,23 +359,23 @@ class GameLayer extends CCLayer
 					//trace("remove");
 				}
 			}
-			this._backSkyRe.runAction(CCMoveBy.create(3, new Point(0, this._backgroundSpeed)));
+			this._backSkyRe.runAction(CCMoveBy.create(3, new Point(0, _backgroundSpeed)));
 		}
 		
 		if (this._backSkyHeight <= 0) {
 			this._backSkyHeight = this._backSky.getContentSize().height;
-			
+			//this.removeChild(this._backSky, true);
 			this._temp = this._backSky;
 			this._backSky = this._backSkyRe;
 			this._backSkyRe = null;
 			this._isBackSkyReload = false;
 		}
-		
-		
 	}
 	
 	public function onGameOver() {
-		
+		var scene = CCScene.create();
+		scene.addChild(GameOver.create());
+		CCDirector.getInstance().replaceScene(scene);
 	}
 	
 	public function onMainMenu() {

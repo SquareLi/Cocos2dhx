@@ -431,9 +431,9 @@ class CCMenu extends CCLayer
 				var child : CCMenuItem = cast(this._children[i], CCMenuItem);
 				if (child.isVisible() && child.isEnabled()) {
 					var r : Rectangle = child.rect();
-					trace(r.toString());
+					//trace(r.toString());
 					if (r.contains(touch.getLocation().x, touch.getLocation().y)) {
-						trace(touch.getLocation().x);
+						//trace(touch.getLocation().x);
 						return child;
 					}
 				}

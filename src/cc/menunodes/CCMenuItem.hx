@@ -32,6 +32,8 @@ import flambe.display.Sprite;
 import flambe.math.Point;
 import flambe.math.Rectangle;
 import cc.action.CCActionInterval;
+import cc.platform.CCCommon;
+import cc.platform.CCMacro;
 
 /**
  * Subclass cc.MenuItem (or any subclass) to create your custom cc.MenuItem objects.
@@ -190,6 +192,15 @@ class CCMenuItem extends CCNode
 		}
 	}
 	
+	//override 
+	//override public function getOpacity() : Int {
+		//return 0;
+	//}
+	//
+	//override
+	//public function setOpacity(o : Int) {
+	//}
+	
 	public static function create(selector : Void -> Void, rec : CCNode) {
 		var ret : CCMenuItem = new CCMenuItem();
 		ret.initWithCallback(selector, rec);
@@ -244,11 +255,11 @@ class CCMenuItemLabel extends CCMenuItem {
 		super.setEnabled(enable);
 	}
 	
-	public function setOpacity(opacity : Int) {
+	override public function setOpacity(opacity : Int) {
 		_label.setOpacity(opacity);
 	}
 	
-	public function getOpacity() : Int {
+	override public function getOpacity() : Int {
 		return this._label.getOpacity();
 	}
 	
@@ -301,7 +312,7 @@ class CCMenuItemLabel extends CCMenuItem {
 		}
 	}
 	
-	public static function create(label : CCLabelBMFont, selector : Void -> Void, target : CCNode) : CCMenuItemLabel {
+	public static function create(label : CCLabelBMFont, ?selector : Void -> Void, ?target : CCNode) : CCMenuItemLabel {
 		var ret = new CCMenuItemLabel();
 		ret.initWithLabel(label, selector, target);
 		//label.setCenterAnchor();
@@ -310,6 +321,21 @@ class CCMenuItemLabel extends CCMenuItem {
 	}
 }
 
+//class CCMenuItemFont extends CCMenuItemLabel {
+	//var _fontName : String = "";
+	//var _fontSize : Int = 0;
+	///**
+     //* @param {String} value text for the menu item
+     //* @param {function|String} selector
+     //* @param {cc.Node} target
+     //* @return {Boolean}
+     //*/
+	//public function initWithString(value : String, selector : Void -> Void, target : CCNode) {
+		//CCCommon.assert(value != null && value.length != 0, "Value length must be greater than 0");
+		//
+		//this._fontName = 
+	//}
+//}
 class CCMenuItemSprite extends CCMenuItem {
 	var _normalImage : CCSprite;
 	var _selectedImage : CCSprite;
@@ -397,7 +423,7 @@ class CCMenuItemSprite extends CCMenuItem {
 	
 	//public function setColor(
 	
-	public function setOpacity(opacity : Int) {
+	override public function setOpacity(opacity : Int) {
 		this._normalImage.setOpacity(opacity);
 		
 		if (this._selectedImage != null) {
@@ -409,7 +435,7 @@ class CCMenuItemSprite extends CCMenuItem {
         }
 	}
 	
-	public function getOpacity() : Int {
+	override public function getOpacity() : Int {
 		return this._normalImage.getOpacity();
 	}
 	
@@ -528,4 +554,128 @@ class CCMenuItemImage extends CCMenuItemSprite {
 		}
 		return null;
 	}
+}
+
+class CCMenuItemToggle extends CCMenuItem {
+	var _opacity : Int = 0;
+	var _subItems : Array<CCMenuItem>;
+	var _selectedIndex : Int = 0;
+	
+	private function new() {
+		super();
+		_subItems = new Array<CCMenuItem>();
+	}
+	override public function getOpacity() : Int {
+		return this._opacity;
+	}
+	
+	override public function setOpacity(opacity : Int) {
+		this._opacity = opacity;
+		if (this._subItems != null && this._subItems.length > 0) {
+			for (i in this._subItems) {
+				i.setOpacity(opacity);
+			}
+		}
+	}
+	
+	public function getSelectedIndex() : Int {
+		return this._selectedIndex;
+	}
+	
+	public function setSelectedIndex(selectedIndex : Int) {
+		if (selectedIndex != this._selectedIndex) {
+			//trace("setSelectedIndex");
+			this._selectedIndex = selectedIndex;
+			var currItem = this.getChildByTag(CCMenuItem.CURRENT_ITEM);
+			if (currItem != null) {
+				//trace("remove");
+				currItem.removeFromParent(false);
+			}
+			
+			var item = this._subItems[this._selectedIndex];
+			this.addChild(item, 0, CCMenuItem.CURRENT_ITEM);
+			var s = item.getContentSize();
+			this.setContentSize(s);
+			item.setPosition(s.width / 2, s.height / 2);
+		}
+	}
+	
+	public function getSubItems() : Array<CCMenuItem> {
+		return this._subItems;
+	}
+	
+	public function setSubItems(s : Array<CCMenuItem>) {
+		this._subItems = s;
+	}
+	
+	
+	public function initWithItems(items : Array<CCMenuItem>, ?fns : Void -> Void, ?target : CCNode) : Bool {
+		this.initWithCallback(fns, target);
+		
+		for (i in items) {
+			if (i != null) {
+				this._subItems.push(i);
+			}
+		}
+		
+		this._selectedIndex = CCMacro.UINT_MAX;
+		this.setSelectedIndex(0);
+		return true;
+	}
+	
+	public function addSubItem(item : CCMenuItem) {
+		this._subItems.push(item);
+	}
+	
+	override public function activate()
+	{
+		if (this._isEnabled) {
+			var newIndex = (this._selectedIndex + 1) % this._subItems.length;
+			this.setSelectedIndex(newIndex);
+		}
+		super.activate();
+	}
+	
+	override public function selected()
+	{
+		super.selected();
+		this._subItems[this._selectedIndex].selected();
+	}
+	
+	override public function unselected()
+	{
+		super.unselected();
+		this._subItems[this._selectedIndex].unselected();
+	}
+	
+	override public function setEnabled(enable:Bool)
+	{
+		if (this._isEnabled == enable) {
+			super.setEnabled(enable);
+			
+			if (this._subItems != null && this._subItems.length > 0) {
+				for (i in this._subItems) {
+					i.setEnabled(enable);
+				}
+			}
+		}
+		
+	}
+	
+	public function selectedItem() : CCMenuItem {
+		return this._subItems[this._selectedIndex];
+	}
+	
+	override public function onEnter()
+	{
+		super.onEnter();
+		this.setSelectedIndex(this._selectedIndex);
+	}
+	
+	public static function create(items : Array<CCMenuItem>, ?fn : Void -> Void, ?target : CCNode) : CCMenuItemToggle {
+		var ret = new CCMenuItemToggle();
+		ret.initWithItems(items, fn, target);
+		return ret;
+	}
+	
 }

@@ -35,20 +35,20 @@ import cc.CCComponent;
 class CCLayerColor extends CCLayer
 {
 	var _color : CCColor3B;
-	var _opacity : Float;
+	var _opacity : Int;
 	var _colorSprite : FillSprite;
 	public function new() 
 	{
 		super();
 		this._color = new CCColor3B(0, 0, 0);
-		_opacity = 0.0;
+		_opacity = 0;
 	}
 	
-	public function getOpacity() : Float {
+	override public function getOpacity() : Int {
 		return this._opacity;
 	}
 	
-	public function setOpacity(v : Float) {
+	override public function setOpacity(v : Int) {
 		this._opacity = v;
 		this.sprite.alpha._ = v;
 	}
@@ -69,7 +69,7 @@ class CCLayerColor extends CCLayer
 		var h : Float;
 		var c : CCColor4B;
 		if (color == null) {
-			c = new CCColor4B(0, 0, 0, 1.0);
+			c = new CCColor4B(0, 0, 0, 255);
 			//trace("123");
 		} else {
 			c = color;

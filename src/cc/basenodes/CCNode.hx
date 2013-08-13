@@ -39,7 +39,7 @@ import cc.platform.CCConfig;
 import cc.platform.CCCommon;
 import flambe.display.FillSprite;
 /**
- * Todos:  zOrder
+ * 
  * @author Ang Li
  */
 class CCNode 
@@ -359,10 +359,13 @@ class CCNode
 	
 	public function getChildByTag(aTag : Int) : CCNode {
 		CCCommon.assert(aTag != CCNode.NODE_TAG_INVALID, "Invalid tag");
+		//trace(aTag);
 		if (this._children != null) {
 			for (i in 0...this._children.length) {
 				var node = this._children[i];
+				//trace(node._tag);
 				if (node != null && node._tag == aTag) {
+					//trace("get");
 					return node;
 				}
 			}
@@ -389,13 +392,13 @@ class CCNode
 		//}
 		//trace(tempzOrder);
 		
-		var tempTag : Int;
+		var tempTag : Int = 0;
 		if (tag == null) {
 			tag = child.getTag();
 		} else {
 			tempTag = tag;
 		}
-		
+		child._tag = tempTag;
 		
 		child.setParent(this);
 		//trace("parent");
@@ -558,10 +561,10 @@ class CCNode
 	}
 	
 	public function runAction(action : CCAction) : CCAction{
-		this.getActionManager().addAction(action, this, !this._running);
+		//this.getActionManager().addAction(action, this, !this._running);
 		//var s : CCSprite = cast (this, CCSprite);
 		//this.action.startWithTarget(s);
-		this.action = action;
+		//this.action = action;
 		
 		for (a in actions) {
 			if (a == action) {
@@ -570,7 +573,8 @@ class CCNode
 		}
 		
 		this.actions.push(action);
-		return this.action;
+		action.startWithTarget(this);
+		return action;
 	}
 	
 	public function stopAllActions() {
@@ -624,6 +628,14 @@ class CCNode
 			this._shaderProgram = actionManager;
 		}
 	}
+	
+	public function setOpacity(o : Int) {
+		
+	}
+	
+	public function getOpacity() : Int {
+		return 0;
+	}
 	public function update(dt : Float) {
 		for (c in cbUpdate) {
 			if (c.curTimer <= 0) {
@@ -634,9 +646,22 @@ class CCNode
 			c.curTimer -= dt;
 		}
 		
+		var temp : Array<CCAction> = new Array<CCAction>();
 		for (a in actions) {
 			if (a != null) {
-				this.action.step(dt);
+				a.step(dt);
+				//trace(actions.length);
+			}
+			
+			if (a.isDone()) {
+				temp.push(a);
+				//trace("remove a");
+			}
+		}
+		
+		if (temp != null) {
+			for (t in temp) {
+				actions.remove(t);
 			}
 		}
 		
@@ -660,6 +685,8 @@ class CCNode
 	public function getSprite() : Sprite {
 		return this.sprite;
 	}
+	
+	
 }
 
 class CbClass {

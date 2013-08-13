@@ -80,7 +80,7 @@ class CCTypes {
 	}
 	//public static function integerToColor3B(color : Int)
 	
-	public static function  c4b(r : Int, g : Int, b : Int, a : Float) : CCColor4B{
+	public static function  c4b(r : Int, g : Int, b : Int, a : Int) : CCColor4B{
 		return new CCColor4B(r, g, b, a);
 	}
 	
@@ -194,9 +194,9 @@ class CCColor4B
 	public var r : Int;
 	public var g : Int;
 	public var b : Int;
-	public var a : Float;
+	public var a : Int;
 	public var color : Int;
-	public function new(r : Int, g : Int, b : Int, alpha : Float) 
+	public function new(r : Int, g : Int, b : Int, alpha : Int) 
 	{
 		this.r = r;
 		this.g = g;

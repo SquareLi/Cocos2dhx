@@ -455,44 +455,6 @@ cc.action.CCFiniteTimeAction.prototype = $extend(cc.action.CCAction.prototype,{
 	}
 	,__class__: cc.action.CCFiniteTimeAction
 });
-cc.action.CCActionInstant = function() {
-	cc.action.CCFiniteTimeAction.call(this);
-};
-cc.action.CCActionInstant.__name__ = true;
-cc.action.CCActionInstant.__super__ = cc.action.CCFiniteTimeAction;
-cc.action.CCActionInstant.prototype = $extend(cc.action.CCFiniteTimeAction.prototype,{
-	update: function(time) {
-	}
-	,step: function(dt) {
-		this.update(1);
-	}
-	,isDone: function() {
-		return true;
-	}
-	,__class__: cc.action.CCActionInstant
-});
-cc.action.CCCallFunc = function() {
-	cc.action.CCActionInstant.call(this);
-};
-cc.action.CCCallFunc.__name__ = true;
-cc.action.CCCallFunc.create = function(selector,selectorTarget,data) {
-	var ret = new cc.action.CCCallFunc();
-	if(ret != null) {
-		ret._callFunc = selector;
-		return ret;
-	}
-	return null;
-}
-cc.action.CCCallFunc.__super__ = cc.action.CCActionInstant;
-cc.action.CCCallFunc.prototype = $extend(cc.action.CCActionInstant.prototype,{
-	update: function(time) {
-		this.execute();
-	}
-	,execute: function() {
-		if(this._callFunc != null) this._callFunc();
-	}
-	,__class__: cc.action.CCCallFunc
-});
 cc.action.CCActionInterval = function() {
 	cc.action.CCFiniteTimeAction.call(this);
 	this._elapsed = 0;
@@ -536,6 +498,108 @@ cc.action.CCActionInterval.prototype = $extend(cc.action.CCFiniteTimeAction.prot
 		return this._elapsed;
 	}
 	,__class__: cc.action.CCActionInterval
+});
+cc.action.CCActionEase = function() {
+	cc.action.CCActionInterval.call(this);
+};
+cc.action.CCActionEase.__name__ = true;
+cc.action.CCActionEase.create = function(action) {
+	var ret = new cc.action.CCActionEase();
+	if(ret != null) ret.initWithAction(action);
+	return ret;
+}
+cc.action.CCActionEase.__super__ = cc.action.CCActionInterval;
+cc.action.CCActionEase.prototype = $extend(cc.action.CCActionInterval.prototype,{
+	update: function(time) {
+		this._other.update(time);
+	}
+	,stop: function() {
+		this._other.stop();
+		cc.action.CCActionInterval.prototype.stop.call(this);
+	}
+	,startWithTarget: function(target) {
+		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
+		this._other.startWithTarget(this._target);
+	}
+	,initWithAction: function(action) {
+		cc.platform.CCCommon.assert(action != null,"");
+		if(this.initWithDuration(action.getDuration())) {
+			this._other = action;
+			return true;
+		}
+		return false;
+	}
+	,__class__: cc.action.CCActionEase
+});
+cc.action.CCEaseExponentialOut = function() {
+	cc.action.CCActionEase.call(this);
+};
+cc.action.CCEaseExponentialOut.__name__ = true;
+cc.action.CCEaseExponentialOut.create = function(action) {
+	var ret = new cc.action.CCEaseExponentialOut();
+	if(ret != null) ret.initWithAction(action);
+	return ret;
+}
+cc.action.CCEaseExponentialOut.__super__ = cc.action.CCActionEase;
+cc.action.CCEaseExponentialOut.prototype = $extend(cc.action.CCActionEase.prototype,{
+	update: function(time) {
+		this._other.update(time == 1?1:-Math.pow(2,10 * time) + 1);
+	}
+	,__class__: cc.action.CCEaseExponentialOut
+});
+cc.action.CCEaseSineOut = function() {
+	cc.action.CCActionEase.call(this);
+};
+cc.action.CCEaseSineOut.__name__ = true;
+cc.action.CCEaseSineOut.create = function(action) {
+	var ret = new cc.action.CCEaseSineOut();
+	if(ret != null) ret.initWithAction(action);
+	return ret;
+}
+cc.action.CCEaseSineOut.__super__ = cc.action.CCActionEase;
+cc.action.CCEaseSineOut.prototype = $extend(cc.action.CCActionEase.prototype,{
+	update: function(time) {
+		this._other.update(Math.sin(time * Math.PI / 2));
+	}
+	,__class__: cc.action.CCEaseSineOut
+});
+cc.action.CCActionInstant = function() {
+	cc.action.CCFiniteTimeAction.call(this);
+};
+cc.action.CCActionInstant.__name__ = true;
+cc.action.CCActionInstant.__super__ = cc.action.CCFiniteTimeAction;
+cc.action.CCActionInstant.prototype = $extend(cc.action.CCFiniteTimeAction.prototype,{
+	update: function(time) {
+	}
+	,step: function(dt) {
+		this.update(1);
+	}
+	,isDone: function() {
+		return true;
+	}
+	,__class__: cc.action.CCActionInstant
+});
+cc.action.CCCallFunc = function() {
+	cc.action.CCActionInstant.call(this);
+};
+cc.action.CCCallFunc.__name__ = true;
+cc.action.CCCallFunc.create = function(selector,selectorTarget,data) {
+	var ret = new cc.action.CCCallFunc();
+	if(ret != null) {
+		ret._callFunc = selector;
+		return ret;
+	}
+	return null;
+}
+cc.action.CCCallFunc.__super__ = cc.action.CCActionInstant;
+cc.action.CCCallFunc.prototype = $extend(cc.action.CCActionInstant.prototype,{
+	update: function(time) {
+		this.execute();
+	}
+	,execute: function() {
+		if(this._callFunc != null) this._callFunc();
+	}
+	,__class__: cc.action.CCCallFunc
 });
 cc.action.CCSequence = function() {
 	cc.action.CCActionInterval.call(this);
@@ -704,12 +768,38 @@ cc.action.CCAnimate.prototype = $extend(cc.action.CCActionInterval.prototype,{
 	}
 	,__class__: cc.action.CCAnimate
 });
+cc.action.CCRotateBy = function() {
+	this._angle = 0;
+	cc.action.CCActionInterval.call(this);
+};
+cc.action.CCRotateBy.__name__ = true;
+cc.action.CCRotateBy.create = function(duration,deltaAngle) {
+	var rotateBy = new cc.action.CCRotateBy();
+	rotateBy.initWithDurationRotateBy(duration,deltaAngle);
+	return rotateBy;
+}
+cc.action.CCRotateBy.__super__ = cc.action.CCActionInterval;
+cc.action.CCRotateBy.prototype = $extend(cc.action.CCActionInterval.prototype,{
+	startWithTarget: function(target) {
+		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
+		this._target.getSprite().rotation.animateBy(this._angle,this._duration,this._ease);
+	}
+	,initWithDurationRotateBy: function(duration,deltaAngle) {
+		if(cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration)) {
+			this._angle = deltaAngle;
+			return true;
+		}
+		return false;
+	}
+	,__class__: cc.action.CCRotateBy
+});
 cc.action.CCMoveTo = function() {
 	this._isMoveTo = true;
 	cc.action.CCActionInterval.call(this);
 	this._endPosition = new flambe.math.Point(0,0);
 	this._startPosition = new flambe.math.Point(0,0);
 	this._delta = new flambe.math.Point(0,0);
+	this._previousPosition = new flambe.math.Point(0,0);
 };
 cc.action.CCMoveTo.__name__ = true;
 cc.action.CCMoveTo.create = function(duration,position) {
@@ -719,20 +809,28 @@ cc.action.CCMoveTo.create = function(duration,position) {
 }
 cc.action.CCMoveTo.__super__ = cc.action.CCActionInterval;
 cc.action.CCMoveTo.prototype = $extend(cc.action.CCActionInterval.prototype,{
-	startWithTarget: function(target) {
-		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
-		if(this._target.getSprite() == null) return;
-		if(this._isMoveTo) {
-			this._target.getSprite().x.animateTo(this._endPosition.x,this.getDuration());
-			this._target.getSprite().y.animateTo(this._endPosition.y,this.getDuration());
+	update: function(time) {
+		if(this._target != null) {
+			var currentPos = this._target.getPosition();
+			var diff = cc.support.CCPointExtension.pSub(currentPos,this._previousPosition);
+			this._startPosition = cc.support.CCPointExtension.pAdd(this._startPosition,diff);
+			var newPos = new flambe.math.Point(this._startPosition.x + this._delta.x * time,this._startPosition.y + this._delta.y * time);
+			this._target.setPosition(newPos.x,newPos.y);
+			this._previousPosition = newPos;
 		}
 	}
-	,update: function(time) {
-		this._target.syncPosition();
+	,startWithTarget: function(target) {
+		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
+		if(this._target.getSprite() == null) return;
+		this._previousPosition = this._startPosition = target.getPosition();
+		this._delta = cc.support.CCPointExtension.pSub(this._endPosition,this._startPosition);
 	}
 	,initWithDurationMoveTo: function(duration,position) {
-		cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration);
-		this._endPosition = position;
+		if(cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration)) {
+			this._endPosition = position;
+			return true;
+		}
+		return false;
 	}
 	,__class__: cc.action.CCMoveTo
 });
@@ -742,31 +840,33 @@ cc.action.CCMoveBy = function() {
 cc.action.CCMoveBy.__name__ = true;
 cc.action.CCMoveBy.create = function(duration,position) {
 	var moveBy = new cc.action.CCMoveBy();
-	moveBy.initWithDurationMoveTo(duration,position);
+	moveBy.initWithDurationMoveBy(duration,position);
 	return moveBy;
 }
 cc.action.CCMoveBy.__super__ = cc.action.CCMoveTo;
 cc.action.CCMoveBy.prototype = $extend(cc.action.CCMoveTo.prototype,{
 	startWithTarget: function(target) {
+		var temp = this._delta;
 		cc.action.CCMoveTo.prototype.startWithTarget.call(this,target);
 		if(this._target.getSprite() == null) return;
-		this._target.getSprite().x.animateBy(this._endPosition.x,this.getDuration());
-		this._target.getSprite().y.animateBy(this._endPosition.y,this.getDuration());
+		this._delta = temp;
 	}
-	,initWithDurationMoveTo: function(duration,position) {
-		cc.action.CCMoveTo.prototype.initWithDurationMoveTo.call(this,duration,position);
-		this._delta = position;
-		this._isMoveTo = false;
+	,initWithDurationMoveBy: function(duration,position) {
+		if(cc.action.CCMoveTo.prototype.initWithDurationMoveTo.call(this,duration,position)) {
+			this._delta = position;
+			this._isMoveTo = false;
+			return true;
+		}
+		return false;
 	}
 	,__class__: cc.action.CCMoveBy
 });
 cc.action.CCScaleTo = function() {
-	this._isTo = true;
 	cc.action.CCActionInterval.call(this);
 	this._scaleX = 1;
 	this._scaleY = 1;
 	this._startScaleX = 1;
-	this._startSclaeY = 1;
+	this._startScaleY = 1;
 	this._endScaleX = 0;
 	this._endScaleY = 0;
 	this._deltaX = 0;
@@ -780,22 +880,23 @@ cc.action.CCScaleTo.create = function(duration,sx,sy) {
 }
 cc.action.CCScaleTo.__super__ = cc.action.CCActionInterval;
 cc.action.CCScaleTo.prototype = $extend(cc.action.CCActionInterval.prototype,{
-	startWithTarget: function(target) {
+	update: function(time) {
+		if(this._target != null) this._target.setScale(this._startScaleX + this._deltaX * time,this._startScaleY + this._deltaY * time);
+	}
+	,startWithTarget: function(target) {
 		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
 		this._startScaleX = target.getScaleX();
-		this._startSclaeY = target.getScaleY();
+		this._startScaleY = target.getScaleY();
 		this._deltaX = this._endScaleX - this._startScaleX;
-		this._deltaY = this._endScaleY - this._startSclaeY;
-		if(this._isTo) {
-			this._target.getSprite().scaleX.animateTo(this._endScaleX,this._duration);
-			this._target.getSprite().scaleY.animateTo(this._endScaleY,this._duration);
-		}
+		this._deltaY = this._endScaleY - this._startScaleY;
 	}
 	,initWithDurationScaleTo: function(duration,sx,sy) {
-		cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration);
-		this._endScaleX = sx;
-		if(sy == null) this._endScaleY = sx; else this._endScaleY = sy;
-		return true;
+		if(cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration)) {
+			this._endScaleX = sx;
+			this._endScaleY = sy != null?sy:sx;
+			return true;
+		}
+		return false;
 	}
 	,__class__: cc.action.CCScaleTo
 });
@@ -811,12 +912,47 @@ cc.action.CCScaleBy.create = function(duration,sx,sy) {
 cc.action.CCScaleBy.__super__ = cc.action.CCScaleTo;
 cc.action.CCScaleBy.prototype = $extend(cc.action.CCScaleTo.prototype,{
 	startWithTarget: function(target) {
-		this._isTo = false;
 		cc.action.CCScaleTo.prototype.startWithTarget.call(this,target);
-		this._target.getSprite().scaleX.animateBy(this._endScaleX,this._duration);
-		this._target.getSprite().scaleY.animateBy(this._endScaleY,this._duration);
+		this._deltaX = this._startScaleX * this._endScaleX - this._startScaleX;
+		this._deltaY = this._startScaleY * this._endScaleY - this._startScaleY;
 	}
 	,__class__: cc.action.CCScaleBy
+});
+cc.action.CCBlink = function() {
+	this._times = 0;
+	cc.action.CCActionInterval.call(this);
+};
+cc.action.CCBlink.__name__ = true;
+cc.action.CCBlink.create = function(duration,blinks) {
+	var blink = new cc.action.CCBlink();
+	blink.initWithDurationBlink(duration,blinks);
+	return blink;
+}
+cc.action.CCBlink.__super__ = cc.action.CCActionInterval;
+cc.action.CCBlink.prototype = $extend(cc.action.CCActionInterval.prototype,{
+	stop: function() {
+		this._target.setVisible(this._originalState);
+		cc.action.CCActionInterval.prototype.stop.call(this);
+	}
+	,startWithTarget: function(target) {
+		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
+		this._originalState = target.isVisible();
+	}
+	,update: function(time) {
+		if(this._target != null && !this.isDone()) {
+			var slice = 1.0 / this._times;
+			var m = time % slice;
+			this._target.setVisible(m > slice / 2?true:false);
+		}
+	}
+	,initWithDurationBlink: function(duration,blinks) {
+		if(cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration)) {
+			this._times = blinks;
+			return true;
+		}
+		return false;
+	}
+	,__class__: cc.action.CCBlink
 });
 cc.action.CCFadeOut = function() {
 	cc.action.CCActionInterval.call(this);
@@ -829,51 +965,64 @@ cc.action.CCFadeOut.create = function(d) {
 }
 cc.action.CCFadeOut.__super__ = cc.action.CCActionInterval;
 cc.action.CCFadeOut.prototype = $extend(cc.action.CCActionInterval.prototype,{
-	startWithTarget: function(target) {
-		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
-		this._target.getSprite().alpha.animateTo(0,this._duration);
-	}
-	,update: function(time) {
+	update: function(time) {
+		this._target.setOpacity(255 * (1 - time) | 0);
 	}
 	,__class__: cc.action.CCFadeOut
+});
+cc.action.CCFadeTo = function() {
+	this._fromOpacity = 0;
+	this._toOpacity = 0;
+	cc.action.CCActionInterval.call(this);
+};
+cc.action.CCFadeTo.__name__ = true;
+cc.action.CCFadeTo.create = function(duration,opacity) {
+	var fadeTo = new cc.action.CCFadeTo();
+	fadeTo.initWithDurationFadeTo(duration,opacity);
+	return fadeTo;
+}
+cc.action.CCFadeTo.__super__ = cc.action.CCActionInterval;
+cc.action.CCFadeTo.prototype = $extend(cc.action.CCActionInterval.prototype,{
+	startWithTarget: function(target) {
+		cc.action.CCActionInterval.prototype.startWithTarget.call(this,target);
+		this._fromOpacity = target.getOpacity();
+	}
+	,update: function(time) {
+		if(this._target != null) this._target.setOpacity(this._fromOpacity + (this._toOpacity - this._fromOpacity) * time | 0);
+	}
+	,initWithDurationFadeTo: function(duration,opacity) {
+		if(cc.action.CCActionInterval.prototype.initWithDuration.call(this,duration)) {
+			this._toOpacity = opacity;
+			return true;
+		}
+		return false;
+	}
+	,__class__: cc.action.CCFadeTo
+});
+cc.action.CCDelayTime = function() {
+	cc.action.CCActionInterval.call(this);
+};
+cc.action.CCDelayTime.__name__ = true;
+cc.action.CCDelayTime.create = function(duration) {
+	var action = new cc.action.CCDelayTime();
+	action.initWithDuration(duration);
+	return action;
+}
+cc.action.CCDelayTime.__super__ = cc.action.CCActionInterval;
+cc.action.CCDelayTime.prototype = $extend(cc.action.CCActionInterval.prototype,{
+	update: function(time) {
+	}
+	,__class__: cc.action.CCDelayTime
 });
 cc.action.CCActionManager = function() {
 	this._targets = new Array();
 };
 cc.action.CCActionManager.__name__ = true;
 cc.action.CCActionManager.prototype = {
-	addAction: function(action,target,paused) {
-		var element = this._searchElementByTarget(this._targets,target);
-		if(element == null) {
-			element = new cc.action.MapElement();
-			element.paused = paused;
-			element.target = target;
-			this._targets.push(element);
-		}
-		this._actionAllocWithHashElement(element);
-		action.startWithTarget(target);
-	}
-	,_actionAllocWithHashElement: function(element) {
-		if(element.actions == null) element.actions = new Array();
-	}
-	,_searchElementByTarget: function(arr,target) {
-		var _g = 0;
-		while(_g < arr.length) {
-			var n = arr[_g];
-			++_g;
-			if(target == n.target) return n;
-		}
-		return null;
-	}
-	,__class__: cc.action.CCActionManager
+	__class__: cc.action.CCActionManager
 }
-cc.action.MapElement = function() {
-	this.actions = new Array();
-};
+cc.action.MapElement = function() { }
 cc.action.MapElement.__name__ = true;
-cc.action.MapElement.prototype = {
-	__class__: cc.action.MapElement
-}
 cc.basenodes = {}
 cc.basenodes.CCNode = function() {
 	this._initializedNode = false;
@@ -910,16 +1059,27 @@ cc.basenodes.CCNode.prototype = {
 			}
 			c.curTimer -= dt;
 		}
+		var temp = new Array();
 		var _g = 0, _g1 = this.actions;
 		while(_g < _g1.length) {
 			var a = _g1[_g];
 			++_g;
-			if(a != null) this.action.step(dt);
+			if(a != null) a.step(dt);
+			if(a.isDone()) temp.push(a);
+		}
+		if(temp != null) {
+			var _g = 0;
+			while(_g < temp.length) {
+				var t = temp[_g];
+				++_g;
+				HxOverrides.remove(this.actions,t);
+			}
 		}
 	}
-	,getActionManager: function() {
-		if(this._actionManager == null) this._actionManager = cc.CCDirector.getInstance().getActionManager();
-		return this._actionManager;
+	,getOpacity: function() {
+		return 0;
+	}
+	,setOpacity: function(o) {
 	}
 	,getActionByTag: function(tag) {
 		var _g = 0, _g1 = this.actions;
@@ -947,8 +1107,6 @@ cc.basenodes.CCNode.prototype = {
 		HxOverrides.remove(this.actions,action);
 	}
 	,runAction: function(action) {
-		this.getActionManager().addAction(action,this,!this._running);
-		this.action = action;
 		var _g = 0, _g1 = this.actions;
 		while(_g < _g1.length) {
 			var a = _g1[_g];
@@ -956,7 +1114,8 @@ cc.basenodes.CCNode.prototype = {
 			if(a == action) return this.action;
 		}
 		this.actions.push(action);
-		return this.action;
+		action.startWithTarget(this);
+		return action;
 	}
 	,onExit: function() {
 		this._running = false;
@@ -987,11 +1146,24 @@ cc.basenodes.CCNode.prototype = {
 			cc.platform.CCCommon.assert(child._parent == null,"child already added. It can't be added again");
 			return;
 		}
-		var tempTag;
+		var tempTag = 0;
 		if(tag == null) tag = child.getTag(); else tempTag = tag;
+		child._tag = tempTag;
 		child.setParent(this);
 		this.entity.addChild(child.entity,true,zOrder);
 		this._children.push(child);
+	}
+	,getChildByTag: function(aTag) {
+		cc.platform.CCCommon.assert(aTag != cc.basenodes.CCNode.NODE_TAG_INVALID,"Invalid tag");
+		if(this._children != null) {
+			var _g1 = 0, _g = this._children.length;
+			while(_g1 < _g) {
+				var i = _g1++;
+				var node = this._children[i];
+				if(node != null && node._tag == aTag) return node;
+			}
+		}
+		return null;
 	}
 	,cleanup: function() {
 		this.unscheduleAllCallbacks();
@@ -1032,9 +1204,9 @@ cc.basenodes.CCNode.prototype = {
 	,isVisible: function() {
 		return this._visible;
 	}
-	,syncPosition: function() {
-		this._position.x = this.sprite.x._value;
-		this._position.y = this.sprite.y._value;
+	,getChildren: function() {
+		if(this._children == null) this._children = new Array();
+		return this._children;
 	}
 	,getPosition: function() {
 		return new flambe.math.Point(this._position.x,this._position.y);
@@ -1155,7 +1327,14 @@ cc.denshion.CCAudioEngine.getInstance = function() {
 	return cc.denshion.CCAudioEngine._instance;
 }
 cc.denshion.CCAudioEngine.prototype = {
-	set__musicVolume: function(volume) {
+	stopMusic: function() {
+		if(this._playingMusic == null) return;
+		this._playingMusic.dispose();
+		this._playingMusic = null;
+		this._cacheMusic = null;
+		this._isMusicPlaying = false;
+	}
+	,set__musicVolume: function(volume) {
 		if(volume <= 0) volume = 0; else if(volume > 1) volume = 1;
 		return this._musicVolume = volume;
 	}
@@ -1197,6 +1376,7 @@ cc.denshion.CCAudioEngine.prototype = {
 cc.labelnodes = {}
 cc.labelnodes.CCLabelBMFont = function() {
 	this._initialString = "";
+	this._string = "";
 	cc.basenodes.CCNode.call(this);
 	this._imageOffset = new flambe.math.Point(0,0);
 };
@@ -1211,7 +1391,18 @@ cc.labelnodes.CCLabelBMFont.create = function(str,fntFile,width,alignment,imageO
 }
 cc.labelnodes.CCLabelBMFont.__super__ = cc.basenodes.CCNode;
 cc.labelnodes.CCLabelBMFont.prototype = $extend(cc.basenodes.CCNode.prototype,{
-	getAlign: function(a) {
+	setString: function(newString,fromUpdate) {
+		if(fromUpdate == null) fromUpdate = false;
+		if(this._string != newString) {
+			this._string = newString;
+			this._initialString = newString;
+			this.updateString(fromUpdate);
+		}
+	}
+	,updateString: function(fromUpdate) {
+		if(!fromUpdate) this._spriteText.set_text(this._string);
+	}
+	,getAlign: function(a) {
 		var ret = flambe.display.TextAlign.Left;
 		switch(a) {
 		case 0:
@@ -1244,6 +1435,21 @@ cc.labelnodes.CCLabelBMFont.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._contentSize.width = this.sprite.getNaturalWidth();
 		this._contentSize.height = this.sprite.getNaturalHeight();
 		return true;
+	}
+	,setOpacity: function(v) {
+		this._opacity = v;
+		this.sprite.alpha.set__(this._opacity / 255.0);
+		if(this._children != null) {
+			var _g1 = 0, _g = this._children.length;
+			while(_g1 < _g) {
+				var i = _g1++;
+				var node = js.Boot.__cast(this._children[i] , cc.labelnodes.CCLabelBMFont);
+				if(node != null) node.setOpacity(this._opacity);
+			}
+		}
+	}
+	,getOpacity: function() {
+		return this._opacity;
 	}
 	,__class__: cc.labelnodes.CCLabelBMFont
 });
@@ -1518,6 +1724,10 @@ cc.menunodes.CCMenuItem.prototype = $extend(cc.basenodes.CCNode.prototype,{
 	activate: function() {
 		if(this._isEnabled && this._selector != null) this._selector();
 	}
+	,setCallback: function(selector,rec) {
+		this._listener = rec;
+		this._selector = selector;
+	}
 	,unselected: function() {
 		this._isSelected = false;
 	}
@@ -1533,6 +1743,9 @@ cc.menunodes.CCMenuItem.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._isEnabled = true;
 		this._isSelected = false;
 		return true;
+	}
+	,setEnabled: function(enable) {
+		this._isEnabled = enable;
 	}
 	,isEnabled: function() {
 		return this._isEnabled;
@@ -1582,6 +1795,20 @@ cc.menunodes.CCMenuItemLabel.prototype = $extend(cc.menunodes.CCMenuItem.prototy
 		this.setLabel(label);
 		return true;
 	}
+	,getOpacity: function() {
+		return this._label.getOpacity();
+	}
+	,setOpacity: function(opacity) {
+		this._label.setOpacity(opacity);
+	}
+	,setEnabled: function(enable) {
+		if(this._isEnabled != enable) {
+			if(!enable) {
+			} else {
+			}
+		}
+		cc.menunodes.CCMenuItem.prototype.setEnabled.call(this,enable);
+	}
 	,setLabel: function(label) {
 		if(label != null) {
 			this.addChild(label);
@@ -1618,6 +1845,12 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 			if(this._disabledImage != null) this._disabledImage.setVisible(false);
 		}
 	}
+	,setEnabled: function(bEnabled) {
+		if(this._isEnabled != bEnabled) {
+			cc.menunodes.CCMenuItem.prototype.setEnabled.call(this,bEnabled);
+			this._updateImagesVisibility();
+		}
+	}
 	,unselected: function() {
 		cc.menunodes.CCMenuItem.prototype.unselected.call(this);
 		if(this._normalImage != null) {
@@ -1635,6 +1868,14 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 				this._selectedImage.setVisible(true);
 			} else this._normalImage.setVisible(true);
 		}
+	}
+	,getOpacity: function() {
+		return this._normalImage.getOpacity();
+	}
+	,setOpacity: function(opacity) {
+		this._normalImage.setOpacity(opacity);
+		if(this._selectedImage != null) this._selectedImage.setOpacity(opacity);
+		if(this._disabledImage != null) this._disabledImage.setOpacity(opacity);
 	}
 	,initWithNormalSprite: function(normalSprite,selectedSprite,disabledSprite,selector,target) {
 		this.initWithCallback(selector,target);
@@ -1667,6 +1908,92 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 		this._updateImagesVisibility();
 	}
 	,__class__: cc.menunodes.CCMenuItemSprite
+});
+cc.menunodes.CCMenuItemToggle = function() {
+	this._selectedIndex = 0;
+	this._opacity = 0;
+	cc.menunodes.CCMenuItem.call(this);
+	this._subItems = new Array();
+};
+cc.menunodes.CCMenuItemToggle.__name__ = true;
+cc.menunodes.CCMenuItemToggle.create = function(items,fn,target) {
+	var ret = new cc.menunodes.CCMenuItemToggle();
+	ret.initWithItems(items,fn,target);
+	return ret;
+}
+cc.menunodes.CCMenuItemToggle.__super__ = cc.menunodes.CCMenuItem;
+cc.menunodes.CCMenuItemToggle.prototype = $extend(cc.menunodes.CCMenuItem.prototype,{
+	onEnter: function() {
+		cc.menunodes.CCMenuItem.prototype.onEnter.call(this);
+		this.setSelectedIndex(this._selectedIndex);
+	}
+	,setEnabled: function(enable) {
+		if(this._isEnabled == enable) {
+			cc.menunodes.CCMenuItem.prototype.setEnabled.call(this,enable);
+			if(this._subItems != null && this._subItems.length > 0) {
+				var _g = 0, _g1 = this._subItems;
+				while(_g < _g1.length) {
+					var i = _g1[_g];
+					++_g;
+					i.setEnabled(enable);
+				}
+			}
+		}
+	}
+	,unselected: function() {
+		cc.menunodes.CCMenuItem.prototype.unselected.call(this);
+		this._subItems[this._selectedIndex].unselected();
+	}
+	,selected: function() {
+		cc.menunodes.CCMenuItem.prototype.selected.call(this);
+		this._subItems[this._selectedIndex].selected();
+	}
+	,activate: function() {
+		if(this._isEnabled) {
+			var newIndex = (this._selectedIndex + 1) % this._subItems.length;
+			this.setSelectedIndex(newIndex);
+		}
+		cc.menunodes.CCMenuItem.prototype.activate.call(this);
+	}
+	,initWithItems: function(items,fns,target) {
+		this.initWithCallback(fns,target);
+		var _g = 0;
+		while(_g < items.length) {
+			var i = items[_g];
+			++_g;
+			if(i != null) this._subItems.push(i);
+		}
+		this._selectedIndex = cc.platform.CCMacro.UINT_MAX;
+		this.setSelectedIndex(0);
+		return true;
+	}
+	,setSelectedIndex: function(selectedIndex) {
+		if(selectedIndex != this._selectedIndex) {
+			this._selectedIndex = selectedIndex;
+			var currItem = this.getChildByTag(cc.menunodes.CCMenuItem.CURRENT_ITEM);
+			if(currItem != null) currItem.removeFromParent(false);
+			var item = this._subItems[this._selectedIndex];
+			this.addChild(item,0,cc.menunodes.CCMenuItem.CURRENT_ITEM);
+			var s = item.getContentSize();
+			this.setContentSize(s);
+			item.setPosition(s.width / 2,s.height / 2);
+		}
+	}
+	,setOpacity: function(opacity) {
+		this._opacity = opacity;
+		if(this._subItems != null && this._subItems.length > 0) {
+			var _g = 0, _g1 = this._subItems;
+			while(_g < _g1.length) {
+				var i = _g1[_g];
+				++_g;
+				i.setOpacity(opacity);
+			}
+		}
+	}
+	,getOpacity: function() {
+		return this._opacity;
+	}
+	,__class__: cc.menunodes.CCMenuItemToggle
 });
 cc.platform = {}
 cc.platform.CCCommon = function() { }
@@ -1871,14 +2198,6 @@ cc.platform.CCV3F_C4B_T2F_Quad = function(bl1,br1,tl1,tr1) {
 cc.platform.CCV3F_C4B_T2F_Quad.__name__ = true;
 cc.platform.CCV3F_C4B_T2F_Quad.prototype = {
 	__class__: cc.platform.CCV3F_C4B_T2F_Quad
-}
-cc.platform.CCBlendFunc = function(src1,dst1) {
-	this.src = src1;
-	this.dst = dst1;
-};
-cc.platform.CCBlendFunc.__name__ = true;
-cc.platform.CCBlendFunc.prototype = {
-	__class__: cc.platform.CCBlendFunc
 }
 cc.spritenodes = {}
 cc.spritenodes.CCAnimation = function() {
@@ -2094,9 +2413,6 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._opacity = 1;
 		this._color = cc.platform.CCTypes.white();
 		this._colorUnmodified = cc.platform.CCTypes.white();
-		this._blendFunc = new cc.platform.CCBlendFunc(0,0);
-		this._blendFunc.src = cc.platform.CCMacro.BLEND_SRC;
-		this._blendFunc.dst = cc.platform.CCMacro.BLEND_DST;
 		this._flipX = this._flipY = false;
 		this.setAnchorPoint(new flambe.math.Point(0,0));
 		this._offsetPosition = new flambe.math.Point(0,0);
@@ -2109,6 +2425,17 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._quad.tr.colors = tmpColor;
 		this.setTextureRect(cc.cocoa.CCGeometry.rectZero(),false,cc.cocoa.CCGeometry.sizeZero());
 		return true;
+	}
+	,setOpacity: function(opacity) {
+		this._opacity = opacity;
+		this.sprite.alpha.set__(opacity / 255);
+	}
+	,getOpacity: function() {
+		return this._opacity;
+	}
+	,setBlendFunc: function(blend) {
+		this._blendFunc = blend;
+		this.sprite.blendMode = blend;
 	}
 	,__class__: cc.spritenodes.CCSprite
 });
@@ -2369,6 +2696,15 @@ cc.spritenodes.CCSpriteSheet.prototype = $extend(flambe.display.Sprite.prototype
 	}
 	,__class__: cc.spritenodes.CCSpriteSheet
 });
+cc.support = {}
+cc.support.CCPointExtension = function() { }
+cc.support.CCPointExtension.__name__ = true;
+cc.support.CCPointExtension.pAdd = function(v1,v2) {
+	return new flambe.math.Point(v1.x + v2.x,v1.y + v2.y);
+}
+cc.support.CCPointExtension.pSub = function(v1,v2) {
+	return new flambe.math.Point(v1.x - v2.x,v1.y - v2.y);
+}
 cc.texture = {}
 cc.texture.CCTexture2D = function() {
 };
@@ -3025,9 +3361,6 @@ flambe.animation.AnimatedFloat.prototype = $extend(flambe.util.Value.prototype,{
 	,animateBy: function(by,seconds,easing) {
 		this.set_behavior(new flambe.animation.Tween(this._value,this._value + by,seconds,easing));
 	}
-	,animateTo: function(to,seconds,easing) {
-		this.set_behavior(new flambe.animation.Tween(this._value,to,seconds,easing));
-	}
 	,update: function(dt) {
 		if(this._behavior != null) {
 			flambe.util.Value.prototype.set__.call(this,this._behavior.update(dt));
@@ -3641,6 +3974,13 @@ flambe.display.TextSprite.prototype = $extend(flambe.display.Sprite.prototype,{
 			this._flags = this._flags | 32;
 		}
 		return align;
+	}
+	,set_text: function(text) {
+		if(text != this._text) {
+			this._text = text;
+			this._flags = this._flags | 32;
+		}
+		return text;
 	}
 	,containsLocal: function(localX,localY) {
 		this.updateLayout();
@@ -6601,6 +6941,77 @@ sample.Bullet.prototype = $extend(cc.spritenodes.CCSprite.prototype,{
 	}
 	,__class__: sample.Bullet
 });
+sample.Effect = function() { }
+sample.Effect.__name__ = true;
+sample.Effect.flareEffect = function(parent,target,cb) {
+	sample.Effect._parent = parent;
+	sample.Effect._target = target;
+	var flare = cc.spritenodes.CCSprite.create("Sample/flare");
+	flare.setBlendFunc(flambe.display.BlendMode.Add);
+	parent.addChild(flare,10);
+	flare.setOpacity(255);
+	flare.setPosition(-30,183);
+	flare.setRotation(-120);
+	flare.setScale(0.2);
+	flare.setCenterAnchor();
+	var opacityAnim = cc.action.CCFadeTo.create(0.5,255);
+	var opacDim = cc.action.CCFadeTo.create(1,0);
+	var biggeAnim = cc.action.CCScaleBy.create(0.7,1.2,1.2);
+	var biggerEase = cc.action.CCEaseSineOut.create(biggeAnim);
+	var moveAnim = cc.action.CCMoveBy.create(0.5,new flambe.math.Point(328,0));
+	var easeMove = cc.action.CCEaseSineOut.create(moveAnim);
+	var rotateAnim = cc.action.CCRotateBy.create(2.5,90);
+	var rotateEase = cc.action.CCEaseExponentialOut.create(rotateAnim);
+	var bigger = cc.action.CCScaleTo.create(0.5,1);
+	var onComplete = cc.action.CCCallFunc.create(cb,target);
+	var killflare = cc.action.CCCallFunc.create(function() {
+		parent.removeChild(target,true);
+	},flare);
+	flare.runAction(cc.action.CCSequence.create([opacityAnim,biggerEase,opacDim,killflare,onComplete]));
+	flare.runAction(moveAnim);
+	flare.runAction(rotateEase);
+	flare.runAction(bigger);
+}
+sample.Effect.spark = function(ccpoint,parent,scale,duration) {
+	sample.Effect._parent = parent;
+	if(scale == null) scale = 0.3;
+	if(duration == null) duration = 0.5;
+	var one = cc.spritenodes.CCSprite.create("Sample/explode1");
+	var two = cc.spritenodes.CCSprite.create("Sample/explode2");
+	var three = cc.spritenodes.CCSprite.create("Sample/explode3");
+	one.setBlendFunc(flambe.display.BlendMode.Add);
+	two.setBlendFunc(flambe.display.BlendMode.Add);
+	three.setBlendFunc(flambe.display.BlendMode.Add);
+	one.setPosition(ccpoint.x,ccpoint.y);
+	two.setPosition(ccpoint.x,ccpoint.y);
+	three.setPosition(ccpoint.x,ccpoint.y);
+	parent.addChild(one);
+	parent.addChild(two);
+	parent.addChild(three);
+	one.setScale(scale);
+	two.setScale(scale);
+	three.setScale(scale);
+	one.setCenterAnchor();
+	two.setCenterAnchor();
+	three.setCenterAnchor();
+	three.setRotation(Math.random() * 360);
+	var left = cc.action.CCRotateBy.create(duration,-45);
+	var right = cc.action.CCRotateBy.create(duration,45);
+	var scaleBy1 = cc.action.CCScaleBy.create(duration,3,3);
+	var scaleBy2 = cc.action.CCScaleBy.create(duration,3,3);
+	var scaleBy3 = cc.action.CCScaleBy.create(duration,3,3);
+	var fadeOut1 = cc.action.CCFadeOut.create(duration);
+	var fadeOut2 = cc.action.CCFadeOut.create(duration);
+	var fadeOut3 = cc.action.CCFadeOut.create(duration);
+	one.runAction(left);
+	two.runAction(right);
+	one.runAction(scaleBy1);
+	two.runAction(scaleBy2);
+	three.runAction(scaleBy3);
+	one.runAction(cc.action.CCSequence.create([fadeOut1,cc.action.CCCallFunc.create($bind(one,one.removeFromParentAndCleanup),one)]));
+	two.runAction(cc.action.CCSequence.create([fadeOut2,cc.action.CCCallFunc.create($bind(two,two.removeFromParentAndCleanup),two)]));
+	three.runAction(cc.action.CCSequence.create([fadeOut3,cc.action.CCCallFunc.create($bind(three,three.removeFromParentAndCleanup),three)]));
+}
 sample.Enemy = function(enemyType) {
 	this._timeTick = 0;
 	this.zOrder = 3000;
@@ -6641,8 +7052,9 @@ sample.Enemy.prototype = $extend(cc.spritenodes.CCSprite.prototype,{
 	,destroy: function() {
 		sample.config.GameConfig.SCORE += this.scoreValue;
 		var a = new sample.Explosion();
-		a.setPosition(this.getPosition().x - 20,this.getPosition().y);
+		a.setPosition(this.getPosition().x - 38,this.getPosition().y - 45);
 		this.getParent().addChild(a);
+		sample.Effect.spark(new flambe.math.Point(this.getPosition().x + 20,this.getPosition().y),this.getParent(),1.2,0.7);
 		cc.CCScheduler.ArrayRemoveObject_sample_Enemy(sample.config.GameConfig.ENEMIES,this);
 		this.removeFromParent(true);
 	}
@@ -6692,6 +7104,7 @@ sample.Explosion.prototype = $extend(cc.spritenodes.CCSprite.prototype,{
 });
 sample.GameLayer = function() {
 	this._backgroundSpeed = -192;
+	this._tmpScore = 0;
 	this._time = 0;
 	cc.layersscenestransitionsnodes.CCLayer.call(this);
 };
@@ -6703,8 +7116,18 @@ sample.GameLayer.create = function() {
 }
 sample.GameLayer.__super__ = cc.layersscenestransitionsnodes.CCLayer;
 sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.prototype,{
-	movingBackground: function() {
-		this._backSky.runAction(cc.action.CCMoveBy.create(3,new flambe.math.Point(0,this._backgroundSpeed)));
+	onMainMenu: function() {
+		var scene = cc.layersscenestransitionsnodes.CCScene.create();
+		scene.addChild(sample.SysMenu.create());
+		cc.CCDirector.getInstance().replaceScene(scene);
+	}
+	,onGameOver: function() {
+		var scene = cc.layersscenestransitionsnodes.CCScene.create();
+		scene.addChild(sample.GameOver.create());
+		cc.CCDirector.getInstance().replaceScene(scene);
+	}
+	,movingBackground: function() {
+		this._backSky.runAction(cc.action.CCMoveBy.create(3,new flambe.math.Point(0,-192)));
 		this._backSkyHeight = this._backSkyHeight + this._backgroundSpeed;
 		if(this._backSkyHeight <= sample.GameLayer.winSize.height) {
 			if(!this._isBackSkyReload) {
@@ -6736,6 +7159,26 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 	,collide: function(a,b) {
 		if(cc.cocoa.CCGeometry.rectIntersectsRect(a,b)) return true; else return false;
 	}
+	,updateUI: function() {
+		if(this._tmpScore < sample.config.GameConfig.SCORE) this._tmpScore += 5;
+		this._lbLife.setString(Std.string(sample.config.GameConfig.LIFE));
+		this.lbScore.setString("Score: " + this._tmpScore);
+	}
+	,checkIsReborn: function() {
+		if(sample.config.GameConfig.LIFE > 0 && !this._ship.active) {
+			this._ship = new sample.Ship();
+			this.addChild(this._ship,this._ship.zOrder,sample.config.UNIT_TAG.PLAYER);
+		} else if(sample.config.GameConfig.LIFE <= 0 && this._ship != null && !this._ship.active) {
+			this.runAction(cc.action.CCSequence.create([cc.action.CCDelayTime.create(0.2),cc.action.CCCallFunc.create($bind(this,this.onGameOver),this)]));
+			this._ship = null;
+		}
+	}
+	,removeInactiveUnit: function(dt) {
+		var enemy;
+		var bullet;
+		var layerChilren = this.getChildren();
+		if(this._ship != null && !this._ship.active) this._ship.destroy();
+	}
 	,checkIsCollide: function() {
 		var selChild;
 		var bulletChild;
@@ -6761,10 +7204,12 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 					}
 				}
 			}
-			if(this.collide(selChild.collideRect(),this._ship.collideRect())) {
-				if(this._ship.active) {
-					selChild.hurt();
-					this._ship.hurt();
+			if(this._ship != null) {
+				if(this.collide(selChild.collideRect(),this._ship.collideRect())) {
+					if(this._ship.active) {
+						selChild.hurt();
+						this._ship.hurt();
+					}
 				}
 			}
 		}
@@ -6789,7 +7234,7 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 			var i = _g1++;
 			enemyBullet = sample.config.GameConfig.ENEMY_BULLETS[i];
 			if(enemyBullet != null) {
-				if(this.collide(enemyBullet.collideRect(),this._ship.collideRect())) {
+				if(this._ship != null && this.collide(enemyBullet.collideRect(),this._ship.collideRect())) {
 					if(this._ship.active) {
 						eb.push(i);
 						this._ship.hurt();
@@ -6807,9 +7252,12 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 	,update: function(dt) {
 		cc.layersscenestransitionsnodes.CCLayer.prototype.update.call(this,dt);
 		this.checkIsCollide();
+		this.removeInactiveUnit(dt);
+		this.checkIsReborn();
+		this.updateUI();
 	}
 	,processEvent: function(event) {
-		if(this._state == sample.GameLayer.STATE_PLAYING) this._ship.setPosition(event.getLocation().x,event.getLocation().y);
+		if(this._state == sample.GameLayer.STATE_PLAYING && this._ship != null) this._ship.setPosition(event.getLocation().x,event.getLocation().y);
 	}
 	,onPointerDragged: function(event) {
 		this.processEvent(event);
@@ -6849,21 +7297,81 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 			this._isBackSkyReload = false;
 			this.initBackground();
 			this.screenRect = new flambe.math.Rectangle(0,0,sample.GameLayer.winSize.width,sample.GameLayer.winSize.height);
+			this.lbScore = cc.labelnodes.CCLabelBMFont.create("Score: 0","Sample/arial-14");
+			this.addChild(this.lbScore,4000);
+			this.lbScore.setPosition(240,0);
 			var shipTexture = cc.texture.CCTextureCache.getInstance().addImage("Sample/ship01");
 			var life = cc.spritenodes.CCSprite.createWithTexture(shipTexture,new flambe.math.Rectangle(0,0,60,38));
 			life.setScale(0.6);
-			life.setPosition(20,0);
-			this.addChild(life,1,5);
+			life.setPosition(0,0);
+			this.addChild(life,4000,5);
 			this._lbLife = cc.labelnodes.CCLabelBMFont.create("0","Sample/arial-14");
-			this._lbLife.setPosition(60,0);
-			this.addChild(this._lbLife,1000);
+			this._lbLife.setPosition(40,0);
+			this.addChild(this._lbLife,4000);
 			this._ship = new sample.Ship();
 			this.addChild(this._ship,this._ship.zOrder,sample.config.UNIT_TAG.PLAYER);
+			var mainMenuButton = cc.labelnodes.CCLabelBMFont.create("Main Menu","Sample/arial-14");
+			var mainMenuItem = cc.menunodes.CCMenuItemLabel.create(mainMenuButton,$bind(this,this.onMainMenu),this);
+			var menu = cc.menunodes.CCMenu.create([mainMenuItem]);
+			menu.setPosition(240,450);
+			this.addChild(menu,4000);
 			this.schedule($bind(this,this.scoreCounter),1);
 		}
 		return true;
 	}
 	,__class__: sample.GameLayer
+});
+sample.GameOver = function() {
+	cc.layersscenestransitionsnodes.CCLayer.call(this);
+};
+sample.GameOver.__name__ = true;
+sample.GameOver.create = function() {
+	var sg = new sample.GameOver();
+	if(sg != null && sg.init()) return sg;
+	return null;
+}
+sample.GameOver.__super__ = cc.layersscenestransitionsnodes.CCLayer;
+sample.GameOver.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.prototype,{
+	onPlayAgain: function() {
+		var scene = cc.layersscenestransitionsnodes.CCScene.create();
+		scene.addChild(sample.GameLayer.create());
+		cc.CCDirector.getInstance().replaceScene(scene);
+	}
+	,init: function() {
+		var _g = this;
+		var bRet = false;
+		if(cc.layersscenestransitionsnodes.CCLayer.prototype.init.call(this)) {
+			var sp = cc.spritenodes.CCSprite.create("Sample/loading");
+			sp.setAnchorPoint(new flambe.math.Point(0,0));
+			this.addChild(sp,0,1);
+			var logo = cc.spritenodes.CCSprite.create("Sample/gameOver");
+			logo.setAnchorPoint(new flambe.math.Point(0,0));
+			logo.setPosition(0,80);
+			this.addChild(logo,10,1);
+			var playAgainNormal = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(378,0,126,33));
+			var playAgainSelected = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(378,33,126,33));
+			var playAgainDisabled = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(378,66,126,33));
+			var cocos2dhtml5 = cc.spritenodes.CCSprite.create("Sample/cocos2d-html5");
+			cocos2dhtml5.setCenterAnchor();
+			cocos2dhtml5.setPosition(160,380);
+			this.addChild(cocos2dhtml5,10);
+			var playAgain = cc.menunodes.CCMenuItemSprite.create(playAgainNormal,playAgainSelected,playAgainDisabled,function() {
+				sample.Effect.flareEffect(_g,_g,$bind(_g,_g.onPlayAgain));
+			},this);
+			var menu = cc.menunodes.CCMenu.create([playAgain]);
+			this.addChild(menu,1,2);
+			menu.setPosition(97,250);
+			var lbScore = cc.labelnodes.CCLabelBMFont.create("Your Score:" + sample.config.GameConfig.SCORE,"Sample/arial-14");
+			lbScore.setScale(2);
+			lbScore.setCenterAnchor();
+			lbScore.setPosition(160,200);
+			this.addChild(lbScore,10);
+			if(sample.config.GameConfig.SOUND) cc.denshion.CCAudioEngine.getInstance().playMusic("Sample/Music/mainMainMusic");
+			bRet = true;
+		}
+		return bRet;
+	}
+	,__class__: sample.GameOver
 });
 sample.LevelManager = function(gameLayer) {
 	if(gameLayer == null) throw "gameLayer must be non-nil";
@@ -6875,8 +7383,9 @@ sample.LevelManager = function(gameLayer) {
 sample.LevelManager.__name__ = true;
 sample.LevelManager.prototype = {
 	addEnemyToGameLayer: function(enemytype) {
+		if(this._gameLayer._ship == null) return;
 		var addEnemy = new sample.Enemy(sample.config.EnemyType.ENEMY_TYPE_LIST[enemytype]);
-		var enemypos = new flambe.math.Point(Math.random() * sample.GameLayer.winSize.width,100);
+		var enemypos = new flambe.math.Point(Math.random() * sample.GameLayer.winSize.width,0);
 		var enemycs = addEnemy.getContentSize();
 		addEnemy.setPosition(enemypos.x,enemypos.y);
 		var offset;
@@ -6889,7 +7398,7 @@ sample.LevelManager.prototype = {
 			tmpAction = cc.action.CCMoveTo.create(1,offset);
 			break;
 		case sample.config.ENEMY_MOVE_TYPE.VERTICAL:
-			offset = new flambe.math.Point(0,-sample.GameLayer.winSize.height - enemycs.height);
+			offset = new flambe.math.Point(0,sample.GameLayer.winSize.height + enemycs.height);
 			tmpAction = cc.action.CCMoveBy.create(4,offset);
 			break;
 		case sample.config.ENEMY_MOVE_TYPE.HORIZONTAL:
@@ -6898,8 +7407,8 @@ sample.LevelManager.prototype = {
 			break;
 		case sample.config.ENEMY_MOVE_TYPE.OVERLAP:
 			var newX = enemypos.x <= sample.GameLayer.winSize.width / 2?320:-320;
-			a0 = cc.action.CCMoveBy.create(4,new flambe.math.Point(newX,-240));
-			a1 = cc.action.CCMoveBy.create(4,new flambe.math.Point(-newX,-320));
+			a0 = cc.action.CCMoveBy.create(4,new flambe.math.Point(newX,240));
+			a1 = cc.action.CCMoveBy.create(4,new flambe.math.Point(-newX,320));
 			tmpAction = cc.action.CCSequence.create([a0,a1]);
 			break;
 		}
@@ -6979,6 +7488,10 @@ sample.SettingsLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer
 		scene.addChild(sample.SysMenu.create());
 		cc.CCDirector.getInstance().replaceScene(scene);
 	}
+	,soundControl: function() {
+		sample.config.GameConfig.SOUND = sample.config.GameConfig.SOUND?false:true;
+		if(!sample.config.GameConfig.SOUND) cc.denshion.CCAudioEngine.getInstance().stopMusic();
+	}
 	,init: function() {
 		var bRet = false;
 		if(cc.layersscenestransitionsnodes.CCLayer.prototype.init.call(this)) {
@@ -6989,11 +7502,23 @@ sample.SettingsLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer
 			title.setCenterAnchor();
 			title.setPosition(160,60);
 			this.addChild(title);
+			var label1 = cc.labelnodes.CCLabelBMFont.create("Sound","Sample/arial-14");
+			label1.setScale(2);
+			var title1 = cc.menunodes.CCMenuItemLabel.create(label1);
+			title1.setEnabled(false);
+			var on = cc.labelnodes.CCLabelBMFont.create("On","Sample/arial-14");
+			var off = cc.labelnodes.CCLabelBMFont.create("Off","Sample/arial-14");
+			var item1 = cc.menunodes.CCMenuItemToggle.create([cc.menunodes.CCMenuItemLabel.create(on),cc.menunodes.CCMenuItemLabel.create(off)]);
+			item1.setCallback($bind(this,this.soundControl),this);
+			var menu = cc.menunodes.CCMenu.create([title1,item1]);
+			this.addChild(menu);
+			menu.alignVerticallyWithPadding(30);
+			menu.setPosition(140,200);
 			var label = cc.labelnodes.CCLabelBMFont.create("Go back","Sample/arial-14");
 			var back = cc.menunodes.CCMenuItemLabel.create(label,$bind(this,this.backCallback),this);
-			var menu = cc.menunodes.CCMenu.create([back]);
-			menu.setPosition(134,360);
-			this.addChild(menu);
+			var menu1 = cc.menunodes.CCMenu.create([back]);
+			menu1.setPosition(134,360);
+			this.addChild(menu1);
 			bRet = true;
 		}
 		return bRet;
@@ -7003,10 +7528,11 @@ sample.SettingsLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer
 sample.Ship = function() {
 	this.zOrder = 3000;
 	this.canBeAttack = true;
-	this.hp = 1000;
+	this.hp = 5;
 	this.bulletSpeed = 900;
+	var _g = this;
 	cc.spritenodes.CCSprite.call(this);
-	this.appearPosition = new flambe.math.Point(160,40);
+	this.appearPosition = new flambe.math.Point(160,440);
 	var shipTexture = cc.texture.CCTextureCache.getInstance().addImage("Sample/ship01");
 	this.initWithTexture(shipTexture,new flambe.math.Rectangle(0,0,60,38));
 	this.setPosition(this.appearPosition.x,this.appearPosition.y);
@@ -7020,6 +7546,21 @@ sample.Ship = function() {
 	var animate = cc.action.CCAnimate.create(animation);
 	this.runAction(cc.action.CCRepeatForever.create(animate));
 	this.schedule($bind(this,this.shoot),1 / 6);
+	this.canBeAttack = false;
+	var ghostSprite = cc.spritenodes.CCSprite.createWithTexture(shipTexture,new flambe.math.Rectangle(0,45,60,38));
+	ghostSprite.setCenterAnchor();
+	ghostSprite.setScale(8);
+	ghostSprite.setPosition(30,24);
+	this.addChild(ghostSprite,3000,99999);
+	ghostSprite.runAction(cc.action.CCSequence.create([cc.action.CCScaleTo.create(0.5,1,1),cc.action.CCCallFunc.create(function() {
+		_g.removeChild(ghostSprite,true);
+	},this)]));
+	var blinks = cc.action.CCBlink.create(3,9);
+	var makeBeAttack = cc.action.CCCallFunc.create(function() {
+		_g.canBeAttack = true;
+		_g.setVisible(true);
+	},this);
+	this.runAction(cc.action.CCSequence.create([cc.action.CCDelayTime.create(0.5),blinks,makeBeAttack]));
 };
 sample.Ship.__name__ = true;
 sample.Ship.__super__ = cc.spritenodes.CCSprite;
@@ -7032,6 +7573,15 @@ sample.Ship.prototype = $extend(cc.spritenodes.CCSprite.prototype,{
 	}
 	,hurt: function() {
 		if(this.canBeAttack) this.hp--;
+	}
+	,destroy: function() {
+		sample.config.GameConfig.LIFE--;
+		var p = this.getPosition();
+		var myParent = this.getParent();
+		var e = new sample.Explosion();
+		myParent.removeChild(this,true);
+		e.setPosition(p.x,p.y);
+		if(sample.config.GameConfig.SOUND) cc.denshion.CCAudioEngine.getInstance().playEffect("Sample/Music/shipDestroyEffect");
 	}
 	,shoot: function() {
 		var offset = 13;
@@ -7085,12 +7635,12 @@ sample.SysMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.proto
 		cc.CCDirector.getInstance().replaceScene(scene);
 	}
 	,onNewGame: function() {
-		this.onButtonEffect();
 		var scene = cc.layersscenestransitionsnodes.CCScene.create();
 		scene.addChild(sample.GameLayer.create());
 		cc.CCDirector.getInstance().replaceScene(cc.layersscenestransitionsnodes.CCTransitionFade.create(1.2,scene));
 	}
 	,init: function() {
+		var _g = this;
 		var bRet = false;
 		if(cc.layersscenestransitionsnodes.CCLayer.prototype.init.call(this)) {
 			this.winSize = cc.CCDirector.getInstance().getWinSize();
@@ -7109,7 +7659,10 @@ sample.SysMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.proto
 			var aboutNormal = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(252,0,126,33));
 			var aboutSelected = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(252,33,126,33));
 			var aboutDisabled = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(252,66,126,33));
-			var newGame = cc.menunodes.CCMenuItemSprite.create(newGameNormal,newGameSelected,newGameDisabled,$bind(this,this.onNewGame),this);
+			var newGame = cc.menunodes.CCMenuItemSprite.create(newGameNormal,newGameSelected,newGameDisabled,function() {
+				_g.onButtonEffect();
+				sample.Effect.flareEffect(_g,_g,$bind(_g,_g.onNewGame));
+			},this);
 			var gameSettings = cc.menunodes.CCMenuItemSprite.create(gameSettingsNormal,gameSettingsSelected,gameSettingsDisabled,$bind(this,this.onSettings),this);
 			var about = cc.menunodes.CCMenuItemSprite.create(aboutNormal,aboutSelected,aboutDisabled,$bind(this,this.onAbout),this);
 			var _menu = cc.menunodes.CCMenu.create([newGame,gameSettings,about]);
@@ -7238,16 +7791,17 @@ cc.CCDirector.DIRECTOR_PROJECTION_DEFAULT = cc.CCDirector.DIRECTOR_PROJECTION_3D
 cc.CCDirector.defaultFPS = 60;
 cc.CCDirector.firstUseDirector = true;
 cc.action.CCAction.ACTION_TAG_INVALID = -1;
+cc.basenodes.CCNode.NODE_TAG_INVALID = -1;
 cc.menunodes.CCMenu.MENU_STATE_WAITING = 0;
 cc.menunodes.CCMenu.MENU_STATE_TRACKING_TOUCH = 1;
 cc.menunodes.CCMenu.MENU_HANDLER_PRIORITY = -128;
+cc.menunodes.CCMenuItem.CURRENT_ITEM = -1061138431;
 cc.menunodes.CCMenuItem.ZOOM_ACTION_TAG = -1061138430;
 cc.menunodes.CCMenuItem.NORMAL_TAG = 8801;
 cc.menunodes.CCMenuItem.SELECTED_TAG = 8802;
 cc.menunodes.CCMenuItem.DISABLE_TAG = 8803;
 cc.platform.CCConfig.NODE_TRANSFORM_USING_AFFINE_MATRIX = 1;
-cc.platform.CCMacro.BLEND_SRC = 1;
-cc.platform.CCMacro.BLEND_DST = 771;
+cc.platform.CCMacro.UINT_MAX = -1;
 flambe.display.Sprite._scratchPoint = new flambe.math.Point();
 cc.touchdispatcher.CCPointerDispatcher.POINTER_DOWN = 0;
 cc.touchdispatcher.CCPointerDispatcher.POINTER_UP = 3;
@@ -7298,7 +7852,7 @@ haxe.xml.Parser.escapes = (function($this) {
 	return $r;
 }(this));
 sample.GameLayer.STATE_PLAYING = 0;
-sample.config.GameConfig.LIFE = 4;
+sample.config.GameConfig.LIFE = 1;
 sample.config.GameConfig.SCORE = 0;
 sample.config.GameConfig.SOUND = true;
 sample.config.GameConfig.ENEMIES = new Array();

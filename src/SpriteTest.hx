@@ -27,9 +27,12 @@ import cc.spritenodes.CCSprite;
 import AllAssets;
 import cc.CCDirector;
 import cc.touchdispatcher.CCPointer;
+import flambe.input.PointerEvent;
+import flambe.math.Point;
 import flambe.math.Rectangle;
 import flambe.System;
 import flambe.Entity;
+import cc.action.CCActionInterval;
 /**
  * ...
  * @author Ang Li
@@ -52,6 +55,8 @@ class SpriteTest extends CCLayer
 		s.setPosition(200, 200);
 		s.setScale(1);
 		s.setCenterAnchor();
+		var m : CCMoveBy = CCMoveBy.create(3, new Point(100, 100));
+		s.runAction(m);
 		var scene  = new CCScene();
 		scene.addChild(this);
 		this.addChild(s);

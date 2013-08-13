@@ -26,6 +26,7 @@ import cc.CCComponent;
 import cc.support.CCPointExtension;
 import cc.texture.CCTexture2D;
 import flambe.asset.AssetPack;
+import flambe.display.BlendMode;
 import flambe.display.ImageSprite;
 import flambe.display.Sprite;
 import flambe.math.Point;
@@ -56,7 +57,7 @@ class CCSprite extends CCNode
 	var _opacity : Int = 255;
 	
 	//Data used when the sprite is self-rendered
-	var _blendFunc : CCBlendFunc;
+	var _blendFunc : BlendMode;
 	var _texture : CCTexture2D;
 	var _color : CCColor3B;
 	var _colorized : Bool = false;
@@ -142,20 +143,23 @@ class CCSprite extends CCNode
 		return new Point(this._offsetPosition.x, this._offsetPosition.y);
 	}
 	
-	public function getBlendFunc() : CCBlendFunc {
+	public function getBlendFunc() : BlendMode {
 		return this._blendFunc;
 	}
 	
-	public function setBlendFunc(src : Float, dst : Float) {
-		this._blendFunc = new CCBlendFunc(src, dst);
+	public function setBlendFunc(blend : BlendMode) {
+		//this._blendFunc = new CCBlendFunc(src, dst);
 	   //this._isLighterMode = (this._blendFunc && (this._blendFunc.src == gl.SRC_ALPHA) && (this._blendFunc.dst == gl.ONE));
+	
+		this._blendFunc = blend;
+		this.sprite.blendMode = blend;
 	}
 	
-	public function getOpacity() : Int {
+	override public function getOpacity() : Int {
 		return this._opacity;
 	}
 	
-	public function setOpacity(opacity : Int) {
+	override public function setOpacity(opacity : Int) {
 		this._opacity = opacity;
 		this.sprite.alpha._ = opacity / 255;
 	}
@@ -175,9 +179,9 @@ class CCSprite extends CCNode
 		this._color = CCTypes.white();
 		this._colorUnmodified = CCTypes.white();
 		
-		this._blendFunc = new CCBlendFunc(0, 0);
-		this._blendFunc.src = CCMacro.BLEND_SRC;
-		this._blendFunc.dst = CCMacro.BLEND_DST;
+		//this._blendFunc = new CCBlendFunc(0, 0);
+		//this._blendFunc.src = CCMacro.BLEND_SRC;
+		//this._blendFunc.dst = CCMacro.BLEND_DST;
 		
 		//this.setTexture(null);
 		

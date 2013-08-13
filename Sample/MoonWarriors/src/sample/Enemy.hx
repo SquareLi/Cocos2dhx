@@ -84,8 +84,10 @@ class Enemy extends CCSprite
 	public function destroy() {
 		GameConfig.SCORE += this.scoreValue;
 		var a : Explosion = new Explosion();
-		a.setPosition(this.getPosition().x - 20, this.getPosition().y);
+		//a.setCenterAnchor();
+		a.setPosition(this.getPosition().x - 38, this.getPosition().y - 45);
 		this.getParent().addChild(a);
+		Effect.spark(new Point(this.getPosition().x + 20, this.getPosition().y), this.getParent(), 1.2, 0.7);
 		CCScheduler.ArrayRemoveObject(GameConfig.ENEMIES, this);
 		this.removeFromParent(true);
 	}

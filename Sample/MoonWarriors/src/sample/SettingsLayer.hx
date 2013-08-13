@@ -31,7 +31,8 @@ import cc.texture.CCTextureCache;
 import flambe.math.Rectangle;
 import cc.CCDirector;
 import cc.layersscenestransitionsnodes.CCTransitionFade;
-
+import sample.config.GameConfig;
+import cc.denshion.CCAudioEngine;
 /**
  * ...
  * @author Ang Li
@@ -57,7 +58,24 @@ class SettingsLayer extends CCLayer
 			title.setPosition(160, 60);
 			this.addChild(title);
 			
+			var label1 : CCLabelBMFont = CCLabelBMFont.create("Sound", "Sample/arial-14");
+			label1.setScale(2);
+			var title1 = CCMenuItemLabel.create(label1);
+			title1.setEnabled(false);
 			
+			
+			var on = CCLabelBMFont.create("On", "Sample/arial-14");
+			var off = CCLabelBMFont.create("Off", "Sample/arial-14");
+			var item1 :CCMenuItemToggle = CCMenuItemToggle.create([
+				CCMenuItemLabel.create(on), 
+				CCMenuItemLabel.create(off)]);
+			item1.setCallback(this.soundControl, this);
+			
+			
+			var menu = CCMenu.create([title1, item1]);
+			this.addChild(menu);
+			menu.alignVerticallyWithPadding(30);
+			menu.setPosition(140, 200);
 			
 			var label : CCLabelBMFont = CCLabelBMFont.create("Go back", "Sample/arial-14");
 			var back : CCMenuItemLabel = CCMenuItemLabel.create(label, this.backCallback, this);
@@ -67,6 +85,13 @@ class SettingsLayer extends CCLayer
 			bRet = true;
 		}
 		return bRet;
+	}
+	
+	public function soundControl() {
+		GameConfig.SOUND = GameConfig.SOUND? false : true;
+		if (!GameConfig.SOUND) {
+			CCAudioEngine.getInstance().stopMusic();
+		}
 	}
 	
 	public function backCallback() {

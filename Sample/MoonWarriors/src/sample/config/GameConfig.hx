@@ -8,7 +8,7 @@ import sample.Enemy;
 class GameConfig
 {
 
-	public static var LIFE : Int = 4;
+	public static var LIFE : Int = 1;
 	public static var SCORE : Int = 0;
 	public static var SOUND : Bool = true;
 	public static var DELTA_X : Int = -100;

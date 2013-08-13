@@ -97,9 +97,12 @@ class LevelManager
 	}
 	
 	public function addEnemyToGameLayer(enemytype : Int) {
+		if (this._gameLayer._ship == null) {
+			return ;
+		}
 		var addEnemy : Enemy = new Enemy(EnemyType.ENEMY_TYPE_LIST[enemytype]);
 		
-		var enemypos : Point = new Point(Math.random() * GameLayer.winSize.width, 100);
+		var enemypos : Point = new Point(Math.random() * GameLayer.winSize.width, 0);
 		var enemycs = addEnemy.getContentSize();
 		addEnemy.setPosition(enemypos.x, enemypos.y);
 		//trace(enemypos.x, enemypos.y);
@@ -115,7 +118,7 @@ class LevelManager
 				offset = this._gameLayer._ship.getPosition();
 				tmpAction = CCMoveTo.create(1, offset);
 			case ENEMY_MOVE_TYPE.VERTICAL:
-				offset = new Point(0, -GameLayer.winSize.height - enemycs.height);
+				offset = new Point(0, GameLayer.winSize.height + enemycs.height);
 				tmpAction = CCMoveBy.create(4, offset);
 			case ENEMY_MOVE_TYPE.HORIZONTAL:
 				//offset = new Point(0, -100 - 200 * Math.random());
@@ -126,8 +129,8 @@ class LevelManager
 				tmpAction = CCMoveBy.create(4, offset);
 			case ENEMY_MOVE_TYPE.OVERLAP:
 				var newX : Float = (enemypos.x <= GameLayer.winSize.width / 2) ? 320 : -320;
-				a0 = CCMoveBy.create(4, new Point(newX, -240));
-				a1 = CCMoveBy.create(4, new Point( -newX, -320));
+				a0 = CCMoveBy.create(4, new Point(newX, 240));
+				a1 = CCMoveBy.create(4, new Point( -newX, 320));
 				tmpAction = CCSequence.create([a0, a1]);
 				
 		}

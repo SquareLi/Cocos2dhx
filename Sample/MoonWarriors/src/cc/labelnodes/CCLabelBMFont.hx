@@ -56,7 +56,7 @@ class CCLabelBMFont extends CCNode
      * conforms to cc.RGBAProtocol protocol
      * @return {Number}
      */
-	public function getOpacity() : Int {
+	override public function getOpacity() : Int {
         return this._opacity;
     }
 
@@ -64,7 +64,7 @@ class CCLabelBMFont extends CCNode
      * set the opacity of this label
      * @param {Number} v
      */
-	public function setOpacity(v : Int) {
+	override public function setOpacity(v : Int) {
         this._opacity = v;
 		this.sprite.alpha._ = _opacity / 255.0;
         if (this._children != null) {
@@ -163,7 +163,7 @@ class CCLabelBMFont extends CCNode
      * set the text
      * @param newString
      */
-    public function setString(newString : String, ?fromUpdate : Bool = true ) {
+    public function setString(newString : String, ?fromUpdate : Bool = false ) {
         if (this._string != newString) {
             this._string = newString;
             //  if(this._initialString == ""){

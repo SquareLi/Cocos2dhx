@@ -33,6 +33,8 @@ import sample.config.GameConfig;
 import cc.cocoa.CCGeometry;
 import cc.action.CCActionInterval;
 import sample.config.GameConfig;
+import cc.action.CCActionInstant;
+import cc.denshion.CCAudioEngine;
 /**
  * ...
  * @author Ang Li
@@ -41,7 +43,7 @@ class Ship extends CCSprite
 {
 	public var speed : Float = 220;
 	public var bulletSpeed : Float = 900;
-	public var hp : Float = 1000;
+	public var hp : Float = 5;
 	public var bulletTypeValue : Int = 1;
 	public var bulletPowerValue : Int = 1;
 	public var throwBombing : Bool = false;
@@ -56,11 +58,12 @@ class Ship extends CCSprite
 	{
 		super();
 		//init life
-		this.appearPosition = new Point(160, 40);
+		this.appearPosition = new Point(160, 440);
 		var shipTexture : CCTexture2D = CCTextureCache.getInstance().addImage("Sample/ship01");
 		this.initWithTexture(shipTexture, new Rectangle(0, 0, 60, 38));
 		this.setPosition(this.appearPosition.x, this.appearPosition.y);
 		this.active = true;
+		
 		
 		//set frame
 		var frame0 : CCSpriteFrame = CCSpriteFrame.createWithTexture(shipTexture, new Rectangle(0, 0, 60, 38), false, new Point(0, 0), new CCSize());
@@ -78,12 +81,22 @@ class Ship extends CCSprite
 		this.schedule(shoot, 1 / 6);
 		
 		//revive effect
-		//this.canBeAttack = false;
-		//var ghostSprite : CCSprite = CCSprite.createWithTexture(shipTexture, new Rectangle(0, 45, 60, 38));
-		//ghostSprite.setScale(8);
-		//ghostSprite.setPosition(this.getContentSize().width / 2, 12);
-		//this.addChild(ghostSprite, 3000, 99999);
-		//ghostSprite.runAction(CCScaleTo.create(0.5, 1, 1));
+		this.canBeAttack = false;
+		var ghostSprite : CCSprite = CCSprite.createWithTexture(shipTexture, new Rectangle(0, 45, 60, 38));
+		ghostSprite.setCenterAnchor();
+		ghostSprite.setScale(8);
+		ghostSprite.setPosition(30, 24);
+		this.addChild(ghostSprite, 3000, 99999);
+		ghostSprite.runAction(CCSequence.create([CCScaleTo.create(0.5, 1, 1), CCCallFunc.create(function() {
+			this.removeChild(ghostSprite,true);
+		}, this)]));
+		var blinks : CCBlink = CCBlink.create(3, 9);
+		var makeBeAttack = CCCallFunc.create(function () {
+            this.canBeAttack = true;
+            this.setVisible(true);
+            
+        }, this);
+		this.runAction(CCSequence.create([CCDelayTime.create(0.5), blinks, makeBeAttack]));
 	}
 	
 	var _bulletTimer : Float = 0;
@@ -124,7 +137,13 @@ class Ship extends CCSprite
 		GameConfig.LIFE--;
 		var p : Point = this.getPosition();
 		var myParent : CCNode = this.getParent();
-		//myParent.addChild(
+		var e = new Explosion();
+		myParent.removeChild(this, true);
+		e.setPosition(p.x, p.y);
+		
+		if (GameConfig.SOUND) {
+			CCAudioEngine.getInstance().playEffect("Sample/Music/shipDestroyEffect");
+		}
 	}
 	
 	public function hurt() {

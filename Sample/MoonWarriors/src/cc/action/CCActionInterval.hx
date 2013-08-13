@@ -25,10 +25,13 @@ import cc.spritenodes.CCAnimation;
 import cc.action.CCAction;
 import cc.spritenodes.CCSprite;
 import cc.spritenodes.CCSpriteFrame;
+import flambe.animation.AnimatedFloat;
+import flambe.display.Font;
+import flambe.display.Sprite;
 import flambe.math.Point;
 import flambe.swf.MovieSprite;
-import haxe.remoting.FlashJsConnection;
 
+import cc.support.CCPointExtension;
 /**
  * ...
  * @author Ang Li
@@ -38,6 +41,7 @@ class CCActionInterval extends CCFiniteTimeAction
 {
 	var _elapsed : Float;
 	var _firstTick : Bool;
+	var _ease : Float -> Float;
 	
 	public function new() 
 	{
@@ -60,6 +64,13 @@ class CCActionInterval extends CCFiniteTimeAction
 		return true;
 	}
 	
+	public function setEaseFunction(fn : Float -> Float) {
+		this._ease = fn;
+	}
+	
+	public function getEaseFunction() : Float -> Float {
+		return this._ease;
+	}
 	/** returns true if the action has finished **/
 	override public function isDone() : Bool {
 		return (this._elapsed >= this._duration);
@@ -186,7 +197,10 @@ class CCSequence extends CCActionInterval {
 		this._last = found;
 	}
 	
-	
+	override public function copy(): CCAction 
+	{
+		return CCSequence._actionOneTwo(cast(this._actions[0].copy(), CCFiniteTimeAction), cast (this._actions[1].copy(), CCFiniteTimeAction));
+	}
 	public static function create(?tempArray : Array<CCFiniteTimeAction>) : CCFiniteTimeAction {
 		var paraArray : Array<CCFiniteTimeAction> = tempArray;
 		var prev : CCFiniteTimeAction = paraArray[0];
@@ -466,11 +480,94 @@ class CCAnimate extends CCActionInterval
 }
 
 
+class CCRotateTo extends CCActionInterval {
+	var _dstAngle : Float = 0;
+	var _startAngle : Float = 0;
+	var _diffAngle : Float = 0;
+	
+	private function new() {
+		super();
+	}
+	
+	public function initWithDurationRotateTo(duration : Float, deltaAngle : Float) {
+		if (super.initWithDuration(duration)) {
+			this._dstAngle = deltaAngle;
+			return true;
+		}
+		
+		return false;
+	}
+	
+	override public function startWithTarget(target : CCNode) {
+		super.startWithTarget(target);
+		//this._target.getSprite().rotation.animateTo(_dstAngle, _duration, this._ease);
+		this._startAngle = target.getRotation();
+		
+		if (this._startAngle > 0) {
+			this._startAngle = this._startAngle % 360.0;
+		} else {
+			this._startAngle = this._startAngle % 360.0;
+		}
+		
+		this._diffAngle = this._dstAngle - this._startAngle;
+		if (this._diffAngle > 180) {
+			this._diffAngle -= -360;
+		} 
+		
+		if (this._diffAngle < -180) {
+			this._diffAngle += 360;
+		}
+	}
+	
+	override public function update(time:Float)
+	{
+		if (this._target != null) {
+			this._target.setRotation(this._startAngle + this._diffAngle * time);
+		}
+	}
+	
+	public static function create(duration : Float, deltaAngle : Float) : CCRotateTo {
+		var rotateTo = new CCRotateTo();
+		rotateTo.initWithDurationRotateTo(duration, deltaAngle);
+		return rotateTo;
+	}
+}
+
+class CCRotateBy extends CCActionInterval {
+	var _angle : Float = 0;
+	
+	private function new() {
+		super();
+	}
+	public function initWithDurationRotateBy(duration : Float, deltaAngle : Float) : Bool {
+		if (super.initWithDuration(duration)) {
+			this._angle = deltaAngle;
+			return true;
+		}
+		
+		return false;
+	}
+	
+	override public function startWithTarget(target:CCNode)
+	{
+		super.startWithTarget(target);
+		this._target.getSprite().rotation.animateBy(_angle, _duration, this._ease);
+	}
+	
+	public static function create(duration : Float, deltaAngle : Float) : CCRotateBy {
+		var rotateBy = new CCRotateBy();
+		rotateBy.initWithDurationRotateBy(duration, deltaAngle);
+		
+		return rotateBy;
+	}
+}
+
 class CCMoveTo extends CCActionInterval {
 	var _endPosition : Point;
 	var _startPosition : Point;
 	var _delta : Point;
 	var _isMoveTo : Bool = true;
+	var _previousPosition : Point;
 	
 	public function new() {
 		super();
@@ -478,18 +575,24 @@ class CCMoveTo extends CCActionInterval {
 		_endPosition = new Point(0, 0);
 		_startPosition = new Point(0, 0);
 		_delta = new Point(0, 0);
+		_previousPosition = new Point(0, 0);
 	}
 	
 	//Haxe does not support overload
-	public function initWithDurationMoveTo(duration : Float, position) {
-		super.initWithDuration(duration);
-		this._endPosition = position;	
+	public function initWithDurationMoveTo(duration : Float, position) : Bool {
+		if (super.initWithDuration(duration)) {
+			this._endPosition = position;	
+			return true;
+		}
+		
+		return false;
+		
 	}
 	
-	override public function update(time:Float)
-	{
-		_target.syncPosition();
-	}
+	//override public function update(time:Float)
+	//{
+		//_target.syncPosition();
+	//}
 	override public function startWithTarget(target:CCNode) 
 	{
 		super.startWithTarget(target);
@@ -497,12 +600,28 @@ class CCMoveTo extends CCActionInterval {
 			return;
 		}
 		
-		if (this._isMoveTo) {
-			this._target.getSprite().x.animateTo(_endPosition.x, this.getDuration());
-			this._target.getSprite().y.animateTo(_endPosition.y, this.getDuration());
+		//if (this._isMoveTo) {
+			//this._target.getSprite().x.animateTo(_endPosition.x, this.getDuration(), this._ease);
+			//this._target.getSprite().y.animateTo(_endPosition.y, this.getDuration(), this._ease);
 			//trace("123");
-		}
+		//}
+		this._previousPosition = this._startPosition = target.getPosition();
+		this._delta = CCPointExtension.pSub(this._endPosition, this._startPosition);
 		
+	}
+	
+	override public function update(time:Float)
+	{
+		if (this._target != null) {
+			var currentPos = this._target.getPosition();
+			var diff = CCPointExtension.pSub(currentPos, this._previousPosition);
+			this._startPosition = CCPointExtension.pAdd(this._startPosition, diff);
+			var newPos = new Point(this._startPosition.x + this._delta.x * time,
+                           this._startPosition.y + this._delta.y * time);
+			this._target.setPosition(newPos.x, newPos.y);
+			this._previousPosition = newPos;
+			//trace(this._delta.y);
+		}
 	}
 	
 	public static function create(duration : Float, position : Point) : CCMoveTo {
@@ -515,26 +634,39 @@ class CCMoveTo extends CCActionInterval {
 
 
 class CCMoveBy extends CCMoveTo {
-	override public function initWithDurationMoveTo(duration:Float, position)
+	private function new() {
+		super();
+	}
+	public function initWithDurationMoveBy(duration:Float, position : Point) : Bool
 	{
-		super.initWithDurationMoveTo(duration, position);
-		this._delta = position;
-		this._isMoveTo = false;
+		
+		if (super.initWithDurationMoveTo(duration, position)) {
+			this._delta = position;
+			this._isMoveTo = false;
+			//trace(_delta);
+			return true;
+		}
+		return false;
 	}
 	
 	override public function startWithTarget(target:CCNode)
 	{
+		//super.startWithTarget(target);
+		
+		//this._target.getSprite().x.animateBy(_endPosition.x, this.getDuration(), this._ease);
+		//this._target.getSprite().y.animateBy(_endPosition.y, this.getDuration(), this._ease);
+		//trace(this._delta);
+		var temp = this._delta;
 		super.startWithTarget(target);
 		if (this._target.getSprite() == null) {
 			return;
 		}
-		this._target.getSprite().x.animateBy(_endPosition.x, this.getDuration());
-		this._target.getSprite().y.animateBy(_endPosition.y, this.getDuration());
-	
+		this._delta = temp;
+		//trace(this._delta);
 	}	
 	public static function create(duration : Float, position : Point) : CCMoveBy{
 		var moveBy : CCMoveBy = new CCMoveBy();
-		moveBy.initWithDurationMoveTo(duration, position);
+		moveBy.initWithDurationMoveBy(duration, position);
 		return  moveBy;
 	}
 }
@@ -543,7 +675,7 @@ class CCScaleTo extends CCActionInterval {
 	var _scaleX : Float;
 	var _scaleY : Float;
 	var _startScaleX : Float;
-	var _startSclaeY : Float;
+	var _startScaleY : Float;
 	var _endScaleX : Float;
 	var _endScaleY : Float;
 	var _deltaX : Float;
@@ -555,7 +687,7 @@ class CCScaleTo extends CCActionInterval {
 		_scaleX = 1;
 		_scaleY = 1;
 		_startScaleX = 1;
-		_startSclaeY = 1;
+		_startScaleY = 1;
 		_endScaleX = 0;
 		_endScaleY = 0;
 		_deltaX = 0;
@@ -563,31 +695,38 @@ class CCScaleTo extends CCActionInterval {
 	}
 	
 	public function initWithDurationScaleTo(duration : Float, sx : Float, ?sy : Float) : Bool{
-		super.initWithDuration(duration);
-		this._endScaleX = sx;
-		if (sy == null) {
-			this._endScaleY = sx;
-		} else {
-			this._endScaleY = sy;
+		if (super.initWithDuration(duration)) {
+			this._endScaleX = sx;
+			this._endScaleY = (sy != null) ? sy : sx;
+			return true;
 		}
 		
-		return true;
+		return false;
 	}
 	
 	override public function startWithTarget(target:CCNode)
 	{
 		super.startWithTarget(target);
 		this._startScaleX = target.getScaleX();
-		this._startSclaeY = target.getScaleY();
+		this._startScaleY = target.getScaleY();
 		this._deltaX = this._endScaleX - this._startScaleX;
-		this._deltaY = this._endScaleY - this._startSclaeY;
+		this._deltaY = this._endScaleY - this._startScaleY;
 		
-		if (this._isTo) {
-			this._target.getSprite().scaleX.animateTo(this._endScaleX, this._duration);
-			this._target.getSprite().scaleY.animateTo(this._endScaleY, this._duration);
-			
+		//if (this._isTo) {
+			//this._target.getSprite().scaleX.animateTo(this._endScaleX, this._duration, this._ease);
+			//this._target.getSprite().scaleY.animateTo(this._endScaleY, this._duration, this._ease);
+			//
+		//}
+		
+		
+	}
+	
+	override public function update(time:Float)
+	{
+		if (this._target != null) {
+			this._target.setScale(this._startScaleX + this._deltaX * time, 
+				this._startScaleY + this._deltaY * time);
 		}
-		
 	}
 	
 	public static function create(duration : Float, sx : Float, ?sy : Float) : CCScaleTo {
@@ -602,14 +741,16 @@ class CCScaleTo extends CCActionInterval {
 	}
 }
 
-class CCScaleBy extends CCScaleTo{
+class CCScaleBy extends CCScaleTo {
 	override public function startWithTarget(target:CCNode)
 	{
-		this._isTo = false;
+		//this._isTo = false;
 		
 		super.startWithTarget(target);
-		this._target.getSprite().scaleX.animateBy(_endScaleX, _duration);
-		this._target.getSprite().scaleY.animateBy(this._endScaleY, this._duration);
+		//this._target.getSprite().scaleX.animateBy(_endScaleX, _duration, this._ease);
+		//this._target.getSprite().scaleY.animateBy(this._endScaleY, this._duration, this._ease);
+		this._deltaX = this._startScaleX * this._endScaleX - this._startScaleX;
+        this._deltaY = this._startScaleY * this._endScaleY - this._startScaleY;
 	}
 	
 	public static function create(duration : Float, sx : Float, ?sy : Float) : CCScaleBy {
@@ -624,19 +765,68 @@ class CCScaleBy extends CCScaleTo{
 	}
 }
 
+class CCBlink extends CCActionInterval {
+	var _times : Float = 0;
+	var _originalState : Bool;
+	public function initWithDurationBlink(duration : Float, blinks : Float) {
+		if (super.initWithDuration(duration)) {
+			_times = blinks;
+			return true;
+		}
+		
+		return false;
+	}
+	
+	override public function update(time:Float)
+	{
+		if (this._target != null && !this.isDone()) {
+			var slice : Float = 1.0 / this._times;
+			var m = time % slice;
+			this._target.setVisible(m > slice / 2 ? true : false);
+		}
+	}
+	
+	override public function startWithTarget(target:CCNode)
+	{
+		super.startWithTarget(target);
+		this._originalState = target.isVisible();
+	}
+	
+	override public function stop()
+	{
+		this._target.setVisible(this._originalState);
+		super.stop();
+	}
+	
+	public static function create(duration : Float, blinks : Float) : CCBlink{
+		var blink = new CCBlink();
+		blink.initWithDurationBlink(duration, blinks);
+		return blink;
+	}
+}
+
+class CCFadeIn extends CCActionInterval {
+	override public function update(time:Float)
+	{
+		if (this._target != null) {
+			this._target.setOpacity(Std.int(255 * time));
+		}
+	}
+	
+	public static function create(duration : Float) {
+		var action = new CCFadeIn();
+		action.initWithDuration(duration);
+		return action;
+	}
+}
+
 class CCFadeOut extends CCActionInterval {
 	public function new() {
 		super();
 	}
 	override public function update(time:Float)
 	{
-		//this._target.setOpacity
-	}
-	
-	override public function startWithTarget(target:CCNode)
-	{
-		super.startWithTarget(target);
-		this._target.getSprite().alpha.animateTo(0, _duration);
+		this._target.setOpacity(Std.int(255 * (1 - time)));
 	}
 	
 	public static function create(d : Float) {
@@ -645,4 +835,56 @@ class CCFadeOut extends CCActionInterval {
 		
 		return action;
 	}
+}
+
+class CCFadeTo extends CCActionInterval {
+	var _toOpacity : Int = 0;
+	var _fromOpacity : Int = 0;
+	private function new() {
+		super();
+	}
+	
+	public function initWithDurationFadeTo(duration : Float, opacity : Int) : Bool {
+		if (super.initWithDuration(duration)) {
+			this._toOpacity = opacity;
+			return true;
+		}
+		return false;
+	}
+	
+	override public function update(time:Float)
+	{
+		if (this._target != null) {
+			this._target.setOpacity(Std.int((this._fromOpacity + (this._toOpacity - this._fromOpacity) * time)));
+			
+		}
+		
+	}
+	
+	override public function startWithTarget(target:CCNode)
+	{
+		super.startWithTarget(target);
+		this._fromOpacity = target.getOpacity();
+	}
+	
+	public static function create(duration : Float, opacity : Int) : CCFadeTo {
+		var fadeTo = new CCFadeTo();
+		fadeTo.initWithDurationFadeTo(duration, opacity);
+		
+		return fadeTo;
+	}
+}
+
+class CCDelayTime extends CCActionInterval {
+	override public function update(time:Float)
+	{
+		
+	}
+	
+	public static function create(duration : Float) : CCDelayTime {
+		var action = new CCDelayTime();
+		action.initWithDuration(duration);
+		return action;
+	}
+	
 }

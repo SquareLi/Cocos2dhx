@@ -74,7 +74,10 @@ class SysMenu extends CCLayer
 			var aboutSelected = CCSprite.create("Sample/menu", new Rectangle(252, 33, 126, 33));
 			var aboutDisabled = CCSprite.create("Sample/menu", new Rectangle(252, 33 * 2, 126, 33));
 			
-			var newGame = CCMenuItemSprite.create(newGameNormal, newGameSelected, newGameDisabled, this.onNewGame ,this);
+			var newGame = CCMenuItemSprite.create(newGameNormal, newGameSelected, newGameDisabled, function() {
+				this.onButtonEffect();
+				Effect.flareEffect(this, this, this.onNewGame);
+			},this);
 			var gameSettings = CCMenuItemSprite.create(gameSettingsNormal, gameSettingsSelected, gameSettingsDisabled, this.onSettings, this);
 			var about = CCMenuItemSprite.create(aboutNormal, aboutSelected, aboutDisabled, this.onAbout, this);
 			
@@ -98,7 +101,7 @@ class SysMenu extends CCLayer
 	}
 	
 	public function onNewGame() {
-		this.onButtonEffect();
+		//this.onButtonEffect();
 		//trace("123");
 		var scene = CCScene.create();
 		scene.addChild(GameLayer.create());

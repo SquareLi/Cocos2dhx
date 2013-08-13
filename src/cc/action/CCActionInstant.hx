@@ -22,7 +22,7 @@
 package cc.action;
 import cc.spritenodes.CCSprite;
 import cc.action.CCAction;
-
+import cc.basenodes.CCNode;
 /**
  * ...
  * @author Ang Li
@@ -55,12 +55,12 @@ class CCCallFunc extends CCActionInstant
 {
 	var _data : Dynamic;
 	var _callFunc : Void -> Void;
-	var _selectorTarget : CCSprite;
+	var _selectorTarget : CCNode;
 	private function new() {
 		super();
 	}
 	
-	public function initWithTargetCallFunc(selector : Void -> Void, selectorTarget : CCSprite, ?data : Dynamic) {
+	public function initWithTargetCallFunc(selector : Void -> Void, selectorTarget : CCNode, ?data : Dynamic) {
 		this._data = data;
 		this._callFunc = selector;
 		this._selectorTarget = selectorTarget;
@@ -78,7 +78,7 @@ class CCCallFunc extends CCActionInstant
 		this.execute();
 	}
 	
-	public function getTargetCallback() : CCSprite {
+	public function getTargetCallback() : CCNode {
 		return this._selectorTarget;
 	}
 	
@@ -91,7 +91,7 @@ class CCCallFunc extends CCActionInstant
 		}
 	}
 	
-	public static function create(selector : Void -> Void, selectorTarget : CCSprite, ?data : Dynamic) {
+	public static function create(selector : Void -> Void, selectorTarget : CCNode, ?data : Dynamic) {
 		var ret : CCCallFunc = new CCCallFunc();
 		if (ret != null) {
 			ret._callFunc = selector;

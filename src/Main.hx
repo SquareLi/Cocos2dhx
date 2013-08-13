@@ -38,6 +38,7 @@ import tests.TestLabelTTF;
 import tests.TestMenu;
 import sample.SysMenu;
 import sample.AboutLayer;
+import sample.GameOver;
 /**
  * ...
  * @author Ang Li
@@ -69,9 +70,9 @@ class Main
 		//System.root.add(a);
 		
 		//Run Sprite Sheet
-		//System.root.add(new FillSprite(0xffffff, 320, 576));
-		//var spriteSheet  = new TestSpriteSheet();
-		//spriteSheet.test();
+		System.root.add(new FillSprite(0xffffff, 320, 576));
+		var spriteSheet  = new TestSpriteSheet();
+		spriteSheet.test();
 		
 		//Run LabelTTF test
 		//var t : TestLabelTTF = new TestLabelTTF();
@@ -81,11 +82,7 @@ class Main
 		//var t : TestMenu = new TestMenu();
 		//t.runTest();
 		
-		//var s = CCScene.create();
-		//s.addChild(AboutLayer.create());
-		//var director : CCDirector = CCDirector.getInstance();
-		//director.runWithScene(SysMenu.scene());
-		//System.root.addChild(SysMenu.create().entity);
+
     }
 
     private static function main () 

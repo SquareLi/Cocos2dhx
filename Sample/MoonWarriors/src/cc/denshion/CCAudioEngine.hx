@@ -219,6 +219,8 @@ class CCAudioEngine
 	}
 	
 	public function stopMusic() {
+		if (_playingMusic == null)
+			return;
 		_playingMusic.dispose();
 		_playingMusic = null;
 		_cacheMusic = null;
