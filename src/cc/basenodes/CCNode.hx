@@ -199,7 +199,7 @@ class CCNode
 	
 	public function setScaleX(newScaleX : Float) {
 		this._scaleX = newScaleX;
-		sprite.setScaleXY(this._scaleX, 1);
+		sprite.scaleX._ = newScaleX;
 	}
 	
 	public function getScaleY() : Float {
@@ -208,7 +208,7 @@ class CCNode
 	
 	public function setScaleY(newScaleY : Float) {
 		this._scaleY = newScaleY;
-		sprite.setScaleXY(1, this._scaleY);
+		sprite.scaleY._ = newScaleY;
 	}
 	
 	//Only accept Float values
