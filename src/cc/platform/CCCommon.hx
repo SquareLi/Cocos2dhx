@@ -22,6 +22,7 @@
 
 package cc.platform;
 import haxe.ds.HashMap;
+import haxe.Log;
 
 /**
  * ...
@@ -98,6 +99,12 @@ class CCCommon
 			return obj; 
 		} 
 		return null; 
+	}
+	
+	public static function log(message : String) {
+		#if debug
+			trace(message);
+		#end
 	}
 	
 	public static function assert(cond : Bool, message : String) {

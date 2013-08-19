@@ -39,6 +39,7 @@ import tests.TestMenu;
 import sample.SysMenu;
 import sample.AboutLayer;
 import sample.GameOver;
+import tests.TestTileMap;
 /**
  * ...
  * @author Ang Li
@@ -70,9 +71,9 @@ class Main
 		//System.root.add(a);
 		
 		//Run Sprite Sheet
-		System.root.add(new FillSprite(0xffffff, 320, 576));
-		var spriteSheet  = new TestSpriteSheet();
-		spriteSheet.test();
+		//System.root.add(new FillSprite(0xffffff, 320, 576));
+		//var spriteSheet  = new TestSpriteSheet();
+		//spriteSheet.test();
 		
 		//Run LabelTTF test
 		//var t : TestLabelTTF = new TestLabelTTF();
@@ -82,7 +83,16 @@ class Main
 		//var t : TestMenu = new TestMenu();
 		//t.runTest();
 		
-
+		//var s = CCScene.create();
+		//s.addChild(AboutLayer.create());
+		//var director : CCDirector = CCDirector.getInstance();
+		//var s :CCScene = CCScene.create();
+		//s.addChild(SysMenu.create());
+		//director.runWithScene(s);
+		//System.root.addChild(SysMenu.create().entity);
+		
+		var test : TestTileMap = new TestTileMap();
+		test.run();
     }
 
     private static function main () 
