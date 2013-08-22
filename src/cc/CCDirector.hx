@@ -21,6 +21,7 @@
  ****************************************************************************/
 
 package cc;
+import cc.keyboarddispatcher.CCKeyboardDispatcher;
 import flambe.math.Point;
 import flambe.scene.Director;
 import haxe.CallStack;
@@ -159,9 +160,9 @@ class CCDirector
     var _scheduler : Dynamic = null;
     var _actionManager : CCActionManager = null;
     var _touchDispatcher : Dynamic = null;
-    var _keyboardDispatcher : Dynamic = null;
     var _accelerometer : Dynamic = null;
     var _pointerDispatcher : CCPointerDispatcher;
+	var _keyboardDispatcher : CCKeyboardDispatcher;
 
     var _watcherFun : Dynamic = null;
     var _watcherSender : Dynamic = null;
@@ -203,6 +204,8 @@ class CCDirector
 		//trace(this.getWinSize().height);
 		
 		this._pointerDispatcher = new CCPointerDispatcher();
+		this._keyboardDispatcher = CCKeyboardDispatcher.getInstance();
+		
 		
 		
 		//Flambe
@@ -375,5 +378,13 @@ class CCDirector
 	 
 	 public function setPointerDispather(p : CCPointerDispatcher) {
 		 this._pointerDispatcher = p;
+	 }
+	 
+	 public function getKeyboardDispatcher() : CCKeyboardDispatcher {
+		 return this._keyboardDispatcher;
+	 }
+	 
+	 public function setKeyboardDispatcher(keyboardDispatcher : CCKeyboardDispatcher) {
+		 this._keyboardDispatcher = keyboardDispatcher;
 	 }
 }

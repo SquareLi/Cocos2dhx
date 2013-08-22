@@ -27,7 +27,7 @@ import cc.platform.CCTypes;
 import cc.touchdispatcher.CCPointer;
 import flambe.Entity;
 import flambe.input.PointerEvent;
-import cc.layerandscenes.CCScene;
+import cc.layersscenestransitionsnodes.CCScene;
 import cc.CCDirector;
 import flambe.math.Rectangle;
 import flambe.System;

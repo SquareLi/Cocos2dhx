@@ -8,7 +8,7 @@ import flambe.math.Point;
 import flambe.math.Rectangle;
 import cc.CCLoader;
 import cc.platform.CCCommon;
-import flash.display.InterpolationMethod;
+import cc.platform.CCBase64;
 /**
  * ...
  * @author Ang Li
@@ -458,12 +458,18 @@ class CCTMXMapInfo {
 			compression = "";
 		}
 		
+		var isCompression : Bool = false;
 		switch(compression) {
+			//case "gzip" :
+				//layer._tiles = 
+			case "zlib" :
+				//isCompression = true;
+				//layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), isCompression);
 			case "":
 				if (encoding == "base64") {
-					
+					//layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), isCompression);
 				} else if (encoding == "csv") {
-					
+					layer._tiles = csvToArray(xml.firstChild().nodeValue);
 				} else {
 					//XML format
 					var indexX = 0;
@@ -503,7 +509,25 @@ class CCTMXMapInfo {
 	
 	private function loadObjectGroup(xml : Xml) {
 		var objectGroup = new CCTMXObjectGroup();
-
+		objectGroup.setGroupName(xml.get("name"));
+		
+		var x : Float;
+		var y : Float;
+		var xStr : String = xml.get("x");
+		var yStr : String = xml.get("y");
+		if (xStr == null) {
+			x = 0;
+		} else {
+			x = Std.parseFloat(xStr);
+		}
+		
+		if (yStr == null) {
+			y = 0;
+		} else {
+			y = Std.parseFloat(yStr);
+		}
+		objectGroup.setPositionOffset(new Point(x * this.getTileSize().width,
+                    y * this.getTileSize().height));
 		for (elem in xml.elements()) {
 			var object : CCTMXObject = new CCTMXObject();
 			switch (elem.nodeName) {
@@ -561,6 +585,29 @@ class CCTMXMapInfo {
 		this._storingCharacters = false;
 		this._layerAttribs = CCTMXXMLParser.TMX_LAYER_ATTRIB_NONE;
 		this._parentElement = CCTMXXMLParser.TMX_PROPERTY_NONE;
+	}
+	
+	/**
+	 * https://github.com/po8rewq/HaxeFlixelTiled/blob/master/org/flixel/tmx/TmxLayer.hx
+	 * @param	input
+	 * @return
+	 */
+	public static function csvToArray(input:String):Array<Array<Int>>
+	{
+		var result:Array<Array<Int>> = new Array<Array<Int>>();
+		var rows:Array<String> = input.split("\n");
+		var row:String;
+		for (row in rows)
+		{
+			if (row == "") continue;
+			var resultRow:Array<Int> = new Array<Int>();
+			var entries:Array<String> = row.split(",");
+			var entry:String;
+			for (entry in entries)
+				resultRow.push(Std.parseInt(entry)); //convert to int
+			result.push(resultRow);
+		}
+		return result;
 	}
 	
 	public static function create(tmxFile : String, ?resourcePath : String) : CCTMXMapInfo {

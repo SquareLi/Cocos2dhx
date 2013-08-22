@@ -61,7 +61,7 @@ class Main
 		//Run Layer and Image test
 		//var s : TestSceneAndLayer = new TestSceneAndLayer();
 		//s.runScene();
-		
+		//
 		//Run Image test
 		//var i : SpriteTest = new SpriteTest();
 		//i.addNewSprite();
@@ -83,12 +83,12 @@ class Main
 		//var t : TestMenu = new TestMenu();
 		//t.runTest();
 		
-		//var s = CCScene.create();
-		//s.addChild(AboutLayer.create());
+
 		//var director : CCDirector = CCDirector.getInstance();
 		//var s :CCScene = CCScene.create();
 		//s.addChild(SysMenu.create());
 		//director.runWithScene(s);
+		
 		//System.root.addChild(SysMenu.create().entity);
 		
 		var test : TestTileMap = new TestTileMap();

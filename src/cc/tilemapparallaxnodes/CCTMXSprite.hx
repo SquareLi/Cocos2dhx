@@ -12,6 +12,8 @@ class CCTMXSprite extends Sprite
 {
 	var _mapInfo : CCTMXMapInfo;
 	var _layerInfo : CCTMXLayerInfo;
+	var _height : Float;
+	var _width : Float;
 	public function new(layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) 
 	{
 		super();
@@ -36,17 +38,7 @@ class CCTMXSprite extends Sprite
 					var rect : Rectangle = tilesetInfo.rectForGID(gid);
 					//trace(rect.toString());
 					
-					
-					
 					g.drawSubImage(tilesetInfo.texture, x, y, rect.x, rect.y, rect.width, rect.height);
-					if (flag) {
-						//trace(rect.toString() + "|||" + x + "," + y);
-						//var max_x = (tilesetInfo.imageSize.width - tilesetInfo.margin * 2 + tilesetInfo.spacing) / (tilesetInfo._tileSize.width + tilesetInfo.spacing);
-						//Std.parseInt(Std.string((gid / max_x) * (tilesetInfo._tileSize.height + tilesetInfo.spacing) + tilesetInfo.margin));
-						//trace(max_x);
-						//trace(Std.int(gid / max_x) * (tilesetInfo._tileSize.height + tilesetInfo.spacing) + tilesetInfo.margin);
-						//;
-					}
 				}
 				
 			}
@@ -72,4 +64,13 @@ class CCTMXSprite extends Sprite
 		return null;
 	}
 	
+	override public function getNaturalWidth():Float 
+	{
+		return _layerInfo._layerSize.width * _mapInfo.getTileSize().width;
+	}
+	
+	override public function getNaturalHeight():Float 
+	{
+		return _layerInfo._layerSize.height * _mapInfo.getTileSize().height;
+	}
 }

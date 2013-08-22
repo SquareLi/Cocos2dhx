@@ -45,7 +45,7 @@ class CCTMXObjectGroup
 		return this._properties[propertyName];
 	}
 	
-	public function objectNamed(objectName : String) {
+	public function objectNamed(objectName : String) : CCTMXObject {
 		if (this._objects != null && this._objects.length > 0) {
 			for (o in this._objects) {
 				if (o.name == objectName) {

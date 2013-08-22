@@ -98,7 +98,7 @@ class CCNode
 	//var _orderOfArrival : Int = 0;
 	public function new() 
 	{
-		this._initNode();
+		init();
 	}
 	
 	private function _initNode() {
@@ -136,7 +136,7 @@ class CCNode
 		this.entity.add(component);*/
 	}
 	
-	public function init() : Bool{
+	public function init() : Bool {
 		if (this._initializedNode == false) {
 			this._initNode();
 		}
@@ -199,7 +199,7 @@ class CCNode
 	
 	public function setScaleX(newScaleX : Float) {
 		this._scaleX = newScaleX;
-		sprite.setScaleXY(this._scaleX, 1);
+		sprite.scaleX._ = newScaleX;
 	}
 	
 	public function getScaleY() : Float {
@@ -208,7 +208,7 @@ class CCNode
 	
 	public function setScaleY(newScaleY : Float) {
 		this._scaleY = newScaleY;
-		sprite.setScaleXY(1, this._scaleY);
+		sprite.scaleY._ = newScaleY;
 	}
 	
 	//Only accept Float values
@@ -475,11 +475,7 @@ class CCNode
 			
 			child.cleanup();
 		}
-		//if (child._parent == null) {
-			//trace("123");
-		//} else {
-			//trace("!null");
-		//}
+
 	}
 	
 	//private function _insertChild(child : CCNode, z : Int) {

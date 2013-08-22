@@ -121,12 +121,32 @@ class CCTMXTiledMap extends CCSprite
 		var layers = mapInfo.getLayers();
 		if (layers != null) {
 			for (l in layers) {
-				var s : Sprite = new CCTMXSprite(l, mapInfo);
-				this.entity.addChild(new Entity().add(s));
+				var child = CCTMXLayer.create(l, mapInfo);
+				this.addChild(child, idx, idx);
+				idx++;
+				
+				var childSize = child.getContentSize();
+				var currentSize = this.getContentSize();
+				currentSize.width = Math.max(currentSize.width, childSize.width);
+				currentSize.height = Math.max(currentSize.height, childSize.height);
+				
+				this.setContentSize(currentSize);
+				
 			}
 		}
 	}
 	
+	public function getObjectGroup(groupName : String) : CCTMXObjectGroup {
+		CCCommon.assert(groupName != null && groupName.length > 0, "Invalid group name!");
+		if (this._objectGroups != null) {
+			for (o in _objectGroups) {
+				if (o != null && o.getGroupName() == groupName) {
+					return o;
+				}
+			}
+		}
+		return null;
+	}
 	public static function create(tmxFile : String, resourcePath : String) : CCTMXTiledMap {
 		var ret = new CCTMXTiledMap();
 		if (ret.initWithTMXFile(tmxFile, resourcePath)) {

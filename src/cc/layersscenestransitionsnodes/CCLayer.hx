@@ -24,12 +24,14 @@ package cc.layersscenestransitionsnodes;
 import cc.basenodes.CCNode;
 import cc.CCComponent;
 import cc.CCDirector;
+import cc.keyboarddispatcher.CCKeyboardDelegate;
 import cc.touchdispatcher.CCPointer;
 import flambe.display.Sprite;
 import flambe.subsystem.PointerSystem;
 import flambe.input.PointerEvent;
 import cc.touchdispatcher.CCPointerEventDelegate;
 import flambe.math.Point;
+import flambe.input.KeyboardEvent;
 
 
 /**
@@ -39,13 +41,12 @@ import flambe.math.Point;
 
  import cc.touchdispatcher.CCPointerEventDelegate;
 
-class CCLayer extends CCNode implements CCPointerEventDelegate
+class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyboardDelegate
 {
 	var _isPointerEnabled : Bool = false;
 	var _isAccelerometerEnabled : Bool = false;
 	var _isKeyboardEnabled : Bool = false;
 	var _pointerPriority : Int = 0;
-	
 	
 	public function new() 
 	{
@@ -62,6 +63,7 @@ class CCLayer extends CCNode implements CCPointerEventDelegate
 		this._isPointerEnabled = false;
 		this._pointerPriority = 0;
 		addComponent();
+		//trace("_initLayer");
 	}
 	
 	public function addComponent() {
@@ -69,8 +71,8 @@ class CCLayer extends CCNode implements CCPointerEventDelegate
 			this.component = new CCComponent(this);
 			this.entity.add(component);
 			
-			if (this.sprite == null) {
-				this.sprite = new Sprite();
+			if (!this.entity.has(Sprite)) {
+				//this.sprite = new Sprite();
 				this.entity.add(sprite);
 			}
 		}
@@ -79,7 +81,7 @@ class CCLayer extends CCNode implements CCPointerEventDelegate
 	
 	override public function init():Bool 
 	{
-		//super.init();
+		super.init();
 		this._initLayer();
 		return true;
 	}
@@ -123,9 +125,29 @@ class CCLayer extends CCNode implements CCPointerEventDelegate
 	public function getPointerPriority() : Int {
 		return this._pointerPriority;
 	}
+	
+	public function isKeyboardEnabled() : Bool {
+		return this._isKeyboardEnabled;
+	}
+	
+	public function setKeyboardEnabled(enabled : Bool) {
+		if (enabled != this._isKeyboardEnabled) {
+			this._isKeyboardEnabled = enabled;
+			if (this._running) {
+				var director = CCDirector.getInstance();
+				if (enabled) {
+					director.getKeyboardDispatcher().addDelegate(this);
+				} else {
+					director.getKeyboardDispatcher().removeDelegate(this);
+				}
+			}
+		}
+	}
+	
+	
 	override public function draw() 
 	{
-		trace("Layer dras");
+		//trace("Layer dras");
 	}
 	
 	override public function onEnter()
@@ -169,4 +191,11 @@ class CCLayer extends CCNode implements CCPointerEventDelegate
 		return false;
 	}
 	
+	public function onKeyDown(event : KeyboardEvent) {
+		
+	}
+	
+	public function onKeyUp(event : KeyboardEvent) {
+		
+	}
 }

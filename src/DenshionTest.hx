@@ -21,7 +21,7 @@
  ****************************************************************************/
 
 package ;
-import cc.denshion.AudioEngine;
+import cc.denshion.CCAudioEngine;
 import flambe.Component;
 import flambe.display.Font;
 import flambe.display.TextSprite;
@@ -56,12 +56,12 @@ class DenshionTest extends Component
 	var pauseAllEffects : TextSprite;
 	var stopAllEffects : TextSprite;
 	var resumeAllEffects : TextSprite;
-	var audioEngine : AudioEngine;
+	var audioEngine : CCAudioEngine;
 	var font : Font;
 	
 	public function new() 
 	{
-		audioEngine = AudioEngine.getInstance(CCLoader.pack);
+		audioEngine = CCAudioEngine.getInstance();
 	}
 	
 	override public function onAdded()
