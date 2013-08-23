@@ -54,14 +54,14 @@ class TestSpriteSheet
 	public function test() {
 		//1) Cache the sprite frames and texture
 		var sharedSpriteFrameCache : CCSpriteFrameCache = CCSpriteFrameCache.getInstance();
-		sharedSpriteFrameCache.addSpriteFrames("TestSpriteSheet/sb.plist");
+		sharedSpriteFrameCache.addSpriteFrames("Sample/explosion.plist");
 		
 		
 		//3) Gather the list of frames
 		var frames : Array<CCSpriteFrame> = new Array<CCSpriteFrame>();
 		
 		for (i in 0...15) {
-			var n : String = "enemySBAppear00";
+			var n : String = "explosion_";
 			if (i + 1 < 10) {
 				n = n + "0" + Std.string(i + 1) + ".png";
 			} else {
@@ -74,15 +74,14 @@ class TestSpriteSheet
 		
 		//4) Create the animation object
 		
-		var animation : CCAnimation = CCAnimation.createWithAnimationFrames(frames, 0.1);
+		var animation : CCAnimation = CCAnimation.createWithAnimationFrames(frames, 0.05);
 		trace(frames[0].toString());
 		var animate : CCAnimate = CCAnimate.create(animation);
 		
 		//5) Create the sprite and run the animation action
 		
-		var sprite : CCSprite = CCSprite.createWithSpriteFrameName("enemySBAppear0010.png");
-		sprite.runAction(CCSequence.create(
-			[CCMoveTo.create(3, new Point(200, 200)), CCMoveTo.create(2, new Point(50, 50))]));
+		var sprite : CCSprite = CCSprite.createWithSpriteFrameName("explosion_01.png");
+		sprite.runAction(CCRepeatForever.create(animate));
 		
 		var d : CCDirector = CCDirector.getInstance();
 		var s : CCScene = new CCScene();

@@ -39,6 +39,7 @@ import tests.TestMenu;
 import sample.SysMenu;
 import sample.AboutLayer;
 import sample.GameOver;
+import tests.TestPartical;
 import tests.TestTileMap;
 /**
  * ...
@@ -71,9 +72,9 @@ class Main
 		//System.root.add(a);
 		
 		//Run Sprite Sheet
-		//System.root.add(new FillSprite(0xffffff, 320, 576));
-		//var spriteSheet  = new TestSpriteSheet();
-		//spriteSheet.test();
+		System.root.add(new FillSprite(0xffffff, 320, 576));
+		var spriteSheet  = new TestSpriteSheet();
+		spriteSheet.test();
 		
 		//Run LabelTTF test
 		//var t : TestLabelTTF = new TestLabelTTF();
@@ -91,8 +92,11 @@ class Main
 		
 		//System.root.addChild(SysMenu.create().entity);
 		
-		var test : TestTileMap = new TestTileMap();
-		test.run();
+		//var test : TestTileMap = new TestTileMap();
+		//test.run();
+		
+		//var test : TestPartical = new TestPartical();
+		//test.run();
     }
 
     private static function main () 
