@@ -632,6 +632,21 @@ class CCNode
 	public function getOpacity() : Int {
 		return 0;
 	}
+	
+	/**
+     * Similar to userData, but instead of holding a void* it holds an id
+     * @param {object} newValue
+     */
+    public function setUserObject(newValue : Dynamic) {
+        if (this._userObject != newValue) {
+            this._userObject = newValue;
+        }
+    }
+	
+	public function getUserObject() : Dynamic {
+		return this._userObject;
+	}
+	
 	public function update(dt : Float) {
 		for (c in cbUpdate) {
 			if (c.curTimer <= 0) {
@@ -682,7 +697,9 @@ class CCNode
 		return this.sprite;
 	}
 	
-	
+	public static function create() : CCNode{
+		return new CCNode();
+	}
 }
 
 class CbClass {
