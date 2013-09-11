@@ -1,4 +1,4 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 /**
  * ...
  * @author Ang Li

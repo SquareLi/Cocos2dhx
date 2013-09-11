@@ -1,10 +1,10 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 
 /**
  * ...
  * @author Ang Li
  */
-class CCBValue
+class CCBReaderUtil
 {
 
 	public function new() 

@@ -1,4 +1,4 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 import cc.action.CCActionManager;
 import cc.basenodes.CCNode;
 import cc.CCLoader;
@@ -7,10 +7,10 @@ import cc.menunodes.CCMenuItem;
 import haxe.io.Bytes;
 import cc.cocoa.CCGeometry;
 import cc.CCDirector;
-import cc.extensions.CCBAnimationManager;
+import cc.extensions.ccbreader.CCBAnimationManager;
 import cc.platform.CCFileUtils;
 import haxe.io.BytesData;
-import cc.extensions.CCBSequence;
+import cc.extensions.ccbreader.CCBSequence;
 /**
  * ...
  * @author Ang Li

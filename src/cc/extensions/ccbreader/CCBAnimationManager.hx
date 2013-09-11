@@ -1,8 +1,8 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 import cc.basenodes.CCNode;
 import cc.cocoa.CCGeometry;
 import cc.menunodes.CCMenuItem;
-import cc.extensions.CCBSequence;
+import cc.extensions.ccbreader.CCBSequence;
 /**
  * ...
  * @author Ang Li

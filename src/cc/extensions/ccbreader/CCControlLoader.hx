@@ -1,10 +1,10 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 
 /**
  * ...
  * @author Ang Li
  */
-class CCBReaderUtil
+class CCControlLoader
 {
 
 	public function new() 

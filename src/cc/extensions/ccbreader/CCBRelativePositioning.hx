@@ -1,4 +1,4 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 import cc.basenodes.CCNode;
 import flambe.math.Point;
 import cc.cocoa.CCGeometry;

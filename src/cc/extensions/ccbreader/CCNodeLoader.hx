@@ -1,8 +1,8 @@
-package cc.extensions;
+package cc.extensions.ccbreader;
 import cc.basenodes.CCNode;
 import cc.platform.CCCommon;
-import cc.extensions.CCBReader;
-import cc.extensions.CCNodeLoaderLibrary;
+import cc.extensions.ccbreader.CCBReader;
+import cc.extensions.ccbreader.CCNodeLoaderLibrary;
 import cc.cocoa.CCGeometry;
 import flambe.math.Point;
 import cc.CCScheduler;
