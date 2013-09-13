@@ -321,11 +321,12 @@ class CCMacro
 	 //* @type Number
 	 //*/
 	//gl.ZERO = 0;
-	///**
-	 //* @constant
-	 //* @type Number
-	 //*/
-	//gl.ONE = 1;
+	
+	/**
+	 * @constant
+	 * @type Number
+	 */
+	public static var ONE : Int = 1;
 	///**
 	 //* @constant
 	 //* @type Number
@@ -336,11 +337,12 @@ class CCMacro
 	 //* @type Number
 	 //*/
 	//gl.ONE_MINUS_SRC_COLOR = 0x0301;
-	///**
-	 //* @constant
-	 //* @type Number
-	 //*/
-	//gl.SRC_ALPHA = 0x0302;
+	
+	/**
+	 * @constant
+	 * @type Number
+	 */
+	public static var SRC_ALPHA : Int = 0x0302;
 	///**
 	 //* @constant
 	 //* @type Number

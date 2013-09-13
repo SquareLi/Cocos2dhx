@@ -180,7 +180,7 @@ class CCSpriteFrame
 	 * //Create a cc.SpriteFrame with a texture, rect, rotated, offset and originalSize in pixels.
 	 * var frame2 = cc.SpriteFrame.createWithTexture(texture, frameRect, rotated, offset, sourceSize);
 	 */
-	public static function createWithTexture(texture : CCTexture2D, rect : Rectangle, rotated : Bool, offset : Point, originalSize : CCSize) : CCSpriteFrame {
+	public static function createWithTexture(texture : CCTexture2D, rect : Rectangle, ?rotated : Bool, ?offset : Point, ?originalSize : CCSize) : CCSpriteFrame {
 		var spriteFrame : CCSpriteFrame = new CCSpriteFrame();
 		spriteFrame.initWithTexture(texture, rect, rotated, offset, originalSize);
 		return spriteFrame;

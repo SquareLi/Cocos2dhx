@@ -143,6 +143,24 @@ class CCNode
 		return true;
 	}
 	
+	public function getSkewX() : Float {
+		return this._skewX;
+	}
+	
+	public function setSkewX(newSkewX : Float) {
+		this._skewX = newSkewX;
+		
+	}
+	
+	public function getSkewY() : Float {
+		return this._skewY;
+	}
+	
+	public function setSkewY(newSkewY : Float) {
+		this._skewY = newSkewY;
+		
+	}
+	
 	public function getZOrder() {
 		return this._zOrder;
 	}

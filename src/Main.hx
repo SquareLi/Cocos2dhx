@@ -20,6 +20,7 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+import cc.extensions.ccbreader.CCBReader;
 import cc.layersscenestransitionsnodes.CCScene;
 import cc.spritenodes.CCAnimation;
 import cc.spritenodes.CCSprite;
@@ -41,6 +42,7 @@ import sample.AboutLayer;
 import sample.GameOver;
 import tests.TestPartical;
 import tests.TestTileMap;
+import tests.TestCCBreader;
 /**
  * ...
  * @author Ang Li
@@ -72,9 +74,9 @@ class Main
 		//System.root.add(a);
 		
 		//Run Sprite Sheet
-		System.root.add(new FillSprite(0xffffff, 320, 576));
-		var spriteSheet  = new TestSpriteSheet();
-		spriteSheet.test();
+		//System.root.add(new FillSprite(0xffffff, 320, 576));
+		//var spriteSheet  = new TestSpriteSheet();
+		//spriteSheet.test();
 		
 		//Run LabelTTF test
 		//var t : TestLabelTTF = new TestLabelTTF();
@@ -97,6 +99,8 @@ class Main
 		
 		//var test : TestPartical = new TestPartical();
 		//test.run();
+		
+		TestCCBreader.run();
     }
 
     private static function main () 

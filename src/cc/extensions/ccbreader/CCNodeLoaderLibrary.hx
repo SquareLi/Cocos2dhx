@@ -1,4 +1,5 @@
 package cc.extensions.ccbreader;
+import cc.extensions.ccbreader.CCSpriteLoader;
 /**
  * ...
  * @author Ang Li
@@ -15,11 +16,11 @@ class CCNodeLoaderLibrary
 	}
 	
 	public function registerDefaultCCNodeLoaders() {
-		this.registerCCNodeLoader("CCNode", cc.NodeLoader.loader());
-        //this.registerCCNodeLoader("CCLayer", cc.LayerLoader.loader());
+		this.registerCCNodeLoader("CCNode", CCNodeLoader.loader());
+        this.registerCCNodeLoader("CCLayer", CCLayerLoader.loader());
         //this.registerCCNodeLoader("CCLayerColor", cc.LayerColorLoader.loader());
         //this.registerCCNodeLoader("CCLayerGradient", cc.LayerGradientLoader.loader());
-        //this.registerCCNodeLoader("CCSprite", cc.SpriteLoader.loader());
+        this.registerCCNodeLoader("CCSprite", CCSpriteLoader.loader());
         //this.registerCCNodeLoader("CCLabelBMFont", cc.LabelBMFontLoader.loader());
         //this.registerCCNodeLoader("CCLabelTTF", cc.LabelTTFLoader.loader());
         //this.registerCCNodeLoader("CCScale9Sprite", cc.Scale9SpriteLoader.loader());

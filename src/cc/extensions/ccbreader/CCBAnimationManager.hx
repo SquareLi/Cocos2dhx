@@ -153,17 +153,16 @@ class CCBuilderAnimationManager {
 		}
 	}
 	
-	public function addNode(node : CCNode, seq : Int) {
+	public function addNode(node : CCNode, seq : _Dictionary) {
 		this._nodeSequences.setObject(seq, node);
 	}
 	
-	public function setBaseValue(value : Array<Float>, node : CCNode, propName : String) {
+	public function setBaseValue(value : Dynamic, node : CCNode, propName : String) {
 		var props = this._baseValues.objectForKey(node);
 		if (props == null) {
 			props = new _Dictionary();
 			this._baseValues.setObject(props, node);
 		}
-		
 		props.setObject(value, propName);
 	}
 	

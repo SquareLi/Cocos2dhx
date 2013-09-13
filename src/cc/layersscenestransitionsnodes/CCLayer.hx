@@ -198,4 +198,12 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 	public function onKeyUp(event : KeyboardEvent) {
 		
 	}
+	
+	public static function create() : CCLayer {
+		var ret : CCLayer = new CCLayer();
+		if (ret != null && ret.init()) {
+			return ret;
+		}
+		return null;
+	}
 }

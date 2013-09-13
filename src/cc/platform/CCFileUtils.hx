@@ -21,7 +21,7 @@
  ****************************************************************************/
 
 package cc.platform;
-
+import cc.CCLoader;
 /**
  * ...
  * @author Ang Li
@@ -49,5 +49,28 @@ class CCFileUtils
 		}
 		
 		return s_SharedFileUtils;
+	}
+	
+	public function getFileData(fileName : String, ?mode : String, ?size : Int) : Dynamic {
+		return this._loadBinaryFileData(fileName);
+	}
+	//
+	private function _loadBinaryFileData(fileUrl : String) : Array<Int>{
+		var str : String = CCLoader.pack.getFile(fileUrl).toString();
+		var arrayInfo : Array<Int> = this._stringConvertToArray(str);
+		return arrayInfo;
+	}
+	
+	private function _stringConvertToArray(strData : String) : Array<Int> {
+		if (strData == null) {
+			return null;
+		}
+		
+		var arrData : Array<Int> = new Array<Int>();
+		for (i in 0...strData.length) {
+			arrData[i] = strData.charCodeAt(i) & 0xff;
+		}
+		
+		return arrData;
 	}
 }

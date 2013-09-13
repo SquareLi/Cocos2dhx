@@ -83,7 +83,7 @@ class NSDictionary
 		var h : Map<String, Dynamic>= new Map<String, Dynamic>();
 		var key :String = null;
 		
-
+		var d : String = "";
 		for (element in xmlDict.elements()) {
 			if (key == null && element.nodeName == "key" ) {						
 				key = element.firstChild().toString();
@@ -97,7 +97,7 @@ class NSDictionary
 					case "real": h.set (key, Std.parseFloat(element.firstChild().toString()));
 					case "data": h.set (key, element.firstChild());
 					case "date": 
-						var d = element.firstChild().toString();
+							d = element.firstChild().toString();
 							d = StringTools.replace(d, "T", " ");
 							d = StringTools.replace(d, "Z", "");
 						h.set (key, Date.fromString(d));

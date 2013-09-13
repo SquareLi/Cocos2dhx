@@ -208,6 +208,7 @@ class CCSprite extends CCNode
 		return true;
 	}
 	
+	var _isAdded : Bool = false;
 	public function initWithTexture(texture : CCTexture2D, ?rect : Rectangle, ?rotated : Bool) : Bool {
 		if (rotated == null) {
 			rotated = false;
@@ -233,6 +234,8 @@ class CCSprite extends CCNode
 			this.entity.add(component);
 			
 			this._contentSize = new CCSize(rect.width, rect.height);
+			
+			this._isAdded = true;
 			//trace(f.toString());
 		}
 		
@@ -342,14 +345,33 @@ class CCSprite extends CCNode
 	}
 	
 	public function setDisplayFrame(newFrame : CCSpriteFrame) {
-		var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
-		s.updateFrame(newFrame);
+		if (Std.is(this.sprite, CCSpriteSheet)) {
+			var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
+			s.updateFrame(newFrame);
+			
+		} else {
+			this.sprite = new CCSpriteSheet();
+			var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
+			s.updateFrame(newFrame);
+			
+			if (!_isAdded) {
+				this.entity.add(s);
+				this.component = new CCComponent(this);
+				this.entity.add(component);
+				
+				this._contentSize = new CCSize(newFrame.getRect().width, newFrame.getRect().height);
+				trace("added");
+				_isAdded = true;
+			}
+		}
+		
 		this._rectRotated = newFrame.isRotated();
 		var pNewTexture = newFrame.getTexture();
 		if (pNewTexture != this._texture) {
 			this.setTexture(pNewTexture);
 		}
 		this.setTextureRect(newFrame.getRect(), this._rectRotated, newFrame.getOriginalSize());
+		
 	}
 	
 	public function displayFrame() : CCSpriteFrame{
@@ -372,10 +394,14 @@ class CCSprite extends CCNode
 	}
 	
 	
-	public static function create(fileName : String, ?rect : Rectangle) : CCSprite {
-		var sprite = new CCSprite();
+	public static function create(?fileName : String, ?rect : Rectangle) : CCSprite {
+		var sprite : CCSprite= new CCSprite();
 		
-		if (rect == null) {
+		if (fileName == null) {
+			if (sprite.init()) {
+				return sprite;
+			}
+		} else if (rect == null) {
 			sprite.init();
 			sprite.initWithFile(fileName);
 		} else {

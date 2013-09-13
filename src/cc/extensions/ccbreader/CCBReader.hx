@@ -4,13 +4,22 @@ import cc.basenodes.CCNode;
 import cc.CCLoader;
 import cc.layersscenestransitionsnodes.CCScene;
 import cc.menunodes.CCMenuItem;
+import cc.spritenodes.CCSpriteFrameCache;
+import cc.texture.CCTexture2D;
+import flambe.math.Rectangle;
 import haxe.io.Bytes;
 import cc.cocoa.CCGeometry;
 import cc.CCDirector;
 import cc.extensions.ccbreader.CCBAnimationManager;
 import cc.platform.CCFileUtils;
 import haxe.io.BytesData;
+import cc.texture.CCTextureCache;
 import cc.extensions.ccbreader.CCBSequence;
+import cc.spritenodes.CCSpriteFrame;
+import cc.CCScheduler;
+import cc.extensions.ccbreader.CCBKeyframe;
+import cc.platform.CCTypes;
+import cc.extensions.ccbreader.CCBValue;
 /**
  * ...
  * @author Ang Li
@@ -27,13 +36,13 @@ class CCBReader
 	public static var CCB_PROPTYPE_DEGREES : Int = 5;
 	public static var CCB_PROPTYPE_INTEGER : Int = 6;
 	public static var CCB_PROPTYPE_FLOAT : Int = 7;
-	public static var CCB_PROPTYPE_FLOATpublic : Int = 8;
+	public static var CCB_PROPTYPE_FLOATVAR : Int = 8;
 	public static var CCB_PROPTYPE_CHECK : Int = 9;
 	public static var CCB_PROPTYPE_SPRITEFRAME : Int = 10;
 	public static var CCB_PROPTYPE_TEXTURE : Int = 11;
 	public static var CCB_PROPTYPE_BYTE : Int = 12;
 	public static var CCB_PROPTYPE_COLOR3 : Int = 13;
-	public static var CCB_PROPTYPE_COLOR4public : Int = 14;
+	public static var CCB_PROPTYPE_COLOR4VAR : Int = 14;
 	public static var CCB_PROPTYPE_FLIP : Int = 15;
 	public static var CCB_PROPTYPE_BLENDMODE : Int = 16;
 	public static var CCB_PROPTYPE_FNTFILE : Int = 17;
@@ -127,7 +136,7 @@ class CCBuilderReader {
 	var _currentBit : Int;
 	
 	var _stringCache : Array<String>;
-	var _loadedSpriteSheets : Dynamic;
+	var _loadedSpriteSheets : Array<String>;
 	
 	var _owner : CCNode;
 	var _actionManager : CCBuilderAnimationManager;
@@ -150,12 +159,31 @@ class CCBuilderReader {
 	public var hasScriptingOwner : Bool = false;
 	
 	
-	public function new(ccNodeLoaderLibrary : CCNodeLoaderLibrary ) {
+	public function new(ccNodeLoaderLibrary : Dynamic) {
 		this._stringCache = new Array<String>();
 		this._currentBit = -1;
 		this._currentByte = -1;
 		
-		this._ccNodeLoaderLibrary = ccNodeLoaderLibrary;
+		if (Std.is(ccNodeLoaderLibrary, CCNodeLoaderLibrary)) {
+			var lib : CCNodeLoaderLibrary = cast (ccNodeLoaderLibrary, CCNodeLoaderLibrary);
+			this._ccNodeLoaderLibrary = lib;
+			
+		} else if (Std.is(ccNodeLoaderLibrary, CCBuilderReader)) {
+			var ccbReader : CCBuilderReader = cast(ccNodeLoaderLibrary, CCBuilderReader);
+			
+			this._loadedSpriteSheets = ccbReader._loadedSpriteSheets;
+			this._ccNodeLoaderLibrary = ccbReader._ccNodeLoaderLibrary;
+			this._ccbMemberVariableAssigner = ccbReader._ccbMemberVariableAssigner;
+			this._ccbSelectorResolver = ccbReader._ccbSelectorResolver;
+			this._ccNodeLoaderListener = ccbReader._ccNodeLoaderListener;
+
+			this._ownerCallbackNames = ccbReader._ownerCallbackNames;
+			this._ownerCallbackNodes = ccbReader._ownerCallbackNodes;
+			this._ownerOutletNames = ccbReader._ownerOutletNames;
+			this._ownerOutletNodes = ccbReader._ownerOutletNodes;
+			this._ccbRootPath = ccbReader._ccbRootPath;
+		}
+		
 		//this._actionManager.setRootContainerSize(parentSize);
 		
 		
@@ -226,8 +254,8 @@ class CCBuilderReader {
 		
 	}
 	
-	public function getCCBSelectorResolver() {
-		
+	public function getCCBSelectorResolver() : Dynamic {
+		return this._ccbSelectorResolver;
 	}
 	
 	public function getAnimationManager() : CCBuilderAnimationManager {
@@ -243,12 +271,12 @@ class CCBuilderReader {
 		return this._animatedProps;
 	}
 	
-	public function getLoadedSpriteSheet() {
-		//return this._loadedSpriteSheets;
+	public function getLoadedSpriteSheet() : Array<String> {
+		return this._loadedSpriteSheets;
 	}
 	
-	public function getOwner() {
-		
+	public function getOwner() : CCNode{
+		return this._owner;
 	}
 	
 	public function readInt(signed : Bool) : Int {
@@ -310,6 +338,7 @@ class CCBuilderReader {
 				var pF = this._decodeFloat(23, 8);
 				return pF;
 		}
+		return 0;
 	}
 	
 	public function _decodeFloat(precisionBits : Int, exponentBits : Int) : Float {
@@ -450,6 +479,8 @@ class CCBuilderReader {
         if (!this._readSequences())
             return null;
 
+		this.readCachedString();
+		this.readCachedString();
         var node = this._readNodeGraph();
         this._animationManagers.setObject(this._actionManager, node);
 
@@ -518,14 +549,15 @@ class CCBuilderReader {
 		
 		var str = "";
 		for (i in 0...numBytes) {
-			var hexChar = StringTools.hex(this._data[this._currentByte + i]);
+			var hexChar = StringTools.hex(this._data[this._currentByte + i]).toUpperCase();
 			hexChar = hexChar.length > 1 ? hexChar : "0" + hexChar;
 			str += "%" + hexChar;
 		}
 		str = StringTools.urlDecode(str);
 		this._currentByte += numBytes;
+		
 		this._stringCache.push(str);
-		//trace(str);
+		trace(str);
 	}
 	
 	private function _cleanUpNodeGraph(node : CCNode) {
@@ -539,77 +571,162 @@ class CCBuilderReader {
 	private function _readSequences() : Bool {
 		var sequences = this._actionManager.getSequences();
 		var numSeqs = this.readInt(false);
+		//trace(numSeqs);
 		for (i in 0...numSeqs) {
 			var seq = new CCBuilderSequence();
 			seq.setDuration(this.readFloat());
+			//trace(seq.getDuration());
 			seq.setName(this.readCachedString());
+			//trace(seq.getName());
 			seq.setSequenceId(this.readInt(false));
+			//trace("seq SequenceID :" + seq.getSequenceId());
 			seq.setChainedSequenceId(this.readInt(true));
+			//trace("seq ChainedSequenceID :" + seq.getChainedSequenceId());
 			sequences.push(seq);
 		}
 		this._actionManager.setAutoPlaySequenceId(this.readInt(true));
+		//trace("autoplaySequenceId: " + this._actionManager.getAutoPlaySequenceId());
+		
 		return true;
 	}
 	
+	public function readKeyframe(type : Int) : CCBuilderKeyFrame{
+		var keyframe : CCBuilderKeyFrame = new CCBuilderKeyFrame();
+		keyframe.setTime(this.readFloat());
+		var easingType = this.readInt(false);
+		var easingOpt : Float = 0;
+		var value : Dynamic = null;
+		
+		if (easingType == CCBReader.CCB_KEYFRAME_EASING_CUBIC_IN
+            || easingType == CCBReader.CCB_KEYFRAME_EASING_CUBIC_OUT
+            || easingType == CCBReader.CCB_KEYFRAME_EASING_CUBIC_INOUT
+            || easingType == CCBReader.CCB_KEYFRAME_EASING_ELASTIC_IN
+            || easingType == CCBReader.CCB_KEYFRAME_EASING_ELASTIC_OUT
+            || easingType == CCBReader.CCB_KEYFRAME_EASING_ELASTIC_INOUT) {
+            easingOpt = this.readFloat();
+        }
+		
+		keyframe.setEasingType(easingType);
+		keyframe.setEasingOpt(easingOpt);
+		
+		if (type == CCBReader.CCB_PROPTYPE_CHECK) {
+            value = this.readBool();
+        } else if (type == CCBReader.CCB_PROPTYPE_BYTE) {
+            value = this.readByte();
+        } else if (type == CCBReader.CCB_PROPTYPE_COLOR3) {
+            var c = new CCColor3B(this.readByte(), this.readByte(), this.readByte());
+            value = CCColor3BWapper.create(c);
+        } else if (type == CCBReader.CCB_PROPTYPE_FLOATXY) {
+            value = [this.readFloat(), this.readFloat()];
+        } else if (type == CCBReader.CCB_PROPTYPE_DEGREES) {
+            value = this.readFloat();
+        } else if (type == CCBReader.CCB_PROPTYPE_SCALELOCK || type == CCBReader.CCB_PROPTYPE_POSITION || type == CCBReader.CCB_PROPTYPE_FLOATXY) {
+            value = [this.readFloat(), this.readFloat()];
+        } else if (type == CCBReader.CCB_PROPTYPE_SPRITEFRAME) {
+            var spriteSheet : String = this.readCachedString();
+            var spriteFile : String = this.readCachedString();
+
+            if (spriteSheet == "") {
+                spriteFile = this._ccbRootPath + spriteFile;
+                var texture : CCTexture2D = CCTextureCache.getInstance().addImage(spriteFile);
+                var locContentSize : CCSize = texture.getContentSize();
+                var bounds = new Rectangle(0, 0, locContentSize.width, locContentSize.height);
+                value = CCSpriteFrame.createWithTexture(texture, bounds);
+            } else {
+                spriteSheet = this._ccbRootPath + spriteSheet;
+                var frameCache : CCSpriteFrameCache = CCSpriteFrameCache.getInstance();
+                // Load the sprite sheet only if it is not loaded
+                if (CCScheduler.ArrayGetIndexOfValue(this._loadedSpriteSheets, spriteSheet) == -1) {
+                    frameCache.addSpriteFrames(spriteSheet);
+                    this._loadedSpriteSheets.push(spriteSheet);
+                }
+                value = frameCache.getSpriteFrame(spriteFile);
+            }
+        }
+        keyframe.setValue(value);
+        return keyframe;
+	}
 	
 	private function _readNodeGraph(?parent : CCNode) : CCNode {
+
 		var className = this.readCachedString();
+		
 		trace(className);
+		var jsControlledName : String = "";
+		var locJsControlled = this._jsControlled;
+		var locActionManager = this._actionManager;
+		
+		if (locJsControlled) {
+			jsControlledName = this.readCachedString();
+			trace(jsControlledName);
+		}
 		
 		var memberVarAssignmentType = this.readInt(false);
+
+		
 		var memberVarAssignmentName : String = "";
 		if (memberVarAssignmentType != CCBReader.CCB_TARGETTYPE_NONE) {
 			memberVarAssignmentName = this.readCachedString();
 		}
-		trace(memberVarAssignmentType + ", " + memberVarAssignmentName);
-		var ccNodeLoader = this._ccNodeLoaderLibrary.getCCNodeLoader(className);
+		
+		
+		var ccNodeLoader : CCNodeLoader = this._ccNodeLoaderLibrary.getCCNodeLoader(className);
 		if (ccNodeLoader == null) {
 			ccNodeLoader = this._ccNodeLoaderLibrary.getCCNodeLoader("CCNode");
 		}
 		var node = ccNodeLoader.loadCCNode(parent, this);
 		
 		//set root node
-		if (this._actionManager.getRootNode() == null) {
-			this._actionManager.setRootNode(node);
+		if (locActionManager.getRootNode() == null) {
+			locActionManager.setRootNode(node);
 		}
 		
+		if (locJsControlled && node == locActionManager.getRootNode()) {
+			locActionManager.setDocumentControllerName(jsControlledName);
+		}
+		
+		
 		//read animated properties
-		//var seqs = new _Dictionary();
-		//this._animatedProps = new Array<String>();
+		var seqs = new _Dictionary();
+		this._animatedProps = new Array<String>();
 		//
-		//var numSequence : Int = this.readInt(false);
-		//for (i in 0...numSequence) {
-			//var seqId = this.readInt(false);
-			//var seqNodeProps = new _Dictionary();
-			//
-			//var numProps = this.readInt(false);
-			//
-			//for (j in 0...numProps) {
-				//var seqProp : CCBuilderSequenceProperty = new CCBuilderSequenceProperty();
-				//seqProp.setName(this.readCachedString());
-				//seqProp.setType(this.readInt(false));
-				//
-				//this._animatedProps.push(seqProp.getName());
-				//var numKeyframes = this.readInt(false);
-				//
-				//for (k in 0...numKeyframes) {
-					//var keyFrame = this.readKeyFrame(seqProp.getType());
-					//seqProp.getKeyFrames().push(keyFrame);
-				//}
-				//seqNodeProps.setObject(seqProp, seqProp.getName());
-			//}
-			//seqs.setObject(seqNodeProps, seqId);
-		//}
-		//
-		//if (seqs.count() > 0) {
-			//this._actionManager.addNode(node, seqs);
-		//}
-		//
+		var locAnimatedProps : Array<String> = this._animatedProps;
+		var numSequence : Int = this.readInt(false);
+		trace("numSequence: " + numSequence);
+		for (i in 0...numSequence) {
+			var seqId = this.readInt(false);
+			var seqNodeProps = new _Dictionary();
+			
+			var numProps = this.readInt(false);
+			
+			for (j in 0...numProps) {
+				var seqProp : CCBuilderSequenceProperty = new CCBuilderSequenceProperty();
+				seqProp.setName(this.readCachedString());
+				seqProp.setType(this.readInt(false));
+				
+				locAnimatedProps.push(seqProp.getName());
+				var numKeyframes = this.readInt(false);
+				//trace(numKeyframes);
+				var locKeyframes = seqProp.getKeyFrames();
+				
+				for (k in 0...numKeyframes) {
+					var keyFrame = this.readKeyframe(seqProp.getType());
+					locKeyframes.push(keyFrame);
+				}
+				seqNodeProps.setObject(seqProp, seqProp.getName());
+			}
+			seqs.setObject(seqNodeProps, seqId);
+		}
+		
+		if (seqs.count() > 0) {
+			locActionManager.addNode(node, seqs);
+		}
+		
 		//read properties
-		//ccNodeLoader.parseProperties(node, parent, this);
+		ccNodeLoader.parseProperties(node, parent, this);
 		
 		//handle sub ccb files(remove middle node)
-		//if (Std.is(node, CCBuilderFile)) {
+		if (Std.is(node, CCBuilderFile)) {
 			//var n : CCBuilderFile = cast(node, CCBuilderFile);
 			//var embeddedNode : CCNode = n.getCCBFileNode();
 			//embeddedNode.setPosition(n.getPosition().x, n.getPosition().y);
@@ -621,8 +738,10 @@ class CCBuilderReader {
 			//
 			//n.setCCBFileNode(null);
 			//node = embeddedNode;
-		//}
+		}
 		
+		//var target : CCNode;
+		//var locMemberAssigner : Dynamic;
 		//if (memberVarAssignmentType != CCBReader.CCB_TARGETTYPE_NONE) {
 			//var target : CCNode = null;
 			//if (memberVarAssignmentType == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT) {
@@ -633,11 +752,17 @@ class CCBuilderReader {
 			//
 			//if (target != null) {
 				//var assigned : Bool = false;
-				//if (target != null && (target.onA
+				//if (target != null && (target.onAssign
 			//}
 			//if (memberVarAssignmentType
 		//}
 		
+		var numChildren = this.readInt(false);
+		for (i in 0...numChildren) {
+			var child = this._readNodeGraph(node);
+			node.addChild(child);
+			trace("addChild");
+		}
 		return node;
 	}
 	
@@ -671,13 +796,13 @@ class CCBuilderReader {
 	public static function loadAsScene(ccbFilePath : String, ?owner : Dynamic, ?parentSize : CCSize, ?ccbRootPath : String) : CCScene {
 		var getNode : CCNode = CCBuilderReader.load(ccbFilePath, owner, parentSize, ccbRootPath);
 		var scene = CCScene.create();
-//		scene.addChild(getNode);
+		scene.addChild(getNode);
 		return scene;
 	}
 	
 	public static function load(ccbFilePath : String, owner : Dynamic, parentSize : CCSize, ccbRootPath : String) : CCNode {
 		var reader : CCBuilderReader = new CCBuilderReader(CCNodeLoaderLibrary.newDefaultCCNodeLoaderLibrary());
-		reader.setCCBRootPath(ccbRootPath);
+		reader.setCCBRootPath("ccbtest/");
 		var node = reader.readNodeGraphFromFile(ccbFilePath, owner, parentSize);
 		return node;
 		//var callbackName : String;

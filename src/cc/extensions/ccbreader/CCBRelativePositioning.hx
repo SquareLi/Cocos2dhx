@@ -3,6 +3,7 @@ import cc.basenodes.CCNode;
 import flambe.math.Point;
 import cc.cocoa.CCGeometry;
 import cc.platform.CCCommon;
+import cc.extensions.ccbreader.CCBReader;
 /**
  * ...
  * @author Ang Li
@@ -15,7 +16,7 @@ class CCBRelativePositioning
 		
 	}
 	
-	public static function getAbsolutePosition(pt : Point, type : Int, containerSize : CCSize, propName : String) {
+	public static function getAbsolutePosition(pt : Point, type : Int, containerSize : CCSize, propName : String) : Point{
 		var absPt : Point = new Point(0, 0);
 		if (type == CCBReader.CCB_POSITIONTYPE_RELATIVE_BOTTOM_LEFT) {
 			absPt = pt;
@@ -32,12 +33,12 @@ class CCBRelativePositioning
 			absPt.x = (containerSize.width * pt.x / 100.0);
 			absPt.y = (containerSize.height * pt.y / 100.0);
 		} else if (type == CCBReader.CCB_POSITIONTYPE_MULTIPLY_RESOLUTION) {
-			var resolutionScale = cc.BuilderReader.getResolutionScale();
+			var resolutionScale = CCBuilderReader.getResolutionScale();
 			absPt.x = pt.x * resolutionScale;
 			absPt.y = pt.y * resolutionScale;
 		}
 		
-		return absPt
+		return absPt;
 	}
 	public static function _getAbsolutePosition(x : Float, y : Float, type : Int, containerSize : CCSize, propName : String) : Point {
 		var absPt : Point = new Point();
@@ -57,7 +58,7 @@ class CCBRelativePositioning
 			absPt.x = (containerSize.width * x / 100.0);
 			absPt.y = (containerSize.height * y / 100.0);
 		} else if (type == CCBReader.CCB_POSITIONTYPE_MULTIPLY_RESOLUTION) {
-			var resolutionScale = cc.BuilderReader.getResolutionScale();
+			var resolutionScale = CCBuilderReader.getResolutionScale();
 			absPt.x = x * resolutionScale;
 			absPt.y = y * resolutionScale;
 		}
