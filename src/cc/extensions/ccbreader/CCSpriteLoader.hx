@@ -26,7 +26,10 @@ class CCSpriteLoader extends CCNodeLoader
 	
 	override private function _createCCNode(parent:CCNode, ccbReader:CCBuilderReader):CCNode 
 	{
-		return CCSprite.create();
+		var ret : CCSprite = CCSprite.create();
+		ret.setTag(250);
+		//trace(ret.getTag());
+		return ret;
 	}
 	
 	override public function onHandlePropTypeColor3(node:CCNode, parent:CCNode, propertyName:String, ccColor3B:CCColor3B, ccbReader:CCBuilderReader)
@@ -103,7 +106,9 @@ class CCLayerLoader extends CCNodeLoader {
 	public static var PROPERTY_IS_KEYBOARD_ENABLED : String = "isKeyboardEnabled";
 	override private function _createCCNode(parent:CCNode, ccbReader:CCBuilderReader):CCNode 
 	{
-		return CCLayer.create();
+		var ret : CCLayer = CCLayer.create();
+		ret.setTag(200);
+		return ret;
 	}
 	
 	override public function onHandlePropTypeCheck(node:CCNode, parent:CCNode, propertyName:String, check:Bool, ccbReader:CCBuilderReader)

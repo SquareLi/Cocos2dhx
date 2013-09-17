@@ -50,7 +50,7 @@ class CCNodeLoader
 		var numExturaProps = ccbReader.readInt(false);
 		//trace(numExturaProps);
 		var propertyCount = numRegularProps + numExturaProps;
-		
+		//trace(propertyCount);
 		for (i in 0...propertyCount) {
 			var isExtraProp : Bool = (i >= numRegularProps);
 			var type = ccbReader.readInt(false);
@@ -138,11 +138,13 @@ class CCNodeLoader
                         this.onHandlePropTypeCheck(node, parent, propertyName, check, ccbReader);
                     }
                 case CCBReader.CCB_PROPTYPE_SPRITEFRAME:
+					//trace("CCB_PROPTYPE_SPRITEFRAME");
                     var ccSpriteFrame : CCSpriteFrame = this.parsePropTypeSpriteFrame(node, parent, ccbReader, propertyName);
                     if (setProp) {
                         this.onHandlePropTypeSpriteFrame(node, parent, propertyName, ccSpriteFrame, ccbReader);
                     }
                 case CCBReader.CCB_PROPTYPE_ANIMATION:
+					//trace("CCB_PROPTYPE_ANIMATION");
                     //var ccAnimation = this.parsePropTypeAnimation(node, parent, ccbReader);
                     //if (setProp) {
                         //this.onHandlePropTypeAnimation(node, parent, propertyName, ccAnimation, ccbReader);
@@ -209,6 +211,7 @@ class CCNodeLoader
                         this.onHandlePropTypeBlockCCControl(node, parent, propertyName, blockCCControlData, ccbReader);
                     }
                 case CCBReader.CCB_PROPTYPE_CCBFILE:
+					//trace("CCB_PROPTYPE_CCBFILE");
                     //var ccbFileNode = this.parsePropTypeCCBFile(node, parent, ccbReader);
                     //if (setProp) {
                         //this.onHandlePropTypeCCBFile(node, parent, propertyName, ccbFileNode, ccbReader);
@@ -224,12 +227,16 @@ class CCNodeLoader
 	}
 	
 	private function _createCCNode(parent : CCNode, ccbReader : CCBuilderReader) : CCNode {
-		return CCNode.create();
+		var ret : CCNode = CCNode.create();
+		ret.setTag(100);
+		return ret;
 	}
 	
 	public function parsePropTypePosition(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader, propertyName : String) : Point {
 		var x = ccbReader.readFloat();
 		var y = ccbReader.readFloat();
+		
+		//trace(x + "," + y);
 		
 		var type = ccbReader.readInt(false);
 		
@@ -359,7 +366,8 @@ class CCNodeLoader
     }
 
     public function parsePropTypeSpriteFrame(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader, propertyName : String) : CCSpriteFrame{
-        var spriteSheet = ccbReader.readCachedString();
+        trace("sprite frame");
+		var spriteSheet = ccbReader.readCachedString();
         var spriteFile : String =  ccbReader.readCachedString();
 
         var spriteFrame : CCSpriteFrame = null;
@@ -370,7 +378,7 @@ class CCNodeLoader
                 var texture : CCTexture2D = CCTextureCache.getInstance().addImage(spriteFile);
 
                 var locContentSize : CCSize = texture.getContentSize();
-				trace("width : " + locContentSize.width);
+				//trace("width : " + locContentSize.width);
                 var bounds : Rectangle = new Rectangle(0, 0, locContentSize.width, locContentSize.height);
                 spriteFrame = CCSpriteFrame.createWithTexture(texture, bounds, false, new Point(0, 0), new CCSize());
             } else {
@@ -417,7 +425,7 @@ class CCNodeLoader
 
     public function parsePropTypeTexture(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader) : CCTexture2D {
         var spriteFile = ccbReader.getCCBRootPath() + ccbReader.readCachedString();
-
+		//trace(spriteFile);
         if(spriteFile != "")
             return CCTextureCache.getInstance().addImage(spriteFile);
         return null;
@@ -650,7 +658,14 @@ class CCNodeLoader
 
     public function onHandlePropTypePoint(node : CCNode, parent : CCNode, propertyName : String, position : Point, ccbReader : CCBuilderReader) {
         if (propertyName == PROPERTY_ANCHORPOINT) {
-            node.setAnchorPoint(position);
+			//if (position.x == 0.5 && position.y == 0.5) {
+				//node.setCenterAnchor();
+				//trace("center");
+			//} else {
+				//
+			//}
+			node.setAnchorPoint(position);
+            
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
         }
@@ -785,12 +800,12 @@ class CCNodeLoader
     }
 	
 	public static function ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName : String) {
-		CCCommon.assert(false, "Unexpected property: '" + propertyName + "'!");
+		//CCCommon.assert(false, "Unexpected property: '" + propertyName + "'!");
 	}
 	
 	public static function ASSERT_FAIL_UNEXPECTED_PROPERTYTYPE(propertyName : String) {
 
-		CCCommon.assert(false, "Unexpected property type: '" + propertyName + "'!");
+		//CCCommon.assert(false, "Unexpected property type: '" + propertyName + "'!");
 	}
 	
 	public static function loader() : CCNodeLoader {

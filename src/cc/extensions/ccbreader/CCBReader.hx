@@ -20,6 +20,7 @@ import cc.CCScheduler;
 import cc.extensions.ccbreader.CCBKeyframe;
 import cc.platform.CCTypes;
 import cc.extensions.ccbreader.CCBValue;
+import cc.spritenodes.CCSprite;
 /**
  * ...
  * @author Ang Li
@@ -237,7 +238,11 @@ class CCBuilderReader {
 		
 		if (nodeGraph != null && this._actionManager.getAutoPlaySequenceId() != -1) {
 			//auto play animations
-            //this._actionManager.runAnimations(this._actionManager.getAutoPlaySequenceId(), 0);
+			//trace("play");
+			//trace(this._actionManager.getAutoPlaySequenceId());
+            this._actionManager.runAnimations(this._actionManager.getAutoPlaySequenceId(), 0);
+			
+			
 		}
 		
 		return nodeGraph;
@@ -557,7 +562,7 @@ class CCBuilderReader {
 		this._currentByte += numBytes;
 		
 		this._stringCache.push(str);
-		trace(str);
+		//trace(str);
 	}
 	
 	private function _cleanUpNodeGraph(node : CCNode) {
@@ -644,6 +649,7 @@ class CCBuilderReader {
             }
         }
         keyframe.setValue(value);
+		//trace(value);
         return keyframe;
 	}
 	
@@ -651,14 +657,14 @@ class CCBuilderReader {
 
 		var className = this.readCachedString();
 		
-		trace(className);
+		//trace(className);
 		var jsControlledName : String = "";
 		var locJsControlled = this._jsControlled;
 		var locActionManager = this._actionManager;
 		
 		if (locJsControlled) {
 			jsControlledName = this.readCachedString();
-			trace(jsControlledName);
+			//trace(jsControlledName);
 		}
 		
 		var memberVarAssignmentType = this.readInt(false);
@@ -673,9 +679,10 @@ class CCBuilderReader {
 		var ccNodeLoader : CCNodeLoader = this._ccNodeLoaderLibrary.getCCNodeLoader(className);
 		if (ccNodeLoader == null) {
 			ccNodeLoader = this._ccNodeLoaderLibrary.getCCNodeLoader("CCNode");
+			
 		}
 		var node = ccNodeLoader.loadCCNode(parent, this);
-		
+		//trace(node.getTag());
 		//set root node
 		if (locActionManager.getRootNode() == null) {
 			locActionManager.setRootNode(node);
@@ -692,7 +699,7 @@ class CCBuilderReader {
 		//
 		var locAnimatedProps : Array<String> = this._animatedProps;
 		var numSequence : Int = this.readInt(false);
-		trace("numSequence: " + numSequence);
+		//trace("numSequence: " + numSequence);
 		for (i in 0...numSequence) {
 			var seqId = this.readInt(false);
 			var seqNodeProps = new _Dictionary();
@@ -707,11 +714,12 @@ class CCBuilderReader {
 				locAnimatedProps.push(seqProp.getName());
 				var numKeyframes = this.readInt(false);
 				//trace(numKeyframes);
-				var locKeyframes = seqProp.getKeyFrames();
+				var locKeyframes = seqProp.getKeyframes();
 				
 				for (k in 0...numKeyframes) {
 					var keyFrame = this.readKeyframe(seqProp.getType());
 					locKeyframes.push(keyFrame);
+					//trace(keyFrame.getTime());
 				}
 				seqNodeProps.setObject(seqProp, seqProp.getName());
 			}
@@ -756,13 +764,24 @@ class CCBuilderReader {
 			//}
 			//if (memberVarAssignmentType
 		//}
-		
+		//trace(node.getTag());
 		var numChildren = this.readInt(false);
 		for (i in 0...numChildren) {
-			var child = this._readNodeGraph(node);
+			//var x = this._readNodeGraph(node);
+			//trace(this._readNodeGraph(node).getTag());
+			//if (Std.is(child, CCSprite)) {
+				//var child : CCSprite = cast (this._readNodeGraph(node), CCSprite);
+				//node.addChild(child);
+			//} else {
+				//var child : CCNode = this._readNodeGraph(node);
+				//node.addChild(child);
+			//}
+			var child : CCSprite = cast (this._readNodeGraph(node), CCSprite);
 			node.addChild(child);
-			trace("addChild");
+			//trace(child.getTag());
+			//trace(node.getTag());
 		}
+		//trace(node.getTag());
 		return node;
 	}
 	
@@ -802,7 +821,7 @@ class CCBuilderReader {
 	
 	public static function load(ccbFilePath : String, owner : Dynamic, parentSize : CCSize, ccbRootPath : String) : CCNode {
 		var reader : CCBuilderReader = new CCBuilderReader(CCNodeLoaderLibrary.newDefaultCCNodeLoaderLibrary());
-		reader.setCCBRootPath("ccbtest/");
+		reader.setCCBRootPath(ccbRootPath);
 		var node = reader.readNodeGraphFromFile(ccbFilePath, owner, parentSize);
 		return node;
 		//var callbackName : String;

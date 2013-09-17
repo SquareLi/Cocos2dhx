@@ -304,7 +304,13 @@ class CCNode
 	
 	public function setAnchorPoint(point : Point) {
 		this._anchorPoint.set(point.x, point.y);
-		sprite.setAnchor(point.x, point.y);
+		
+		
+		var width : Float = this.sprite.getNaturalWidth();
+		var height : Float = this.sprite.getNaturalHeight();
+		
+		
+		sprite.setAnchor(point.x * width, point.y * height);
 	}
 	
 	public function setCenterAnchor() {

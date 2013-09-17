@@ -350,17 +350,33 @@ class CCSprite extends CCNode
 			s.updateFrame(newFrame);
 			
 		} else {
+			//trace(this.sprite.x._);
+			var x = this.sprite.x._;
+			var y = this.sprite.y._;
+			var scaleX = this.sprite.scaleX._;
+			var scaleY = this.sprite.scaleY._;
+			var anchorX = this._anchorPoint.x;
+			var anchorY = this._anchorPoint.y;
+			//trace(anchorX);
+			
 			this.sprite = new CCSpriteSheet();
+			
+			
+			
+			
+			
 			var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
 			s.updateFrame(newFrame);
-			
+			this.setAnchorPoint(new Point(anchorX, anchorY));
+			this.setPosition(x, y);
+			this.setScale(scaleX, scaleY);
 			if (!_isAdded) {
 				this.entity.add(s);
 				this.component = new CCComponent(this);
 				this.entity.add(component);
 				
 				this._contentSize = new CCSize(newFrame.getRect().width, newFrame.getRect().height);
-				trace("added");
+				
 				_isAdded = true;
 			}
 		}

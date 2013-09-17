@@ -15,7 +15,7 @@ class TestCCBreader
 	}
 	
 	public static function run() {
-		var scene : CCScene = CCBuilderReader.loadAsScene("ccbtest/MainScene.ccbi");
+		var scene : CCScene = CCBuilderReader.loadAsScene("ccbtest/MainScene.ccbi", null, null, "ccbtest/");
 		var director : CCDirector = CCDirector.getInstance();
 		director.runWithScene(scene);
 	}

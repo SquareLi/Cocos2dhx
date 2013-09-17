@@ -1,5 +1,6 @@
 package cc.extensions.ccbreader;
-
+import cc.spritenodes.CCSpriteFrame;
+import cc.extensions.ccbreader.CCBKeyframe;
 /**
  * ...
  * @author Ang Li
@@ -55,14 +56,14 @@ class CCBuilderSequence
 class CCBuilderSequenceProperty {
 	var _name : String;
 	var _type : Int;
-	var _keyFrames : Array<Dynamic>;
+	var _keyFrames : Array<CCBuilderKeyFrame>;
 	
 	public function new() {
 		this.init();
 	}
 	
 	public function init() {
-		this._keyFrames = new Array<Dynamic>();
+		this._keyFrames = new Array<CCBuilderKeyFrame>();
 		this._name = "";
 	}
 	
@@ -82,7 +83,7 @@ class CCBuilderSequenceProperty {
 		this._type = type;
 	}
 	
-	public function getKeyFrames() : Array<Dynamic> {
+	public function getKeyframes() : Array<CCBuilderKeyFrame> {
 		return this._keyFrames;
 	}
 }

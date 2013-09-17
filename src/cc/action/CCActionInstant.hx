@@ -51,6 +51,36 @@ class CCActionInstant extends CCFiniteTimeAction
 	}
 }
 
+class CCShow extends CCActionInstant {
+	private function new() {
+		super();
+	}
+	
+	override public function update(time:Float)
+	{
+		this._target.setVisible(true);
+	}
+	
+	public static function create() : CCShow{
+		return new CCShow();
+	}
+}
+
+class CCHide extends CCActionInstant {
+	private function new() {
+		super();
+	}
+	
+	override public function update(time:Float)
+	{
+		this._target.setVisible(false);
+	}
+	
+	public static function create() : CCHide {
+		return new CCHide();
+	}
+}
+
 class CCCallFunc extends CCActionInstant
 {
 	var _data : Dynamic;

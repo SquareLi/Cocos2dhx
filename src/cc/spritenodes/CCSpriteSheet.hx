@@ -92,11 +92,17 @@ class CCSpriteSheet extends Sprite
 	
 	override public function getNaturalHeight():Float 
 	{
+		if (this.frame == null) {
+			return 0;
+		}
 		return frame.getRect().height;
 	}
 	
     override public function getNaturalWidth():Float 
 	{
+		if (this.frame == null) {
+			return 0;
+		}
 		return frame.getRect().width;
 	}
 	
