@@ -800,12 +800,12 @@ class CCNodeLoader
     }
 	
 	public static function ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName : String) {
-		//CCCommon.assert(false, "Unexpected property: '" + propertyName + "'!");
+		CCCommon.assert(false, "Unexpected property: '" + propertyName + "'!");
 	}
 	
 	public static function ASSERT_FAIL_UNEXPECTED_PROPERTYTYPE(propertyName : String) {
 
-		//CCCommon.assert(false, "Unexpected property type: '" + propertyName + "'!");
+		CCCommon.assert(false, "Unexpected property type: '" + propertyName + "'!");
 	}
 	
 	public static function loader() : CCNodeLoader {

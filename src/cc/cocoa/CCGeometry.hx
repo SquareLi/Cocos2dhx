@@ -112,6 +112,27 @@ class CCGeometry
 	public static function rectGetMinY(rect : Rectangle) : Float {
 		return rect.y;
 	}
+	
+	public static function _rectEqualToZero(rect : Rectangle) : Bool {
+		return rect.x == 0 && rect.y == 0 && rect.width == 0 && rect.height == 0;
+	}
+	
+	/**
+	 * Returns the smallest rectangle that contains the two source rectangles.
+	 * @function
+	 * @param {cc.Rect} rectA
+	 * @param {cc.Rect} rectB
+	 * @return {cc.Rect}
+	 */
+	public static function rectUnion(rectA : Rectangle, rectB : Rectangle) : Rectangle {
+		var rect : Rectangle = new Rectangle(0, 0, 0, 0);
+		rect.x = Math.min(rectA.x, rectB.x);
+		rect.y = Math.min(rectA.y, rectB.y);
+		rect.width = Math.max(rectA.x + rectA.width, rectB.x + rectB.width) - rect.x;
+		rect.height = Math.max(rectA.y + rectA.height, rectB.y + rectB.height) - rect.y;
+		return rect;
+	}
+	
 	public static function rectIntersectsRect(rectA : Rectangle, rectB : Rectangle) : Bool{
 		return !(CCGeometry.rectGetMaxX(rectA) < CCGeometry.rectGetMinX(rectB) ||
 			CCGeometry.rectGetMaxX(rectB) < CCGeometry.rectGetMinX(rectA) ||

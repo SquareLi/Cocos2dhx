@@ -259,10 +259,7 @@ class CCSprite extends CCNode
 			this.entity.add(component);
 		} else {
 			this.initWithTexture(texture, rect);
-		}
-		
-		
-		
+		}	
 	}
 	
 	public function initWithSpriteFrame(spriteFrame : CCSpriteFrame) : Bool {
@@ -342,6 +339,10 @@ class CCSprite extends CCNode
 	
 	public function setTexture(texture : CCTexture2D) {
 		this._texture = texture;
+	}
+	
+	public function getTexture() : CCTexture2D {
+		return this._texture;
 	}
 	
 	public function setDisplayFrame(newFrame : CCSpriteFrame) {

@@ -43,6 +43,7 @@ import sample.GameOver;
 import tests.TestPartical;
 import tests.TestTileMap;
 import tests.TestCCBreader;
+import tests.TestScale9Sprite;
 /**
  * ...
  * @author Ang Li
@@ -100,7 +101,11 @@ class Main
 		//var test : TestPartical = new TestPartical();
 		//test.run();
 		
-		TestCCBreader.run();
+		//System.root.add(new FillSprite(0xffffff, 320, 576));
+		//TestCCBreader.run();
+		
+		System.root.add(new FillSprite(0xffffff, 320, 576));
+		TestScale9Sprite.run();
     }
 
     private static function main () 

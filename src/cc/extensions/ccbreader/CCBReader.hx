@@ -124,6 +124,10 @@ class CCBuilderFile extends CCNode {
 	public function setCCBFileNode(node : CCNode) {
 		this._ccbFileNode = node;
 	}
+	
+	public static function create() : CCBuilderFile {
+		return new CCBuilderFile();
+	}
 }
 
 class CCBuilderReader {

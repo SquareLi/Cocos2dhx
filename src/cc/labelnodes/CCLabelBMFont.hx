@@ -255,6 +255,11 @@ class CCLabelBMFont extends CCNode
 		if (imageOffset == null) {
 			imageOffset = new Point(0, 0);
 		}
+		
+		if (fntFile == null) {
+			return ret;
+		}
+		
 		ret.initWithString(str, fntFile, width, alignment, imageOffset);
 		return ret;
 	}
