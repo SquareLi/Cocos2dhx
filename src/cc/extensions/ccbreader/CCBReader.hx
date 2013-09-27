@@ -2,7 +2,10 @@ package cc.extensions.ccbreader;
 import cc.action.CCActionManager;
 import cc.basenodes.CCNode;
 import cc.CCLoader;
+import cc.labelnodes.CCLabelBMFont;
+import cc.layersscenestransitionsnodes.CCLayer;
 import cc.layersscenestransitionsnodes.CCScene;
+import cc.menunodes.CCMenu;
 import cc.menunodes.CCMenuItem;
 import cc.spritenodes.CCSpriteFrameCache;
 import cc.texture.CCTexture2D;
@@ -104,6 +107,9 @@ class CCBReader
 
 	public static var CCB_SCALETYPE_ABSOLUTE : Int = 0;
 	public static var CCB_SCALETYPE_MULTIPLY_RESOLUTION : Int = 1; 
+	
+	
+	public static var CCB_CLASS_ROOT_PATH : String = "";
 	public function new() 
 	{
 		
@@ -144,7 +150,7 @@ class CCBuilderReader {
 	var _loadedSpriteSheets : Array<String>;
 	
 	var _owner : CCNode;
-	var _actionManager : CCBuilderAnimationManager;
+	var _animationManager : CCBuilderAnimationManager;
 	var _animationManagers : _Dictionary;
 	var _animatedProps : Array<String>;
 	
@@ -155,17 +161,21 @@ class CCBuilderReader {
 	
 	var _ownerOutletNames : Array<String>;
 	var _ownerOutletNodes : Array<CCNode>;
-	var _nodeWithAnimationManagers : Array<CCNode>;
+	var _nodesWithAnimationManagers : Array<CCNode>;
 	var _animationManagerForNodes : Array<CCBuilderAnimationManager>;
 	
 	var _ownerCallbackNames : Array<String>;
-	var _ownerCallbackNodes : Array<CCMenuItem>;
+	var _ownerCallbackNodes : Array<CCNode>;
+	
+	var _controller : Dynamic;
 	
 	public var hasScriptingOwner : Bool = false;
 	
 	
+	
 	public function new(ccNodeLoaderLibrary : Dynamic) {
 		this._stringCache = new Array<String>();
+		//this._ccbGlobalContext = new Array<String>();
 		this._currentBit = -1;
 		this._currentByte = -1;
 		
@@ -189,7 +199,7 @@ class CCBuilderReader {
 			this._ccbRootPath = ccbReader._ccbRootPath;
 		}
 		
-		//this._actionManager.setRootContainerSize(parentSize);
+		//this._animationManager.setRootContainerSize(parentSize);
 		
 		
 	}
@@ -203,7 +213,7 @@ class CCBuilderReader {
 	}
 	
 	public function initWithData(data : Array<Int>, owner : Dynamic) : Bool{
-		this._actionManager = new CCBuilderAnimationManager();
+		this._animationManager = new CCBuilderAnimationManager();
 		
 		this._data = data;
 		this._bytes = data.length;
@@ -212,7 +222,7 @@ class CCBuilderReader {
 		
 		this._owner = owner;
 		
-		//this._actionManager.setRootContainerSize(cc.Director.getInstance().getWinSize());
+		this._animationManager.setRootContainerSize(CCDirector.getInstance().getWinSize());
 		
 		return true;
 	}
@@ -230,26 +240,56 @@ class CCBuilderReader {
 	
 	public function readNodeGraphFromData(data : Array<Int>, ?owner : Dynamic, ?parentSize : CCSize, ?animationManager : CCBuilderAnimationManager) : CCNode {
 		this.initWithData(data, owner);
-		this._actionManager.setRootContainerSize(parentSize);
+		this._animationManager.setRootContainerSize(parentSize);
 		
 		this._ownerOutletNames = new Array<String>();
 		this._ownerOutletNodes = new Array<CCNode>();
 		this._ownerCallbackNames = new Array<String>();
-		this._ownerCallbackNodes = new Array<CCMenuItem>();
+		this._ownerCallbackNodes = new Array<CCNode>();
 		this._animationManagers = new _Dictionary();
 		
 		var nodeGraph = this.readFileWithCleanUp(true);
 		
-		if (nodeGraph != null && this._actionManager.getAutoPlaySequenceId() != -1) {
+		if (nodeGraph != null && this._animationManager.getAutoPlaySequenceId() != -1) {
 			//auto play animations
-			//trace("play");
-			//trace(this._actionManager.getAutoPlaySequenceId());
-            this._actionManager.runAnimations(this._actionManager.getAutoPlaySequenceId(), 0);
-			
-			
+            this._animationManager.runAnimations(this._animationManager.getAutoPlaySequenceId(), 0);	
 		}
 		
+		if (this._jsControlled) {
+			var locNodes : Array<CCNode> = new Array<CCNode>();
+			//var locAnimations
+			var locAnimationManagers : _Dictionary = this._animationManagers;
+			var getAllKeys : Array<Dynamic> = locAnimationManagers.allKeys();
+			for (i in 0...getAllKeys.length) {
+				
+			}
+		}
+		
+		// Call didLoadFromCCB
+		callDidLoadFromCCBForNodeGraph(nodeGraph);
 		return nodeGraph;
+	}
+	
+	public function callDidLoadFromCCBForNodeGraph(nodeGraph : CCNode) {
+		
+		if (_controller != null) {
+			this._animationManager.getRootNode().controller = _controller;
+			this._animationManager.getRootNode().animationManager = this._animationManager;
+			
+			Reflect.setProperty(_controller, "rootNode", this._animationManager.getRootNode());
+			Reflect.callMethod(_controller, Reflect.field(_controller, "onDidLoadFromCCB"), []);
+		}
+		
+		//if ([nodeGraph respondsToSelector:@selector(didLoadFromCCB)])
+		//{
+			//[nodeGraph performSelector:@selector(didLoadFromCCB)];
+		//}
+		//
+		//CCNode* child = NULL;
+		//CCARRAY_FOREACH(nodeGraph.children, child)
+		//{
+			//[CCBReader callDidLoadFromCCBForNodeGraph:child];
+		//}
 	}
 	
 	public function createSceneWithNodeGraphFromFile(ccbFileName : String, owner : Dynamic, parentSize : CCSize, animationManager : CCBuilderAnimationManager) : CCScene{
@@ -268,11 +308,11 @@ class CCBuilderReader {
 	}
 	
 	public function getAnimationManager() : CCBuilderAnimationManager {
-		return this._actionManager;
+		return this._animationManager;
 	}
 	
 	public function setAnimationManager(animationManager : CCBuilderAnimationManager) {
-		this._actionManager = animationManager;
+		this._animationManager = animationManager;
 	}
 	
 	public function getAnimatedProperties() : Array<String> {
@@ -436,7 +476,7 @@ class CCBuilderReader {
 		return this._ownerCallbackNames;
 	}
 	
-	public function getOwnerCallbackNodes() : Array<CCMenuItem> {
+	public function getOwnerCallbackNodes() : Array<CCNode> {
         return this._ownerCallbackNodes;
     }
 
@@ -448,9 +488,9 @@ class CCBuilderReader {
         return this._ownerOutletNodes;
     }
 
-    //public function getNodesWithAnimationManagers() :  Array<CCNode>{
-        //return this._nodesWithAnimationManagers;
-    //}
+    public function getNodesWithAnimationManagers() :  Array<CCNode>{
+        return this._nodesWithAnimationManagers;
+    }
 
 	public function getAnimationManagersForNodes() : Array<CCBuilderAnimationManager>{
         return this._animationManagerForNodes;
@@ -468,16 +508,19 @@ class CCBuilderReader {
         this._ownerCallbackNames.push(name);
     }
 
-    public function addOwnerCallbackNode(node : CCMenuItem) {
+    public function addOwnerCallbackNode(node : CCNode) {
         this._ownerCallbackNodes.push(node);
     }
 
     public function addDocumentCallbackName(name : String) {
-        this._actionManager.addDocumentCallbackName(name);
+        this._animationManager.addDocumentCallbackName(name);
     }
 
-    public function addDocumentCallbackNode(node : CCMenuItem) {
-        this._actionManager.addDocumentCallbackNode(node);
+	public function addDocumentCallbackNode(node : CCNode) {
+		this._animationManager.addDocumentCallbackNode(node);
+	}
+    public function addDocumentCallbackControlEvents(controlEvents : Int){
+        this._animationManager.addDocumentCallbackControlEvents(controlEvents);
     }
 	
 	public function readFileWithCleanUp(cleanUp : Bool) : CCNode {
@@ -488,11 +531,9 @@ class CCBuilderReader {
         if (!this._readSequences())
             return null;
 
-		this.readCachedString();
-		this.readCachedString();
         var node = this._readNodeGraph();
-        this._animationManagers.setObject(this._actionManager, node);
-
+		
+        this._animationManagers.setObject(this._animationManager, node);
         if (cleanUp)
             this._cleanUpNodeGraph(node);
         return node;
@@ -570,6 +611,7 @@ class CCBuilderReader {
 	}
 	
 	private function _cleanUpNodeGraph(node : CCNode) {
+		
 		node.setUserObject(null);
 		var getChildren = node.getChildren();
 		for (i in 0...getChildren.length) {
@@ -577,8 +619,74 @@ class CCBuilderReader {
 		}
 	}
 	
+	private function _readCallbackKeyframesForSeq(seq : CCBuilderSequence) : Bool {
+		var numKeyframes = this.readInt(false);
+		
+		if (numKeyframes == 0) {
+			return true;
+		}
+		
+		var channel : CCBuilderSequenceProperty = new CCBuilderSequenceProperty();
+		var locJsControlled : Bool = this._jsControlled;
+		var locAnimationManager : CCBuilderAnimationManager = this._animationManager;
+		var locKeyframes : Array<CCBuilderKeyframe> = channel.getKeyframes();
+		
+        for (i in 0...numKeyframes) {
+            var time : Float = this.readFloat();
+            var callbackName : String = this.readCachedString();
+            var callbackType : Int = this.readInt(false);
+
+            var value : Dynamic= [ callbackName, callbackType];
+
+            var keyframe : CCBuilderKeyframe = new CCBuilderKeyframe();
+            keyframe.setTime(time);
+            keyframe.setValue(value);
+
+            if(locJsControlled)
+                locAnimationManager.getKeyframeCallbacks().push(Std.string(callbackType) + ":" + callbackName);
+
+            locKeyframes.push(keyframe);
+        }
+
+        // Assign to sequence
+        seq.setCallbackChannel(channel);
+
+        return true;
+	}
+	
+	private function _readSoundKeyframesForSeq(seq : CCBuilderSequence) : Bool{
+		var numKeyframes = this.readInt(false);
+		
+		if (numKeyframes == 0) {
+			return true;
+		}
+		
+		return true;
+		
+		//var channel = new cc.BuilderSequenceProperty();
+        //var locKeyframes = channel.getKeyframes();
+        //for (var i = 0; i < numKeyframes; i++) {
+            //var time = this.readFloat();
+            //var soundFile = this.readCachedString();
+            //var pitch = this.readFloat();
+            //var pan = this.readFloat();
+            //var gain = this.readFloat();
+//
+            //var value  = [soundFile, pitch, pan, gain];
+            //var keyframe = new cc.BuilderKeyframe();
+            //keyframe.setTime(time);
+            //keyframe.setValue(value);
+//
+            //locKeyframes.push(keyframe);
+        //}
+//
+        // Assign to sequence
+        //seq.setSoundChannel(channel);
+        //return true;
+	}
+	
 	private function _readSequences() : Bool {
-		var sequences = this._actionManager.getSequences();
+		var sequences = this._animationManager.getSequences();
 		var numSeqs = this.readInt(false);
 		//trace(numSeqs);
 		for (i in 0...numSeqs) {
@@ -592,15 +700,20 @@ class CCBuilderReader {
 			seq.setChainedSequenceId(this.readInt(true));
 			//trace("seq ChainedSequenceID :" + seq.getChainedSequenceId());
 			sequences.push(seq);
+			
+			if (!this._readCallbackKeyframesForSeq(seq))
+                return false;
+            if (!this._readSoundKeyframesForSeq(seq))
+                return false;
 		}
-		this._actionManager.setAutoPlaySequenceId(this.readInt(true));
-		//trace("autoplaySequenceId: " + this._actionManager.getAutoPlaySequenceId());
+		this._animationManager.setAutoPlaySequenceId(this.readInt(true));
+		//trace("autoplaySequenceId: " + this._animationManager.getAutoPlaySequenceId());
 		
 		return true;
 	}
 	
-	public function readKeyframe(type : Int) : CCBuilderKeyFrame{
-		var keyframe : CCBuilderKeyFrame = new CCBuilderKeyFrame();
+	public function readKeyframe(type : Int) : CCBuilderKeyframe{
+		var keyframe : CCBuilderKeyframe = new CCBuilderKeyframe();
 		keyframe.setTime(this.readFloat());
 		var easingType = this.readInt(false);
 		var easingOpt : Float = 0;
@@ -660,16 +773,22 @@ class CCBuilderReader {
 	private function _readNodeGraph(?parent : CCNode) : CCNode {
 
 		var className = this.readCachedString();
-		
+	
 		//trace(className);
 		var jsControlledName : String = "";
 		var locJsControlled = this._jsControlled;
-		var locActionManager = this._actionManager;
+		var locActionManager = this._animationManager;
 		
 		if (locJsControlled) {
 			jsControlledName = this.readCachedString();
-			//trace(jsControlledName);
+			
 		}
+		
+		if (jsControlledName != "") {
+			//trace(CCBReader.CCB_CLASS_ROOT_PATH + jsControlledName);
+			_controller = Type.createInstance(Type.resolveClass(CCBReader.CCB_CLASS_ROOT_PATH + jsControlledName), []);
+		}
+		
 		
 		var memberVarAssignmentType = this.readInt(false);
 
@@ -709,7 +828,6 @@ class CCBuilderReader {
 			var seqNodeProps = new _Dictionary();
 			
 			var numProps = this.readInt(false);
-			
 			for (j in 0...numProps) {
 				var seqProp : CCBuilderSequenceProperty = new CCBuilderSequenceProperty();
 				seqProp.setName(this.readCachedString());
@@ -733,10 +851,8 @@ class CCBuilderReader {
 		if (seqs.count() > 0) {
 			locActionManager.addNode(node, seqs);
 		}
-		
 		//read properties
 		ccNodeLoader.parseProperties(node, parent, this);
-		
 		//handle sub ccb files(remove middle node)
 		if (Std.is(node, CCBuilderFile)) {
 			//var n : CCBuilderFile = cast(node, CCBuilderFile);
@@ -752,40 +868,46 @@ class CCBuilderReader {
 			//node = embeddedNode;
 		}
 		
-		//var target : CCNode;
-		//var locMemberAssigner : Dynamic;
-		//if (memberVarAssignmentType != CCBReader.CCB_TARGETTYPE_NONE) {
-			//var target : CCNode = null;
-			//if (memberVarAssignmentType == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT) {
-				//target = this._actionManager.getRootNode();
-			//} else if (memberVarAssignmentType == CCBReader.CCB_TARGETTYPE_OWNER) {
-				//target = this._owner;
-			//}
-			//
-			//if (target != null) {
-				//var assigned : Bool = false;
-				//if (target != null && (target.onAssign
-			//}
-			//if (memberVarAssignmentType
-		//}
-		//trace(node.getTag());
+		var target : CCNode;
+		var locMemberAssigner : Dynamic;
+		if (locJsControlled)
+		{
+			if (memberVarAssignmentType != 0)
+			{
+				var target : Dynamic = null;
+				//if (memberVarAssignmentType == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT) target = actionManager.rootNode;
+				//else if (memberVarAssignmentType == CCBReader.CCB_TARGETTYPE_OWNER) target = owner;
+				
+				if (_controller != null)
+				{
+					//trace(memberVarAssignmentName);
+					//if (Std.is(node, CCSprite)) {
+						//var n : CCSprite = cast(node, CCSprite);
+						//Reflect.setProperty(_controller, memberVarAssignmentName, n);
+					//} else if (Std.is(node, CCLayer)) {
+						//var n : CCLayer = cast(node, CCLayer);
+						//Reflect.setProperty(_controller, memberVarAssignmentName, n);
+					//} else if (Std.is(node, CCMenu)) {
+						//var n : CCMenu = cast(node, CCMenu);
+						//Reflect.setProperty(_controller, memberVarAssignmentName, n);
+					//} else if (Std.is(node, CCLabelBMFont)) {
+						//var n : CCLabelBMFont = cast(node, CCLabelBMFont);
+						//Reflect.setProperty(_controller, memberVarAssignmentName, n);
+					//} else {
+						Reflect.setProperty(_controller, memberVarAssignmentName, node);
+					//}
+				}
+			}
+		}
+		
+		//Read Children
 		var numChildren = this.readInt(false);
 		for (i in 0...numChildren) {
-			//var x = this._readNodeGraph(node);
-			//trace(this._readNodeGraph(node).getTag());
-			//if (Std.is(child, CCSprite)) {
-				//var child : CCSprite = cast (this._readNodeGraph(node), CCSprite);
-				//node.addChild(child);
-			//} else {
-				//var child : CCNode = this._readNodeGraph(node);
-				//node.addChild(child);
-			//}
-			var child : CCSprite = cast (this._readNodeGraph(node), CCSprite);
+			var child : CCNode = this._readNodeGraph(node);
 			node.addChild(child);
-			//trace(child.getTag());
-			//trace(node.getTag());
 		}
 		//trace(node.getTag());
+		//trace("return node");
 		return node;
 	}
 	
@@ -809,6 +931,14 @@ class CCBuilderReader {
         }
 	}
 	
+	public function getController() : Dynamic {
+		return this._controller;
+	}
+	
+	public function setController(c : Dynamic) {
+		this._controller = c;
+	}
+	
 	private static var _ccbResolutionScale : Float = 1;
 	public static function setResolutionScale(scale : Float) {
 		_ccbResolutionScale = scale;
@@ -817,6 +947,7 @@ class CCBuilderReader {
 		return _ccbResolutionScale;
 	}
 	public static function loadAsScene(ccbFilePath : String, ?owner : Dynamic, ?parentSize : CCSize, ?ccbRootPath : String) : CCScene {
+		
 		var getNode : CCNode = CCBuilderReader.load(ccbFilePath, owner, parentSize, ccbRootPath);
 		var scene = CCScene.create();
 		scene.addChild(getNode);
@@ -827,36 +958,91 @@ class CCBuilderReader {
 		var reader : CCBuilderReader = new CCBuilderReader(CCNodeLoaderLibrary.newDefaultCCNodeLoaderLibrary());
 		reader.setCCBRootPath(ccbRootPath);
 		var node = reader.readNodeGraphFromFile(ccbFilePath, owner, parentSize);
+		
 		return node;
+		
+		
 		//var callbackName : String;
 		//var callbackNode : CCMenuItem;
 		//var outletName : String;
 		//var outletNode : CCNode;
+		//var callbackControlEvents : Dynamic;
+		//
 		//if (owner != null) {
-			//
+			//Todo
 		//}
 		//
-		//var nodesWithAnimationManagers = reader.getNodesWithAnimationManagers();
-		//var animationManagersForNodes = reader.getAnimationManagersForNodes();
 		//
-		//for (i in 0...nodesWithAnmiationManagers.length) {
-			//var innerNode = nodesWithAnimationManagers[i];
-			//var animationManager = animationManagersForNodes[i];
+		//var nodesWithAnimationManager : Array<CCNode> = reader.getNodesWithAnimationManagers();
+		//var animationManagersForNodes : Array<CCBuilderAnimationManager> = reader.getAnimationManagersForNodes();
+		//
+		//if(nodesWithAnimationManagers == null || animationManagersForNodes == null)
+        //return node;
+		//
+		//Attach animation managers to nodes and assign root node callbacks and member variables
+		//for (i in 0...nodesWithAnimationManagers.length) {
+			//var innerNode : CCNode = nodesWithAnimationManagers[i];
+			//var animationManager : CCBuilderAnimationManager = animationManagersForNodes[i];
 			//
-			//innerNode.setUserObject(animationManager);
-			//var documentControllerName = animationManager.getDocumentControllerName();
+			//innerNode.animationManager = animationManager;
+//
+			//var documentControllerName : String = animationManager.getDocumentControllerName();
 			//if (documentControllerName == null) continue;
-			//
-			// Create a document controller
-			//var controller = new _ccbGlobalContext
-			//
-			//Callbacks
+//
+			//Create a document controller
+			//var controller;
+			//if(documentControllerName.indexOf(".") > -1){
+				//var controllerNameArr : Array<String> = documentControllerName.split(".");
+				//controller = _ccbGlobalContext[controllerNameArr[0]];
+				//for(var ni = 1, niLen = controllerNameArr.length - 1; ni < niLen; ni++)
+					//controller = controller[controllerNameArr[ni]];
+				//controller = new controller[controllerNameArr[controllerNameArr.length - 1]]();
+			//}else
+				//controller = new _ccbGlobalContext[documentControllerName]();
+			//controller.controllerName = documentControllerName;
+//
+			//innerNode.controller = controller;
+			//controller.rootNode = innerNode;
+//
+			 //Callbacks
 			//var documentCallbackNames = animationManager.getDocumentCallbackNames();
 			//var documentCallbackNodes = animationManager.getDocumentCallbackNodes();
-			//for (j in 0...documentCallbackNames.length) {
+			//var documentCallbackControlEvents = animationManager.getDocumentCallbackControlEvents();
+			//for (j = 0; j < documentCallbackNames.length; j++) {
 				//callbackName = documentCallbackNames[j];
-				//callbackNode = ownerCallbackNodes[i];
-				//callbackNode.setCallback(
+				//callbackNode = documentCallbackNodes[j];
+				//callbackControlEvents = documentCallbackControlEvents[j];
+				//if(callbackNode instanceof cc.ControlButton)
+					//callbackNode.addTargetWithActionForControlEvents(controller, controller[callbackName], callbackControlEvents);        //register all type of events
+				//else
+					//callbackNode.setCallback(controller[callbackName], controller);
+			//}
+//
+			 //Variables
+			//var documentOutletNames = animationManager.getDocumentOutletNames();
+			//var documentOutletNodes = animationManager.getDocumentOutletNodes();
+			//for (j = 0; j < documentOutletNames.length; j++) {
+				//outletName = documentOutletNames[j];
+				//outletNode = documentOutletNodes[j];
+//
+				//controller[outletName] = outletNode;
+			//}
+//
+			//if (controller.onDidLoadFromCCB && typeof(controller.onDidLoadFromCCB) == "function")
+				//controller.onDidLoadFromCCB();
+//
+			 //Setup timeline callbacks
+			//var keyframeCallbacks = animationManager.getKeyframeCallbacks();
+			//for (j = 0; j < keyframeCallbacks.length; j++) {
+				//var callbackSplit = keyframeCallbacks[j].split(":");
+				//var callbackType = callbackSplit[0];
+				//var kfCallbackName = callbackSplit[1];
+//
+				//if (callbackType == 1){ // Document callback
+					//animationManager.setCallFunc(cc.CallFunc.create(controller[kfCallbackName], controller), keyframeCallbacks[j]);
+				//} else if (callbackType == 2 && owner) {// Owner callback
+					//animationManager.setCallFunc(cc.CallFunc.create(owner[kfCallbackName], owner), keyframeCallbacks[j]);
+				//}
 			//}
 		//}
 	}

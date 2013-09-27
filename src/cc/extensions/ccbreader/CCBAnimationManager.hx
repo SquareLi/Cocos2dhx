@@ -52,12 +52,17 @@ class CCBuilderAnimationManager {
     var _documentOutletNames : Array<String>;
     var _documentOutletNodes : Array<CCNode>;
     var _documentCallbackNames : Array<String>;
-    var _documentCallbackNodes : Array<CCMenuItem>;
+    var _documentCallbackNodes : Array<CCNode>;
+	var _documentCallbackControlEvents : Array<Int>;
     var _documentControllerName : String = "";
     var _lastCompletedSequenceName : String = "";
+	
+	var _keyframeCallbacks : Array<String>;
+    var _keyframeCallFuncs : Map<String, CCCallFunc>;
 
-    var _animationCompleteCallbackFunc : Void -> Void = null;
+    var _animationCompleteCallbackFunc : Void -> Void;
     var _target : CCNode;
+	var _jsControlled : Bool = false;
 	public function new() {
 		this._rootContainerSize = new CCSize(0, 0);
 		this.init();
@@ -71,8 +76,12 @@ class CCBuilderAnimationManager {
 		this._documentOutletNames = new Array<String>();
 		this._documentOutletNodes = new Array<CCNode>();
 		this._documentCallbackNames = new Array<String>();
-		this._documentCallbackNodes = new Array<CCMenuItem>();
+		this._documentCallbackNodes = new Array<CCNode>();
 		
+		this._documentCallbackControlEvents = new Array<Int>();
+		
+		this._keyframeCallbacks = new Array<String>();
+		this._keyframeCallFuncs = new Map<String, CCCallFunc>();
 		
 		return true;
 	}
@@ -97,13 +106,17 @@ class CCBuilderAnimationManager {
 		this._rootNode = rootNode;
 	}
 	
-	public function addDocumentCallbackNode(node : CCMenuItem) {
+	public function addDocumentCallbackNode(node : CCNode) {
 		this._documentCallbackNodes.push(node);
 	}
 	
 	public function addDocumentCallbackName(name : String) {
 		this._documentCallbackNames.push(name);
 	}
+	
+	public function addDocumentCallbackControlEvents(controlEvents : Int){
+        this._documentCallbackControlEvents.push(controlEvents);
+    }
 	
 	public function addDocumentOutletNode(node : CCNode) {
 		this._documentOutletNodes.push(node);
@@ -125,9 +138,13 @@ class CCBuilderAnimationManager {
 		return this._documentCallbackNames;
 	}
 	
-	public function getDocumentCallbackNodes() : Array<CCMenuItem> {
+	public function getDocumentCallbackNodes() : Array<CCNode> {
 		return this._documentCallbackNodes;
 	}
+	
+	public function getDocumentCallbackControlEvents() : Array<Int>{
+        return this._documentCallbackControlEvents;
+    }
 	
 	public function getDocumentOutletNames() : Array<String> {
 		return this._documentOutletNames;
@@ -141,6 +158,9 @@ class CCBuilderAnimationManager {
 		return this._lastCompletedSequenceName;
 	}
 	
+	public function getKeyframeCallbacks() : Array<String> {
+		return this._keyframeCallbacks;
+	}
 	public function getRootContainerSize() : CCSize {
 		return this._rootContainerSize;
 	}
@@ -182,12 +202,78 @@ class CCBuilderAnimationManager {
 		props.setObject(value, propName);
 	}
 	
-	public function moveAnimationsFromNode() {
-		
+	public function moveAnimationsFromNode(fromNode : CCNode, toNode : CCNode) {
+		// Move base values
+        var locBaseValues : _Dictionary = this._baseValues;
+        var baseValue = locBaseValues.objectForKey(fromNode);
+        if(baseValue != null) {
+            locBaseValues.setObject(baseValue, toNode);
+            locBaseValues.removeObjectForKey(fromNode);
+        }
+
+        // Move seqs
+        var locNodeSequences : _Dictionary = this._nodeSequences;
+        var seqs = locNodeSequences.objectForKey(fromNode);
+        if(seqs != null) {
+            locNodeSequences.setObject(seqs, toNode);
+            locNodeSequences.removeObjectForKey(fromNode);
+        }
 	}
 	
-	public function getActionForCallbackChannel() {
+	public function getActionForCallbackChannel(channel : CCBuilderSequenceProperty) : CCSequence {
+		var lastKeyframeTime : Float = 0;
 		
+		var actions : Array<CCFiniteTimeAction> = new Array<CCFiniteTimeAction>();
+		var keyframes : Array<CCBuilderKeyframe> = channel.getKeyframes();
+		var numKeyframes = keyframes.length;
+		
+		for (i in 0...numKeyframes) {
+            var keyframe : CCBuilderKeyframe = keyframes[i];
+            var timeSinceLastKeyframe = keyframe.getTime() - lastKeyframeTime;
+            lastKeyframeTime = keyframe.getTime();
+            if(timeSinceLastKeyframe > 0) {
+                actions.push(CCDelayTime.create(timeSinceLastKeyframe));
+            }
+
+            var keyVal = keyframe.getValue();
+            var selectorName = keyVal[0];
+            var selectorTarget = keyVal[1];
+
+            if(this._jsControlled) {
+                var callbackName = Std.string(selectorTarget) + ":" + selectorName;    //add number to the stream
+                var cb : CCCallFunc = this._keyframeCallFuncs[callbackName];
+
+                if(cb != null)
+                    actions.push(cb);
+            } else {
+                //var target;
+                //if(selectorTarget == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT)
+                    //target = this._rootNode;
+                //else if (selectorTarget == CCBReader.CCB_TARGETTYPE_OWNER)
+                    //target = this._owner;
+//
+                //if(target != null) {
+                    //if(selectorName.length > 0) {
+                        //var selCallFunc = 0;
+//
+                        //var targetAsCCBSelectorResolver = target;
+//
+                        //if(target.onResolveCCBCCCallFuncSelector != null)
+                            //selCallFunc = targetAsCCBSelectorResolver.onResolveCCBCCCallFuncSelector(target, selectorName);
+                        //if(selCallFunc == 0)
+                            //cc.log("Skipping selector '" + selectorName + "' since no CCBSelectorResolver is present.");
+                        //else
+                            //actions.push(cc.CallFunc.create(selCallFunc,target));
+                    //} else {
+                        //cc.log("Unexpected empty selector.");
+                    //}
+                //}
+            }
+        }
+        if(actions.length < 1)
+            return null;
+
+        return CCSequence.create(actions);
 	}
 	
 	public function getActionForSoundChannel() {
@@ -212,10 +298,10 @@ class CCBuilderAnimationManager {
         this._rootNode.stopAllActions();
 
         var allKeys = this._nodeSequences.allKeys();
-		//trace(allKeys.length);
         for(i in 0...allKeys.length){
-            var node : CCSprite = cast (allKeys[i], CCSprite);
+            //var node : CCSprite = cast (allKeys[i], CCSprite);
 			//trace("node's tag : " + node.getTag());
+			var node : CCNode = allKeys[i];
             node.stopAllActions();
 			
 
@@ -290,6 +376,19 @@ class CCBuilderAnimationManager {
 		this.runAnimationsForSequenceIdTweenDuration(nSeqId, tweenDuration);
 	}
 	
+	public function setAnimationCompletedCallback(target : CCNode,callbackFunc : Void -> Void){
+        this._target = target;
+        this._animationCompleteCallbackFunc = callbackFunc;
+    }
+
+    public function setCompletedAnimationCallback(target : CCNode,callbackFunc : Void -> Void){
+        this.setAnimationCompletedCallback(target,callbackFunc);
+    }
+	
+    public function setCallFunc(callFunc : CCCallFunc, callbackNamed : String) {
+        this._keyframeCallFuncs[callbackNamed] = callFunc;
+    }
+	
 	public function debug() {
 		
 	}
@@ -326,7 +425,7 @@ class CCBuilderAnimationManager {
 		return null;
 	}
 	
-	public function _getAction(keyframe0 : CCBuilderKeyFrame, keyframe1 : CCBuilderKeyFrame, propName : String, node : CCNode) : CCActionInterval{
+	public function _getAction(keyframe0 : CCBuilderKeyframe, keyframe1 : CCBuilderKeyframe, propName : String, node : CCNode) : CCActionInterval{
 		var duration : Float = keyframe1.getTime() - ((keyframe0 != null) ? keyframe0.getTime() : 0);
 		
 		var x : Float;
@@ -401,7 +500,7 @@ class CCBuilderAnimationManager {
 	private function _setAnimatedProperty(propName : String, node : CCNode, value : Dynamic, tweenDuration : Float ) {
         if(tweenDuration > 0){
             // Create a fake keyframe to generate the action from
-			var kf1 : CCBuilderKeyFrame= new CCBuilderKeyFrame();
+			var kf1 : CCBuilderKeyframe= new CCBuilderKeyframe();
             kf1.setValue(value);
             kf1.setTime(tweenDuration);
             kf1.setEasingType(CCBReader.CCB_KEYFRAME_EASING_LINEAR);
@@ -477,7 +576,7 @@ class CCBuilderAnimationManager {
         }
 	}
 	
-	private function _getEaseAction (action : CCActionInterval, easingType : Int, easingOpt : Float ) : CCActionInterval{
+	private function _getEaseAction (action : CCActionInterval, easingType : Int, easingOpt : Float ) : CCActionInterval {
         if (easingType == CCBReader.CCB_KEYFRAME_EASING_LINEAR || easingType == CCBReader.CCB_KEYFRAME_EASING_INSTANT ) {
             return action;
 		
@@ -513,7 +612,7 @@ class CCBuilderAnimationManager {
 	
 	private function _runAction(node : CCNode, seqProp : CCBuilderSequenceProperty, tweenDuration : Float) {
 		
-        var keyframes : Array<CCBuilderKeyFrame> = seqProp.getKeyframes();
+        var keyframes : Array<CCBuilderKeyframe> = seqProp.getKeyframes();
         var numKeyframes : Int = keyframes.length;
 		
 
@@ -521,7 +620,7 @@ class CCBuilderAnimationManager {
             // Make an animation!
             var actions : Array<CCFiniteTimeAction>= new Array<CCFiniteTimeAction>();
 
-            var keyframeFirst : CCBuilderKeyFrame = keyframes[0];
+            var keyframeFirst : CCBuilderKeyframe = keyframes[0];
             var timeFirst : Float = keyframeFirst.getTime() + tweenDuration;
 			//trace(keyframes[1].getTime());
 
@@ -530,8 +629,8 @@ class CCBuilderAnimationManager {
             }
 
             for (i in 0...numKeyframes - 1) {
-                var kf0 : CCBuilderKeyFrame = keyframes[i];
-                var kf1 : CCBuilderKeyFrame = keyframes[(i+1)];
+                var kf0 : CCBuilderKeyframe = keyframes[i];
+                var kf1 : CCBuilderKeyframe = keyframes[(i+1)];
 
                 var action : CCActionInterval = this._getAction(kf0, kf1, seqProp.getName(), node);
                 if (action != null) {

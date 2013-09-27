@@ -134,19 +134,23 @@ class CCPointerDispatcher
 		var a : Int = 0;
 		var b : Int = 3;
 		var c : Int = 1;
+		var b : Bool = false;
 		for (h in this._pointerDelegateHandlers) {
 			switch(index) {
 				case 0:
-					h.getDelegate().onPointerDown(pointerObj);
+					b = h.getDelegate().onPointerDown(pointerObj);
 					//trace(this._pointerDelegateHandlers.length);
 				case 3:
-					h.getDelegate().onPointerUp(pointerObj);
+					b = h.getDelegate().onPointerUp(pointerObj);
 				case 1:
 					if (this._pointerPressed) {
-						h.getDelegate().onPointerDragged(pointerObj);
+						b = h.getDelegate().onPointerDragged(pointerObj);
 					} else {
-						h.getDelegate().onPointerMoved(pointerObj);
+						b = h.getDelegate().onPointerMoved(pointerObj);
 					}
+			}
+			if (b) {
+				return;
 			}
 		}
 	}

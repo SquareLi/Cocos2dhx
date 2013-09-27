@@ -14,7 +14,7 @@ class CCBKeyframe
 	
 }
 
-class CCBuilderKeyFrame {
+class CCBuilderKeyframe {
 	var _value : Dynamic;
 	var _time : Float;
 	var _easingType : Int = 0;

@@ -441,6 +441,7 @@ class CCSprite extends CCNode
 	public static function createWithSpriteFrameName(spriteFrameName : String) : CCSprite {
 		var ret : CCSprite = new CCSprite();
 		var spriteFrame : CCSpriteFrame;
+		
 		spriteFrame = CCSpriteFrameCache.getInstance().getSpriteFrame(spriteFrameName);
 		//trace(spriteFrame.toString());
 		

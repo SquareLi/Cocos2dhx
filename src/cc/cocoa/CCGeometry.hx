@@ -163,5 +163,9 @@ class CCSize
 			return false;
 		}
 	}
+	
+	public function toString() : String {
+		return '$width x $height';
+	}
 }
 

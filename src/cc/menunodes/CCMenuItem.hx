@@ -34,6 +34,7 @@ import flambe.math.Rectangle;
 import cc.action.CCActionInterval;
 import cc.platform.CCCommon;
 import cc.platform.CCMacro;
+import cc.cocoa.CCGeometry;
 
 /**
  * Subclass cc.MenuItem (or any subclass) to create your custom cc.MenuItem objects.
@@ -92,6 +93,7 @@ class CCMenuItem extends CCNode
 	var _selector : Void -> Void;
 	var _isSelected : Bool = false;
 	var _isEnabled : Bool = false;
+	
 	public function new() 
 	{
 		super();
@@ -154,10 +156,20 @@ class CCMenuItem extends CCNode
      */
 	public function rect() : Rectangle {
 		//trace(this._position.x + "," + this._anchorPoint.x);
-		return new Rectangle(this._position.x + this._parent._position.x - this._anchorPoint.x,
-            this._position.y + this._parent._position.y - this._anchorPoint.y,
-            this._contentSize.width, this._contentSize.height);
+		//return new Rectangle(this._position.x + this._parent._position.x - this._anchorPoint.x,
+            //this._position.y + this._parent._position.y - this._anchorPoint.y,
+            //this._contentSize.width, this._contentSize.height);
 		//return this.getBoundingBox();
+		
+		var locPosition : Point = this._position;
+		//trace('locPosition = $locPosition');
+		var locContentSize : CCSize = this._contentSize;
+		var locAnchorPoint : Point = this._anchorPoint;
+		var ret : Rectangle = new Rectangle(locPosition.x - locContentSize.width * locAnchorPoint.x,
+            locPosition.y - locContentSize.height * locAnchorPoint.y,
+            locContentSize.width, locContentSize.height);
+			//trace(ret);
+        return ret;
 	}
 	
 	/**
@@ -192,6 +204,9 @@ class CCMenuItem extends CCNode
 		}
 	}
 	
+	public function getCurrentNode() : CCNode {
+		return null;
+	}
 	//override 
 	//override public function getOpacity() : Int {
 		//return 0;
@@ -312,6 +327,11 @@ class CCMenuItemLabel extends CCMenuItem {
 		}
 	}
 	
+	override public function getCurrentNode():CCNode 
+	{
+		return this._label;
+	}
+	
 	public static function create(label : CCLabelBMFont, ?selector : Void -> Void, ?target : CCNode) : CCMenuItemLabel {
 		var ret = new CCMenuItemLabel();
 		ret.initWithLabel(label, selector, target);
@@ -341,6 +361,8 @@ class CCMenuItemSprite extends CCMenuItem {
 	var _selectedImage : CCSprite;
 	var _disabledImage : CCSprite;
 	
+	var _currentImage : CCSprite;
+	
 	private function new() {
 		super();
 		
@@ -365,6 +387,7 @@ class CCMenuItemSprite extends CCMenuItem {
 		
 		this._normalImage = normalImage;
 		this.setContentSize(this._normalImage.getContentSize());
+		this._normalImage.setAnchorPoint(this.getAnchorPoint());
 		this._updateImagesVisibility();
 	}
 	
@@ -385,6 +408,7 @@ class CCMenuItemSprite extends CCMenuItem {
         }
 
         this._selectedImage = selectedImage;
+		this._selectedImage.setAnchorPoint(this.getAnchorPoint());
         this._updateImagesVisibility();
 	}
 	
@@ -405,6 +429,7 @@ class CCMenuItemSprite extends CCMenuItem {
         }
 
         this._disabledImage = disabledImage;
+		this._disabledImage.setAnchorPoint(this.getAnchorPoint());
         this._updateImagesVisibility();
 	}
 	
@@ -450,8 +475,10 @@ class CCMenuItemSprite extends CCMenuItem {
 			if (this._selectedImage != null) {
 				this._normalImage.setVisible(false);
 				this._selectedImage.setVisible(true);
+				this._currentImage = _selectedImage;
 			} else {
 				this._normalImage.setVisible(true);
+				this._currentImage = _selectedImage;
 			}
 		}
 	}
@@ -461,6 +488,7 @@ class CCMenuItemSprite extends CCMenuItem {
 		
 		if (this._normalImage != null) {
             this._normalImage.setVisible(true);
+			this._currentImage = _normalImage;
 
             if (this._selectedImage != null) {
                 this._selectedImage.setVisible(false);
@@ -479,6 +507,24 @@ class CCMenuItemSprite extends CCMenuItem {
 		}
 	}
 	
+	override public function setAnchorPoint(point:Point)
+	{
+		super.setAnchorPoint(point);
+		
+		if (_normalImage != null) {
+			this._normalImage.setAnchorPoint(point);
+		}
+		
+		if (_disabledImage != null) {
+			this._disabledImage.setAnchorPoint(point);
+		}
+		
+		if (_selectedImage != null) {
+			this._selectedImage.setAnchorPoint(point);
+		}
+		
+	}
+	
 	private function _updateImagesVisibility() {
 		if (this._isEnabled) {
             if (this._normalImage != null)
@@ -487,6 +533,7 @@ class CCMenuItemSprite extends CCMenuItem {
                 this._selectedImage.setVisible(false);
             if (this._disabledImage != null)
                 this._disabledImage.setVisible(false);
+			this._currentImage = _normalImage;
         } else {
             if (this._disabledImage != null) {
                 if (this._normalImage != null)
@@ -495,6 +542,7 @@ class CCMenuItemSprite extends CCMenuItem {
                     this._selectedImage.setVisible(false);
                 if (this._disabledImage != null)
                     this._disabledImage.setVisible(true);
+				this._currentImage = this._disabledImage;
             } else {
                 if (this._normalImage != null)
                     this._normalImage.setVisible(true);
@@ -502,8 +550,14 @@ class CCMenuItemSprite extends CCMenuItem {
                     this._selectedImage.setVisible(false);
                 if (this._disabledImage != null)
                     this._disabledImage.setVisible(false);
+				this._currentImage = _normalImage;
             }
         }
+	}
+	
+	override public function getCurrentNode():CCNode 
+	{
+		return _currentImage;
 	}
 	
 	public static function create(normalSprite : CCSprite, ?selectedSprite : CCSprite, ?three : CCSprite, ?four : Void -> Void, ?five : CCNode) {
@@ -547,7 +601,7 @@ class CCMenuItemImage extends CCMenuItemSprite {
         return this.initWithNormalSprite(normalSprite, selectedSprite, disabledSprite, selector, target);
 	}
 	
-	public static function create(normalImage : CCSpriteFrame, selectedImage : CCSpriteFrame, ?three : CCSpriteFrame, ?four : Void -> Void, ?five : CCNode) : CCMenuItem {
+	public static function create(?normalImage : CCSpriteFrame, ?selectedImage : CCSpriteFrame, ?three : CCSpriteFrame, ?four : Void -> Void, ?five : CCNode) : CCMenuItemImage {
 		var ret : CCMenuItemImage = new CCMenuItemImage();
 		if (ret.initWithNormalImage(normalImage, selectedImage, three, four, five)) {
 			return ret;
@@ -560,6 +614,8 @@ class CCMenuItemToggle extends CCMenuItem {
 	var _opacity : Int = 0;
 	var _subItems : Array<CCMenuItem>;
 	var _selectedIndex : Int = 0;
+	
+	var _current : CCMenuItem;
 	
 	private function new() {
 		super();
@@ -639,6 +695,7 @@ class CCMenuItemToggle extends CCMenuItem {
 	override public function selected()
 	{
 		super.selected();
+		_current = this._subItems[this._selectedIndex];
 		this._subItems[this._selectedIndex].selected();
 	}
 	
@@ -664,6 +721,11 @@ class CCMenuItemToggle extends CCMenuItem {
 	
 	public function selectedItem() : CCMenuItem {
 		return this._subItems[this._selectedIndex];
+	}
+	
+	override public function getCurrentNode():CCNode 
+	{
+		return this._current.getCurrentNode();
 	}
 	
 	override public function onEnter()

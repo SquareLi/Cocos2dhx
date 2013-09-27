@@ -34,7 +34,7 @@ import flambe.math.Point;
 import flambe.input.KeyboardEvent;
 import cc.platform.CCTypes;
 import cc.touchdispatcher.CCPointerEventDelegate;
-
+import cc.menunodes.CCMenu;
 /**
  * ...
  * @author Ang Li
@@ -146,6 +146,23 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 	}
 	
 	
+	//override public function setAnchorPoint(point:Point)
+	//{
+		//if (Std.is(this, CCMenu)) {
+			//trace("ccmenu ignore");
+		//}
+		//
+		//this._anchorPoint = new Point(0, 0);
+		//this.sprite.anchorX._ = 0;
+		//this.sprite.anchorY._ = _contentSize.height;
+		//
+		//if (!_hasSetPosition) {
+			//
+			//this.setPosition(0, _contentSize.height);
+			//this._hasSetPosition = true;
+		//}
+	//}
+	
 	override public function draw() 
 	{
 		//trace("Layer dras");
@@ -172,8 +189,6 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 		}
 		director.getPointerDispatcher().removePointerDelegate(this);
 		super.onExit();
-		
-		//trace("onExit");
 	}
 	
 	public function onPointerDown(event : CCPointer) : Bool {
@@ -361,6 +376,8 @@ class CCLayerRGBA extends CCLayer {
     public function isOpacityModifyRGB() : Bool{
         return false;
     }
+	
+	
 }
 
 

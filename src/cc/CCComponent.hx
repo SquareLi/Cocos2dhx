@@ -57,6 +57,7 @@ class CCComponent extends Component
 	{
 		super.onRemoved();
 		_node.onExit();
+		//trace("onRemoved");
 	}
 	
 	

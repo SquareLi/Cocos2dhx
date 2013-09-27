@@ -6,6 +6,7 @@ import flambe.math.Rectangle;
 import flambe.swf.Library;
 import flambe.swf.MovieSprite;
 import cc.cocoa.CCGeometry;
+import cc.CCLoader;
 
 /**
  * ...
@@ -131,7 +132,7 @@ class CCSpriteFrame
 	}
 	
 	public function initWithTextureFilename(filename : String, rect : Rectangle, rotated : Bool, offset : Point, originalSize : CCSize) : Bool {
-		this._texture = null;
+		this._texture = new CCTexture2D();
 		this._textureFilname = filename;
 		this._rectInPixels = rect;
 		this._rect = rect;
@@ -140,6 +141,8 @@ class CCSpriteFrame
 		this._offset = offset;
 		this._originalSize = originalSize;
 		this._originalSizeInPixels = originalSize;
+		
+		this._texture.setTexture(CCLoader.pack.getTexture(filename));
 		return true;
 	}
 	

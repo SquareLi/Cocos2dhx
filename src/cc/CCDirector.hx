@@ -180,7 +180,7 @@ class CCDirector
 			CCDirector.s_SharedDirector = new CCDirector();
 			s_SharedDirector.init();
 		}
-		
+		//trace(s_SharedDirector.getWinSize());
 		return CCDirector.s_SharedDirector;
 	}
 	

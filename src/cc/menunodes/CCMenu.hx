@@ -30,8 +30,12 @@ import cc.CCDirector;
 import cc.platform.CCMacro;
 import cc.platform.CCCommon;
 import cc.touchdispatcher.CCPointer;
+import flambe.display.FillSprite;
 import flambe.display.Sprite;
+import flambe.input.PointerEvent;
+import flambe.math.Point;
 import flambe.math.Rectangle;
+import cc.menunodes.CCMenuItem;
 /**
  * <p> Features and Limitation:<br/>
  *  - You can add MenuItem objects in runtime using addChild:<br/>
@@ -53,12 +57,30 @@ class CCMenu extends CCLayer
 	public function new() 
 	{
 		super();
-		this.sprite = new Sprite();
-		this.entity.add(sprite);
-		this.component = new CCComponent(this);
-		this.entity.add(component);
+		//this.sprite = new Sprite();
+		//this.sprite = new FillSprite(0x000000, 0, 0);
+		//this.sprite.setAnchor(0, 0);
+		//this.sprite.y._ = 200;
+		//var f : FillSprite = cast(this.sprite, FillSprite);
+		//sprite.alpha._ = 1;
+		//var f : FillSprite = cast(this.sprite, FillSprite);
+		//f.alpha 
+		//this.entity.add(sprite);
+		//this.component = new CCComponent(this);
+		//this.entity.add(component);
 		//_color = new CCColor3B();
 	}
+	
+	
+	
+	//override public function setAnchorPoint(point:Point)
+	//{
+		//
+		//super.setAnchorPoint(new Point(0, 0));
+		//
+		//this.sprite.anchorX._ = 0;
+		//this.sprite.anchorY._ = _contentSize.height;
+	//}
 	
 	//public function getColor() : CCColor3B {
 		//return this._color;
@@ -111,7 +133,7 @@ class CCMenu extends CCLayer
 			
 			//menu in the center of the screen
 			var winSize : CCSize = CCDirector.getInstance().getWinSize();
-			this.ignoreAnchorPointForPosition(true);
+			//this.ignoreAnchorPointForPosition(true);
 			
 			//this.sprite.getNaturalHeight
 			//this.setCenterAnchor();
@@ -363,7 +385,8 @@ class CCMenu extends CCLayer
 	{
 
 		if (this._state != MENU_STATE_WAITING || !this._visible || !this._enabled) {
-			return false;
+			//trace("false");
+			return true;
 		}
 		
 		var c : CCNode = this._parent;
@@ -387,6 +410,9 @@ class CCMenu extends CCLayer
 	
 	override public function onPointerUp(event:CCPointer):Bool 
 	{
+		if (!_enabled) {
+			return true;
+		}
 		//CCCommon.assert(this._state == MENU_STATE_TRACKING_TOUCH, "[Menu onTouchEnded] -- invalid state");
 		if (this._selectedItem != null) {
 			this._selectedItem.unselected();
@@ -399,6 +425,9 @@ class CCMenu extends CCLayer
 	
 	override public function onPointerDragged(event:CCPointer):Bool 
 	{
+		if (!_enabled) {
+			return true;
+		}
 		//CCCommon.assert(this._state == MENU_STATE_TRACKING_TOUCH, "[Menu onTouchMoved] -- invalid state");
 		var currentItem : CCMenuItem = this._itemForTouch(event);
 		if (currentItem != this._selectedItem) {
@@ -420,6 +449,7 @@ class CCMenu extends CCLayer
 			this._state = MENU_STATE_WAITING;
 			this._selectedItem = null;
 		}
+		//trace("CCMenu onExit");
 		super.onExit();
 	}
 	
@@ -432,7 +462,19 @@ class CCMenu extends CCLayer
 				if (child.isVisible() && child.isEnabled()) {
 					var r : Rectangle = child.rect();
 					//trace(r.toString());
-					if (r.contains(touch.getLocation().x, touch.getLocation().y)) {
+					//r.x = r.x + this._position.x;
+					//r.y = r.y + this._position.y;
+					//trace(r.toString());
+					
+					var temp : CCMenuItemImage = null;
+					var isContain : Bool = false;
+
+					var tempNode : CCNode = child.getCurrentNode();
+					if (tempNode != null) {
+						isContain = tempNode.getSprite().contains(touch.getLocation().x, touch.getLocation().y);
+					}
+					
+					if (isContain) {
 						//trace(touch.getLocation().x);
 						return child;
 					}
@@ -446,14 +488,20 @@ class CCMenu extends CCLayer
 		CCDirector.getInstance().getPointerDispatcher().setPriority(newPriority, this);
 	}
 	
-	public static function create(args : Array<CCMenuItem>) : CCMenu {
+	public static function create(?args : Array<CCMenuItem>) : CCMenu {
 		var ret : CCMenu = new CCMenu();
+		if (args == null) {
+			ret.initWithItems(null);
+			ret.initWithArray([]);
+			return ret;
+		}
 		
 		if (args.length == 0) {
 			ret.initWithItems(null);
 		} 
 		
 		ret.initWithArray(args);
+		
 		return ret;
 	}
 }

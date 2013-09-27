@@ -402,7 +402,7 @@ class CCEaseBounce extends CCActionEase {
 	public function bounceTime(time : Float) : Float{
 		if (time < 1 / 2.75) {
 			return 7.5625 * time * time;
-		} else if (time < 2.75) {
+		} else if (time < 2 / 2.75) {
 			time -= 1.5 / 2.75;
 			return 7.5625 * time * time + 0.75;
 		} else if (time < 2.5 / 2.75) {

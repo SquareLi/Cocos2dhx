@@ -30,7 +30,7 @@ class CCControlButton extends CCControl
     var _titleDispatchTable : Map<Int, String>;
    // var _titleColorDispatchTable:null;
     var _titleLabelDispatchTable : Map<Int, CCNode>;
-    //var _backgroundSpriteDispatchTable:null;
+    var _backgroundSpriteDispatchTable : Map<Int, CCScale9Sprite>;
     var _parentInited : Bool = false;
 
     var _marginV : Float = 0;
@@ -131,7 +131,7 @@ class CCControlButton extends CCControl
         }
 	}
 
-    public function initWithLabelAndBackgroundSprite(label, backgroundSprite) {
+    public function initWithLabelAndBackgroundSprite(label : CCLabelBMFont, backgroundSprite : CCScale9Sprite) {
         if (super.init()) {
             CCCommon.assert(label != null, "node must not be nil");
             CCCommon.assert(label != null || backgroundSprite != null, "");
@@ -587,13 +587,13 @@ class CCControlButton extends CCControl
      *
      * @param {Number} state The state that uses the background sprite. Possible values are described in "CCControlState".
      */
-    getBackgroundSpriteForState:function (state) {
-        var locTable = this._backgroundSpriteDispatchTable;
-        if (locTable.hasOwnProperty(state) && locTable[state]) {
+    public function getBackgroundSpriteForState(state : Int) : CCScale9Sprite{
+        var locTable : Map<Int, CCScale9Sprite> = this._backgroundSpriteDispatchTable;
+        if (locTable.exists(state) && locTable[state] != null) {
             return locTable[state];
         }
-        return locTable[cc.CONTROL_STATE_NORMAL];
-    },
+        return locTable[CONTROL_STATE_NORMAL];
+    }
 
     /**
      * Sets the background sprite to use for the specified button state.
@@ -601,20 +601,20 @@ class CCControlButton extends CCControl
      * @param {Scale9Sprite} sprite The background sprite to use for the specified state.
      * @param {Number} state The state that uses the specified image. The values are described in "CCControlState".
      */
-    setBackgroundSpriteForState:function (sprite, state) {
-        var locTable = this._backgroundSpriteDispatchTable;
-        if (locTable.hasOwnProperty(state)) {
-            var previousSprite = locTable[state];
-            if (previousSprite)
+    public function setBackgroundSpriteForState(sprite : CCScale9Sprite, state : Int) {
+        var locTable : Map<Int, CCScale9Sprite> = this._backgroundSpriteDispatchTable;
+        if (locTable.exists(state)) {
+            var previousSprite : CCScale9Sprite = locTable[state];
+            if (previousSprite != null)
                 this.removeChild(previousSprite, true);
         }
 
-        locTable[state] = sprite;
+        locTable[state] : CCScale9Sprite = sprite;
         sprite.setVisible(false);
-        sprite.setAnchorPoint(cc.p(0.5, 0.5));
+        sprite.setAnchorPoint(new Point(0.5, 0.5));
         this.addChild(sprite);
 
-        var locPreferredSize = this._preferredSize;
+        var locPreferredSize : CCSize = this._preferredSize;
         if (locPreferredSize.width !== 0 || locPreferredSize.height !== 0) {
             sprite.setPreferredSize(locPreferredSize);
         }
@@ -622,7 +622,7 @@ class CCControlButton extends CCControl
         // If the current state if equal to the given state we update the layout
         if (this._state === state)
             this.needsLayout();
-    },
+    }
 
     /**
      * Sets the background spriteFrame to use for the specified button state.
@@ -630,30 +630,25 @@ class CCControlButton extends CCControl
      * @param {SpriteFrame} spriteFrame The background spriteFrame to use for the specified state.
      * @param {Number} state The state that uses the specified image. The values are described in "CCControlState".
      */
-    setBackgroundSpriteFrameForState:function (spriteFrame, state) {
-        var sprite = cc.Scale9Sprite.createWithSpriteFrame(spriteFrame);
-        this.setBackgroundSpriteForState(sprite, state);
-    }
-});
-
-cc.ControlButton.create = function(label, backgroundSprite) {
-    var controlButton;
-    if (arguments.length == 0) {
-        controlButton = new cc.ControlButton();
-        if (controlButton && controlButton.init()) {
-            return controlButton;
-        }
-        return null;
-    } else if (arguments.length == 1) {
-        controlButton = new cc.ControlButton();
-        controlButton.initWithBackgroundSprite(arguments[0]);
-    } else if (arguments.length == 2) {
-        controlButton = new cc.ControlButton();
-        controlButton.initWithLabelAndBackgroundSprite(label, backgroundSprite);
-    } else if (arguments.length == 3) {
-        controlButton = new cc.ControlButton();
-        controlButton.initWithTitleAndFontNameAndFontSize(arguments[0], arguments[1], arguments[2]);
-    }
-    return controlButton;
-	
+    //setBackgroundSpriteFrameForState (spriteFrame, state) {
+        //var sprite = cc.Scale9Sprite.createWithSpriteFrame(spriteFrame);
+        //this.setBackgroundSpriteForState(sprite, state);
+    //}
+	public static function create(?label : CCLabelBMFont, ?backgroundSprite : CCScale9Sprite) : CCControlButton {
+		var ret : CCControlButton = null;
+		if (label == null && backgroundSprite == null) {
+			ret = new CCControlButton();
+			if (ret != null && ret.init()) {
+				return ret;
+			}
+			return null;
+		} else if (label == null && backgroundSprite != null) {
+			ret = new CCControlButton();
+			ret.initWithBackgroundSprite(backgroundSprite);
+			
+		} else if (label != null && backgroundSprite != null) {
+			ret = new CCControlButton();
+			ret.initWithLabelAndBackgroundSprite(label, backgroundSprite);
+		}
+	}
 }

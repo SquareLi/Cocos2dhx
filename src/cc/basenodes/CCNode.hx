@@ -26,6 +26,7 @@ import cc.CCComponent;
 import cc.CCDirector;
 import cc.CCScheduler;
 import cc.cocoa.CCGeometry;
+import cc.extensions.ccbreader.CCBAnimationManager;
 import cc.spritenodes.CCSprite;
 import flambe.animation.AnimatedFloat;
 import flambe.Component;
@@ -38,6 +39,7 @@ import flambe.platform.DummyWeb;
 import cc.platform.CCConfig;
 import cc.platform.CCCommon;
 import flambe.display.FillSprite;
+import cc.menunodes.CCMenu;
 /**
  * 
  * @author Ang Li
@@ -59,10 +61,16 @@ class CCNode
 	
 	public var actions : Array<CCAction>;
 	
+	//CCBReader
+	public var controller : Dynamic;
+	public var animationManager : CCBuilderAnimationManager;
+	
 	//zOrder is not finished. 
 	var _zOrder : Int = 0;  
 	var _vertextZ : Float = 0;
 	var _rotation : Float = 0;
+	var _rotationX : Float = 0;
+	var _rotationY : Float = 0;
 	var _scaleX : Float = 1;
 	var _scaleY : Float = 1;
 	var _position : Point;
@@ -86,8 +94,8 @@ class CCNode
 	var _inverseDirty : Bool = true;
 	var _cacheDirty : Bool = true;
 	var _transformGLDirty : Dynamic;
-	var _transform : Dynamic;
-	var _inverse : Dynamic;
+	var _transform : CCAffineTransform;
+	var _inverse : CCAffineTransform;
 	var _reorderChildDirty : Bool = false;
 	var _shaderProgram : CCActionManager;
 	var _orderOfArrival : Int = 0;
@@ -118,7 +126,7 @@ class CCNode
 		this._children = new Array<CCNode>();
 		
 		
-		_contentSize = director.getWinSize();
+		_contentSize = new CCSize(director.getWinSize().width, director.getWinSize().height);
 		//trace(_contentSize.width);
 		
 		
@@ -234,6 +242,7 @@ class CCNode
 		this._position = new Point(xValue, yValue);
 		sprite.x._ = this._position.x;
 		sprite.y._ = this._position.y;
+		_hasSetPosition = true;
 	}
 	
 	public function getPosition() : Point {
@@ -303,6 +312,11 @@ class CCNode
 	}
 	
 	public function setAnchorPoint(point : Point) {
+		if (isIgnoreAnchorPointForPosition()) {
+			return;
+		}
+		
+		
 		this._anchorPoint.set(point.x, point.y);
 		
 		
@@ -310,12 +324,12 @@ class CCNode
 		var height : Float = this.sprite.getNaturalHeight();
 		
 		
-		sprite.setAnchor(point.x * width, point.y * height);
+		sprite.setAnchor(point.x * width, (1 - point.y) * height);
 	}
 	
 	public function setCenterAnchor() {
-		sprite.centerAnchor();
-		this._anchorPoint.set(sprite.anchorX._, sprite.anchorY._);
+		//sprite.centerAnchor();
+		//this._anchorPoint.set(sprite.anchorX._, sprite.anchorY._);
 	}
 	
 	
@@ -325,6 +339,8 @@ class CCNode
 	
 	public function setContentSize(size : CCSize) {
 		this._contentSize = new CCSize(size.width, size.height);
+		//this.sprite.wSprite = this._contentSize.width;
+		//this.sprite.hSprite = this._contentSize.height;
 	}
 	
 	public function isRunning() : Bool {
@@ -346,10 +362,35 @@ class CCNode
 		return this._ignoreAnchorPointForPosition;
 	}
 	
+	var _hasSetPosition : Bool = false;
 	public function ignoreAnchorPointForPosition(newValue : Bool) {
-		if (newValue != this._ignoreAnchorPointForPosition) {
+		//if (Std.is(this, CCMenu)) {
+			//trace("CCMenu ignore");
+		//}
+		
+		if (newValue) {
 			this._ignoreAnchorPointForPosition = newValue;
-			this.setCenterAnchor();
+			
+			this._anchorPoint = new Point(0, 0);
+			this.sprite.anchorX._ = 0;
+			this.sprite.anchorY._ = _contentSize.height;
+			
+			if (!_hasSetPosition) {
+				this.setPosition(0, _contentSize.height);
+				_hasSetPosition = true;
+			} else {
+				this.setPosition(_position.x, _position.y);
+			}
+			
+			//trace(this._position.y);
+			//trace("ignore");
+				//this._hasSetPosition = true;
+			//if (!_hasSetPosition) {
+				//
+				//
+			//}
+			
+			//this.setCenterAnchor();
 		}
 	}
 	public function getTag() : Int {
@@ -365,12 +406,101 @@ class CCNode
 	}
 	
 	public function getBoundingBoxToWorld() : Rectangle {
-		return null;
+		return Sprite.getBounds(this.entity);
 	}
+	
+	public function nodeToParentTransform() : CCAffineTransform {
+		if (this._transform == null) {
+			this._transform = new CCAffineTransform(1, 0, 0, 1, 0, 0);
+		}
+		
+		if (this._transformDirty) {
+            var t : CCAffineTransform= this._transform;// quick reference
+             //base position
+            t.tx = this._position.x;
+            t.ty = this._position.y;
+
+            //rotation Cos and Sin
+            var Cos = 1, Sin = 0;
+
+            //base abcd
+            t.a = t.d = Cos;
+            t.b = -Sin;
+            t.c = Sin;
+
+            var lScaleX = this._scaleX, lScaleY = this._scaleY;
+            var appX = this._anchorPointInPoints.x, appY = this._anchorPointInPoints.y;
+
+             //Firefox on Vista and XP crashes
+             //GPU thread in case of scale(0.0, 0.0)
+            var sx = (lScaleX < 0.000001 && lScaleX > -0.000001)?  0.000001 : lScaleX,
+                sy = (lScaleY < 0.000001 && lScaleY > -0.000001)? 0.000001 : lScaleY;
+
+           
+
+             //scale
+            if (lScaleX != 1 || lScaleY != 1) {
+                t.a *= sx;
+                t.c *= sx;
+                t.b *= sy;
+                t.d *= sy;
+            }
+
+            //adjust anchorPoint
+            t.tx += Cos * -appX * sx + -Sin * appY * sy;
+            t.ty -= Sin * -appX * sx + Cos * appY * sy;
+
+            //if ignore anchorPoint
+            if (this._ignoreAnchorPointForPosition) {
+                t.tx += appX;
+                t.ty += appY;
+            }
+
+            //if (this._additionalTransformDirty) {
+                //this._transform = cc.AffineTransformConcat(this._transform, this._additionalTransform);
+                //this._additionalTransformDirty = false;
+            //}
+
+            this._transformDirty = false;
+        }
+        return this._transform;
+		
+	}
+	
+	public function parentToNodeTransform() : CCAffineTransform {
+		if (this._inverseDirty) {
+			this._inverse = CCAffineTransform.AffineTransformInvert(this.nodeToParentTransform());
+			this._inverseDirty = false;
+		}
+		
+		return this._inverse;
+	}
+	
+	public function nodeToWorldTransform() : CCAffineTransform {
+		var t = this.nodeToParentTransform();
+		var p : CCNode = this._parent;
+		while (p != null) {
+			t = CCAffineTransform.AffineTransformConcat(t, p.nodeToParentTransform());
+			p = p.getParent();
+		}
+		
+		return t;
+	}
+	
+	public function worldToNodeTransform() : CCAffineTransform {
+		return CCAffineTransform.AffineTransformInvert(this.nodeToWorldTransform());
+	}
+	
+	public function convertToNodeSpace(worldPoint : Point)  : Point {
+		return CCAffineTransform.PointApplyAffineTransform(worldPoint, this.worldToNodeTransform());
+	}
+	
 	
 	public function cleanup() {
 		this.unscheduleAllCallbacks();
-		//trace("cleanup");
+		//this.entity.disposeChildren();
+		this.entity.dispose();
+		
 	}
 	
 	public function description() : String{
@@ -492,6 +622,7 @@ class CCNode
 		
 		this._children.remove(child);
 		this.entity.removeChild(child.getEntity());
+		child.onExit();
 		child._parent = null;
 		
 		//trace(doCleanup);
@@ -578,6 +709,12 @@ class CCNode
 	
 	public function onExit() {
 		this._running = false;
+		
+		if (_children != null) {
+			for (c in _children) {
+				c.onExit();
+			}
+		}
 	}
 	
 	public function runAction(action : CCAction) : CCAction{
@@ -724,6 +861,7 @@ class CCNode
 	public static function create() : CCNode{
 		return new CCNode();
 	}
+	
 }
 
 class CbClass {

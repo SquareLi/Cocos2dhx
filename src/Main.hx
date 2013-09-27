@@ -35,6 +35,7 @@ import cc.CCDirector;
 import cc.action.CCActionInterval;
 import cc.CCLoader;
 import sample.GameLayer;
+import tests.MainScene;
 import tests.TestLabelTTF;
 import tests.TestMenu;
 import sample.SysMenu;
@@ -44,6 +45,7 @@ import tests.TestPartical;
 import tests.TestTileMap;
 import tests.TestCCBreader;
 import tests.TestScale9Sprite;
+import tests.TestEase;
 /**
  * ...
  * @author Ang Li
@@ -53,6 +55,9 @@ class Main
     private static function onSuccess (pack :AssetPack) 
     {
 		AllAssets.pack = pack;
+		
+		//System.root.add(new FillSprite(0xffffff, 320, 576));
+		
 		//var m = MainScreen.getInstance();
 		//System.root.addChild(new Entity().add(m));
 		/*var name = neko.Sys.args()[0];
@@ -85,7 +90,7 @@ class Main
 		
 		//Run Menu test
 		//var t : TestMenu = new TestMenu();
-		//t.runTest();
+		//TestMenu.runTest();
 		
 
 		//var director : CCDirector = CCDirector.getInstance();
@@ -102,10 +107,13 @@ class Main
 		//test.run();
 		
 		//System.root.add(new FillSprite(0xffffff, 320, 576));
-		//TestCCBreader.run();
+		//var s = Type.createInstance(Type.resolveClass("tests.MainScene"), []);
 		
-		System.root.add(new FillSprite(0xffffff, 320, 576));
-		TestScale9Sprite.run();
+
+		TestCCBreader.run();
+		//TestEase.run();
+		
+		//TestScale9Sprite.run();
     }
 
     private static function main () 

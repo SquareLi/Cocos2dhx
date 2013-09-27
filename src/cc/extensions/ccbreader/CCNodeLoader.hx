@@ -1,5 +1,6 @@
 package cc.extensions.ccbreader;
 import cc.basenodes.CCNode;
+import cc.menunodes.CCMenuItem;
 import cc.platform.CCCommon;
 import cc.extensions.ccbreader.CCBReader;
 import cc.extensions.ccbreader.CCNodeLoaderLibrary;
@@ -45,6 +46,7 @@ class CCNodeLoader
 	}
 	
 	public function parseProperties(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader) {
+		
 		var numRegularProps = ccbReader.readInt(false);
 		//trace(numRegularProps);
 		var numExturaProps = ccbReader.readInt(false);
@@ -54,6 +56,7 @@ class CCNodeLoader
 		for (i in 0...propertyCount) {
 			var isExtraProp : Bool = (i >= numRegularProps);
 			var type = ccbReader.readInt(false);
+			//trace("type = " + type);
 			var propertyName = ccbReader.readCachedString();
 			
 			var setProp = false;
@@ -228,7 +231,6 @@ class CCNodeLoader
 	
 	private function _createCCNode(parent : CCNode, ccbReader : CCBuilderReader) : CCNode {
 		var ret : CCNode = CCNode.create();
-		ret.setTag(100);
 		return ret;
 	}
 	
@@ -236,20 +238,35 @@ class CCNodeLoader
 		var x = ccbReader.readFloat();
 		var y = ccbReader.readFloat();
 		
-		//trace(x + "," + y);
+		//trace('x = $x, y = $y');
+		
 		
 		var type = ccbReader.readInt(false);
 		
 		var containerSize : CCSize = ccbReader.getAnimationManager().getContainerSize(parent);
+		
+		//trace('width = ${containerSize.width}, height = ${containerSize.height}');
 		var pt = CCBRelativePositioning._getAbsolutePosition(x, y, type, containerSize, propertyName);
-		var p = CCBRelativePositioning.getAbsolutePosition(pt, type, containerSize, propertyName);
-		node.setPosition(p.x, p.y);
+		//var p = CCBRelativePositioning.getAbsolutePosition(pt, type, containerSize, propertyName);
+		
+		//var p : Point = new Point(pt.x, containerSize.height - pt.y);
+		
+		//p.y = containerSize.height - p.y;
+		node.setPosition(pt.x, pt.y);
+		//trace('pt.x = ${pt.x}, pt.y = ${pt.y}');
+		//trace('p.x = ${p.x}, p.y = ${p.y}');
+		
+		
 		
 		if (CCScheduler.ArrayGetIndexOfValue(ccbReader.getAnimatedProperties(), propertyName) > -1) {
 			var typeFloat = Std.parseFloat(Std.string(type));
 			var baseValue = [x, y, typeFloat];
 			ccbReader.getAnimationManager().setBaseValue(baseValue, node, propertyName);
 		}
+		//trace(pt);
+		
+		//trace('pt.x = ${pt.x}, pt.y = ${pt.y}');
+		//trace('p.x = ${p.x}, p.y = ${p.y}');
 		return pt;
 	}
 	
@@ -366,7 +383,7 @@ class CCNodeLoader
     }
 
     public function parsePropTypeSpriteFrame(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader, propertyName : String) : CCSpriteFrame{
-        trace("sprite frame");
+        //trace("sprite frame");
 		var spriteSheet = ccbReader.readCachedString();
         var spriteFile : String =  ccbReader.readCachedString();
 
@@ -508,107 +525,47 @@ class CCNodeLoader
     }
 
     public function parsePropTypeBlock(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader) {
-        //var selectorName = ccbReader.readCachedString();
-        //var selectorTarget = ccbReader.readInt(false);
-//
-        //if (selectorTarget != CCBReader.CCB_TARGETTYPE_NONE) {
-            //var target = null;
-            //if(!ccbReader.isJSControlled()) {
-                //if (selectorTarget == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT) {
-                    //target = ccbReader.getAnimationManager().getRootNode();
-                //} else if (selectorTarget == CCBReader.CCB_TARGETTYPE_OWNER) {
-                    //target = ccbReader.getOwner();
-                //}
-//
-                //if (target != null) {
-                    //if (selectorName.length > 0) {
-                        //var selMenuHandler = 0;
-//
-                        //var targetAsCCBSelectorResolver = target;
-                        //if (target != null && target.onResolveCCBCCMenuItemSelector)
-                            //selMenuHandler = target.onResolveCCBCCMenuItemSelector(target, selectorName);
-//
-                        //if (selMenuHandler == 0) {
-                            //var ccbSelectorResolver = ccbReader.getCCBSelectorResolver();
-                            //if (ccbSelectorResolver != null)
-                                //selMenuHandler = ccbSelectorResolver.onResolveCCBCCMenuItemSelector(target, selectorName);
-                        //}
-//
-                        //if (selMenuHandler == 0) {
-                            //trace("Skipping selector '" +selectorName+ "' since no CCBSelectorResolver is present.");
-                        //} else {
-                            //return new BlockData(selMenuHandler,target);
-                        //}
-                    //} else {
-                        //trace("Unexpected empty selector.");
-                    //}
-                //} else {
-                    //trace("Unexpected NULL target for selector.");
-                //}
-            //} else {
-                //if(selectorTarget == CCB_TARGETTYPE_DOCUMENTROOT){
-                    //ccbReader.addDocumentCallbackNode(node);
-                    //ccbReader.addDocumentCallbackName(selectorName);
-                    //ccbReader.addDocumentCallbackControlEvents(0);
-                //} else {
-                    //ccbReader.addOwnerCallbackNode(node);
-                    //ccbReader.addOwnerCallbackName(selectorName);
-                //}
-            //}
-        //}
+        var selectorName = ccbReader.readCachedString();
+        var selectorTarget = ccbReader.readInt(false);
+		
+		//trace(selectorName + ", " + selectorTarget);
+
+        if (selectorTarget != CCBReader.CCB_TARGETTYPE_NONE) {
+            var target = null;
+           
+			//if(selectorTarget == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT){
+				//ccbReader.addDocumentCallbackNode(node);
+				//ccbReader.addDocumentCallbackName(selectorName);
+				//ccbReader.addDocumentCallbackControlEvents(0);
+			//} else {
+				//ccbReader.addOwnerCallbackNode(node);
+				//ccbReader.addOwnerCallbackName(selectorName);
+			//}
+			var mi : CCMenuItem = cast (node, CCMenuItem);
+			mi.setCallback(Reflect.field(ccbReader.getController(), selectorName), node);
+            
+        }
         return null;
     }
 
     public function parsePropTypeBlockCCControl(node : CCNode, parent : CCNode, ccbReader : CCBuilderReader) {
-        //var selectorName = ccbReader.readCachedString();
-        //var selectorTarget = ccbReader.readInt(false);
-        //var controlEvents = ccbReader.readInt(false);
-//
+        var selectorName = ccbReader.readCachedString();
+        var selectorTarget = ccbReader.readInt(false);
+        var controlEvents = ccbReader.readInt(false);
+
         //if (selectorTarget != CCBReader.CCB_TARGETTYPE_NONE) {
-            //if(!ccbReader.isJSControlled()){
-                //var target = null;
-                //if (selectorTarget == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT) {
-                    //target = ccbReader.getAnimationManager().getRootNode();
-                //} else if (selectorTarget == CCBReader.CCB_TARGETTYPE_OWNER) {
-                    //target = ccbReader.getOwner();
-                //}
-//
-                //if (target != null) {
-                    //if (selectorName.length > 0) {
-                        //var selCCControlHandler = 0;
-//
-                        //if (target != null && target.onResolveCCBCCControlSelector) {
-                            //selCCControlHandler = target.onResolveCCBCCControlSelector(target, selectorName);
-                        //}
-                        //if (selCCControlHandler == 0) {
-                            //var ccbSelectorResolver = ccbReader.getCCBSelectorResolver();
-                            //if (ccbSelectorResolver != null) {
-                                //selCCControlHandler = ccbSelectorResolver.onResolveCCBCCControlSelector(target, selectorName);
-                            //}
-                        //}
-//
-                        //if (selCCControlHandler == 0) {
-                            //trace("Skipping selector '" + selectorName + "' since no CCBSelectorResolver is present.");
-                        //} else {
-                            //return new BlockCCControlData(selCCControlHandler,target,controlEvents);
-                        //}
-                    //} else {
-                        //trace("Unexpected empty selector.");
-                    //}
-                //} else {
-                    //trace("Unexpected NULL target for selector.");
-                //}
-            //} else {
-                //if(selectorTarget == CCB_TARGETTYPE_DOCUMENTROOT){
+            //if (!ccbReader.isJSControlled()) {
+				//
+			//} else if(selectorTarget == CCBReader.CCB_TARGETTYPE_DOCUMENTROOT){
                     //ccbReader.addDocumentCallbackNode(node);
                     //ccbReader.addDocumentCallbackName(selectorName);
                     //ccbReader.addDocumentCallbackControlEvents(controlEvents);
-                //} else {
+            //} else{
                     //ccbReader.addOwnerCallbackNode(node);
                     //ccbReader.addOwnerCallbackName(selectorName);
-                //}
-            //}
+			//}
         //}
+        
         return null;
     }
 
@@ -651,6 +608,7 @@ class CCNodeLoader
     public function onHandlePropTypePosition(node : CCNode, parent : CCNode, propertyName : String, position : Point, ccbReader : CCBuilderReader) {
         if (propertyName == PROPERTY_POSITION) {
             node.setPosition(position.x, position.y);
+			//trace(position);
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
         }
@@ -658,13 +616,8 @@ class CCNodeLoader
 
     public function onHandlePropTypePoint(node : CCNode, parent : CCNode, propertyName : String, position : Point, ccbReader : CCBuilderReader) {
         if (propertyName == PROPERTY_ANCHORPOINT) {
-			//if (position.x == 0.5 && position.y == 0.5) {
-				//node.setCenterAnchor();
-				//trace("center");
-			//} else {
-				//
-			//}
-			node.setAnchorPoint(position);
+			var p : Point = new Point(position.x, position.y);
+			node.setAnchorPoint(p);
             
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
@@ -783,16 +736,16 @@ class CCNodeLoader
         // It may be a custom property, add it to custom property dictionary.
         this._customProperties.setObject(strValue, propertyName);
     }
-    public function onHandlePropTypeText(node : CCNode, parent : CCNode, propertyName : String, textValue : Dynamic, ccbReader : CCBuilderReader) {
+    public function onHandlePropTypeText(node : CCNode, parent : CCNode, propertyName : String, textValue : String, ccbReader : CCBuilderReader) {
         ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
     }
-    public function onHandlePropTypeFontTTF(node : CCNode, parent : CCNode, propertyName : String, fontTTF : Dynamic, ccbReader : CCBuilderReader) {
+    public function onHandlePropTypeFontTTF(node : CCNode, parent : CCNode, propertyName : String, fontTTF : String, ccbReader : CCBuilderReader) {
         ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
     }
-    public function onHandlePropTypeBlock(node : CCNode, parent : CCNode, propertyName : String, blockData : Dynamic, ccbReader : CCBuilderReader) {
+    public function onHandlePropTypeBlock(node : CCNode, parent : CCNode, propertyName : String, blockData : BlockData, ccbReader : CCBuilderReader) {
         ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
     }
-    public function onHandlePropTypeBlockCCControl(node : CCNode, parent : CCNode, propertyName : String, blockCCControlData : Dynamic, ccbReader : CCBuilderReader) {
+    public function onHandlePropTypeBlockCCControl(node : CCNode, parent : CCNode, propertyName : String, blockCCControlData : BlockCCControlData, ccbReader : CCBuilderReader) {
         ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
     }
     public function onHandlePropTypeCCBFile(node : CCNode, parent : CCNode, propertyName : String, ccbFilenode : Dynamic, ccbReader : CCBuilderReader) {
@@ -814,9 +767,22 @@ class CCNodeLoader
 }
 
 class BlockData {
-	
+	public var selMenuHander : Void -> Void;
+	public var target : CCNode;
+	public function new(selMenuHander : Void -> Void, target : CCNode) {
+		this.selMenuHander = selMenuHander;
+		this.target = target;
+	}
 }
 
 class BlockCCControlData {
+	public var selMenuHander : Void -> Void;
+	public var target : CCNode;
+	public var controlEvents : Dynamic;
 	
+	public function new(selMenuHander : Void -> Void, target : CCNode, controlEvents : Dynamic) {
+		this.selMenuHander = selMenuHander;
+		this.target = target;
+		this.controlEvents = controlEvents;
+	}
 }

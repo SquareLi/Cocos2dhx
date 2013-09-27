@@ -21,13 +21,13 @@ class CCNodeLoaderLibrary
         //this.registerCCNodeLoader("CCLayerColor", cc.LayerColorLoader.loader());
         //this.registerCCNodeLoader("CCLayerGradient", cc.LayerGradientLoader.loader());
         this.registerCCNodeLoader("CCSprite", CCSpriteLoader.loader());
-        //this.registerCCNodeLoader("CCLabelBMFont", cc.LabelBMFontLoader.loader());
+        this.registerCCNodeLoader("CCLabelBMFont", CCLabelBMFontLoader.loader());
         //this.registerCCNodeLoader("CCLabelTTF", cc.LabelTTFLoader.loader());
         //this.registerCCNodeLoader("CCScale9Sprite", cc.Scale9SpriteLoader.loader());
         //this.registerCCNodeLoader("CCScrollView", cc.ScrollViewLoader.loader());
         //this.registerCCNodeLoader("CCBFile", cc.BuilderFileLoader.loader());
-        //this.registerCCNodeLoader("CCMenu", cc.MenuLoader.loader());
-        //this.registerCCNodeLoader("CCMenuItemImage", cc.MenuItemImageLoader.loader());
+        this.registerCCNodeLoader("CCMenu", CCMenuLoader.loader());
+        this.registerCCNodeLoader("CCMenuItemImage", CCMenuItemImageLoader.loader());
         //this.registerCCNodeLoader("CCControlButton", cc.ControlButtonLoader.loader());
         //this.registerCCNodeLoader("CCParticleSystemQuad", cc.ParticleSystemQuadLoader.loader());
 	}
