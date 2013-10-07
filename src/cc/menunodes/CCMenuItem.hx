@@ -378,7 +378,10 @@ class CCMenuItemSprite extends CCMenuItem {
 		}
 		
 		if (normalImage != null) {
+			
+			//trace('normalImage = ${normalImage.getSprite().getNaturalHeight()}');
 			this.addChild(normalImage, 0, CCMenuItem.NORMAL_TAG);
+		
 		}
 		
 		if (this._normalImage != null) {

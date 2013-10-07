@@ -128,7 +128,7 @@ class CCMenu extends CCLayer
      */
 	public function initWithArray(arrayOfItems : Array<CCMenuItem>) : Bool{
 		if (this.init()) {
-			this.registerWithTouchDispatcher();
+			//this.registerWithTouchDispatcher();
 			this._enabled = true;
 			
 			//menu in the center of the screen
@@ -377,11 +377,11 @@ class CCMenu extends CCLayer
 	
 	override public function registerWithTouchDispatcher()
 	{
-		super.registerWithTouchDispatcher();
+		//super.registerWithTouchDispatcher();
 		CCDirector.getInstance().getPointerDispatcher().addPointerDelegate(this, MENU_HANDLER_PRIORITY);
 	}
 	
-	override public function onPointerDown(event:CCPointer):Bool 
+	@:keep override public function onPointerDown(event:CCPointer):Bool 
 	{
 
 		if (this._state != MENU_STATE_WAITING || !this._visible || !this._enabled) {
@@ -408,7 +408,7 @@ class CCMenu extends CCLayer
 		return false;
 	}
 	
-	override public function onPointerUp(event:CCPointer):Bool 
+	@:keep override public function onPointerUp(event:CCPointer):Bool 
 	{
 		if (!_enabled) {
 			return true;
@@ -423,7 +423,7 @@ class CCMenu extends CCLayer
 		return true;
 	}
 	
-	override public function onPointerDragged(event:CCPointer):Bool 
+	@:keep override public function onPointerDragged(event:CCPointer):Bool 
 	{
 		if (!_enabled) {
 			return true;
@@ -439,6 +439,11 @@ class CCMenu extends CCLayer
 				this._selectedItem.selected();
 			}
 		}
+		return true;
+	}
+	
+	@:keep override public function onPointerMoved(event:CCPointer):Bool 
+	{
 		return true;
 	}
 	

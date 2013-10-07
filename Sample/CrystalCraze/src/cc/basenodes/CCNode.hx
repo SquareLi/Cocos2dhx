@@ -243,6 +243,7 @@ class CCNode
 		sprite.x._ = this._position.x;
 		sprite.y._ = this._position.y;
 		_hasSetPosition = true;
+		//trace(sprite.getNaturalHeight());
 	}
 	
 	public function getPosition() : Point {
@@ -311,20 +312,26 @@ class CCNode
 		return new Point(this._anchorPoint.x, this._anchorPoint.y);
 	}
 	
+	public var isOriginTopLeft : Bool = true;
+	
 	public function setAnchorPoint(point : Point) {
 		if (isIgnoreAnchorPointForPosition()) {
 			return;
 		}
 		
+		this._anchorPoint = new Point(point.x, point.y);
 		
-		this._anchorPoint.set(point.x, point.y);
 		
 		
 		var width : Float = this.sprite.getNaturalWidth();
 		var height : Float = this.sprite.getNaturalHeight();
 		
+		if (isOriginTopLeft) {
+			sprite.setAnchor(this._anchorPoint.x * width, this._anchorPoint.y * height);
+		} else {
+			sprite.setAnchor(this._anchorPoint.x * width, (1 - this._anchorPoint.y) * height);
+		}
 		
-		sprite.setAnchor(point.x * width, (1 - point.y) * height);
 	}
 	
 	public function setCenterAnchor() {

@@ -3,6 +3,7 @@ import cc.basenodes.CCNode;
 import cc.extensions.ccbreader.CCBAnimationManager;
 import cc.layersscenestransitionsnodes.CCLayer;
 import cc.CCDirector;
+import cc.menunodes.CCMenu;
 /**
  * ...
  * @author Ang Li
@@ -20,6 +21,8 @@ import cc.CCDirector;
 	
 	@:keep public function onDidLoadFromCCB() {
 		this.rootNode.animationManager.setCompletedAnimationCallback(rootNode, this.onAnimationComplete);	
+		
+		
 	}
 	
 	@:keep public function onPressDone() {

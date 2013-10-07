@@ -7,7 +7,7 @@ id: com.angli
 main: com.angli.Main
 
 # The platform to use when invoking `run` or `build` with no arguments
-default_platform: html
+default_platform: flash
 
 # Additional flags to pass to the Haxe compiler
 # haxe_flags: -lib nape -D foobar

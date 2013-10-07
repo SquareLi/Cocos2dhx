@@ -232,7 +232,6 @@ class CCBuilderReader {
 			parentSize = CCDirector.getInstance().getWinSize();
 		}
 		
-		//var path =
 		var data = CCFileUtils.getInstance().getFileData(ccbFileName);
 		
 		return this.readNodeGraphFromData(data, owner, parentSize, animationManager);

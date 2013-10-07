@@ -191,19 +191,19 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 		super.onExit();
 	}
 	
-	public function onPointerDown(event : CCPointer) : Bool {
+	@:keep public dynamic function onPointerDown(event : CCPointer) : Bool {
 		return false;
 	}
 	
-	public function onPointerDragged(event : CCPointer) : Bool {
+	@:keep public dynamic function onPointerDragged(event : CCPointer) : Bool {
 		return false;
 	}
 	
-	public function onPointerMoved(event : CCPointer) : Bool {
+	@:keep public dynamic function onPointerMoved(event : CCPointer) : Bool {
 		return false;
 	}
 	
-	public function onPointerUp(event : CCPointer) : Bool {
+	@:keep public dynamic function onPointerUp(event : CCPointer) : Bool {
 		return false;
 	}
 	

@@ -155,6 +155,9 @@ class CCLabelBMFont extends CCNode
         //}
         if (!fromUpdate) {
 			this._spriteText.text = this._string;
+			this._contentSize.width = this._spriteText.getNaturalWidth();
+			this._contentSize.height = this._spriteText.getNaturalHeight();
+			this.setAnchorPoint(this._anchorPoint);
         }
     }
 
@@ -236,13 +239,24 @@ class CCLabelBMFont extends CCNode
     public function setFntFile(fntFile : String) {
         this._font = new Font(CCLoader.pack, fntFile);
 		if (this._spriteText == null) {
+		
 			this.sprite = new TextSprite(_font);
 			this._spriteText = cast(sprite, TextSprite);
 			//this._spriteText.align = getAlign(alignment);
 			//this._spriteText.wrapWidth._ = width;
 			
-			this._contentSize.width = this.sprite.getNaturalWidth();
-			this._contentSize.height = this.sprite.getNaturalHeight();
+			this._contentSize.width = this._spriteText.getNaturalWidth();
+			this._contentSize.height = this._spriteText.getNaturalHeight();
+			this.setAnchorPoint(this._anchorPoint);
+			this.setPosition(this._position.x, this._position.y);
+			//trace(this._anchorPoint);
+			//trace(this._position);
+			//trace(this._contentSize);
+			
+			
+			this.component = new CCComponent(this);
+			this.entity.add(this.sprite);
+			this.entity.add(this.component);
 		}
 		this._spriteText.font = this._font;
     }

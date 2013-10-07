@@ -206,6 +206,8 @@ class CCMenuItemImageLoader extends CCMenuItemLoader {
             if (spriteFrame != null) {
 				var n : CCMenuItemImage = cast (node, CCMenuItemImage);
                 n.setNormalSpriteFrame(spriteFrame);
+				//trace("setNormal");
+				//trace(spriteFrame.getTexture().);
             }
         } else if (propertyName == PROPERTY_SELECTEDDISPLAYFRAME) {
             if (spriteFrame != null) {
@@ -258,7 +260,7 @@ class CCLabelBMFontLoader extends CCNodeLoader {
 
 	override public function onHandlePropTypeByte(node:CCNode, parent:CCNode, propertyName:String, byteValue:Int, ccbReader:CCBuilderReader)
 	{
-		trace(CCDirector.getInstance().getWinSize());
+		//trace(CCDirector.getInstance().getWinSize());
 		if (propertyName == CCSpriteLoader.PROPERTY_OPACITY) {
             node.setOpacity(byteValue);
         } else {

@@ -29,12 +29,12 @@ package cc.touchdispatcher;
 
 interface CCPointerEventDelegate
 {
-	public function onPointerDown(event : CCPointer) : Bool;
+	@:keep public dynamic function onPointerDown(event : CCPointer) : Bool;
 	
-	public function onPointerDragged(event : CCPointer) : Bool;
+	@:keep public dynamic function onPointerDragged(event : CCPointer) : Bool;
 	
-	public function onPointerMoved(event : CCPointer) : Bool;
+	@:keep public dynamic function onPointerMoved(event : CCPointer) : Bool;
 	
-	public function onPointerUp(event : CCPointer) : Bool;
+	@:keep public dynamic function onPointerUp(event : CCPointer) : Bool;
 
 }

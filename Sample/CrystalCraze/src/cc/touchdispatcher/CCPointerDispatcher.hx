@@ -28,6 +28,9 @@ import flambe.System;
 import cc.CCDirector;
 import cc.CCScheduler;
 
+import cc.menunodes.CCMenu;
+import cc.layersscenestransitionsnodes.CCLayer;
+
 /**
  * ...
  * @author Ang Li
@@ -69,6 +72,8 @@ class CCPointerDispatcher
 	}
 	
 	public function forceAddHandler(handler : CCPointerHandler, array : Array<CCPointerHandler>) : Array<CCPointerHandler> {
+		
+		
 		
 		
 		var u = 0;
@@ -136,17 +141,23 @@ class CCPointerDispatcher
 		var c : Int = 1;
 		var b : Bool = false;
 		for (h in this._pointerDelegateHandlers) {
+			
 			switch(index) {
 				case 0:
-					b = h.getDelegate().onPointerDown(pointerObj);
+					Reflect.callMethod(h.getDelegate(), Reflect.field(h.getDelegate(), "onPointerDown"), [pointerObj]);
 					//trace(this._pointerDelegateHandlers.length);
 				case 3:
-					b = h.getDelegate().onPointerUp(pointerObj);
+					Reflect.callMethod(h.getDelegate(), Reflect.field(h.getDelegate(), "onPointerUp"), [pointerObj]);
 				case 1:
 					if (this._pointerPressed) {
-						b = h.getDelegate().onPointerDragged(pointerObj);
+						Reflect.callMethod(h.getDelegate(), Reflect.field(h.getDelegate(), "onPointerDragged"), [pointerObj]);
 					} else {
-						b = h.getDelegate().onPointerMoved(pointerObj);
+						if ( Reflect.field(h.getDelegate(), "onPointerMoved") == null) {
+							trace("null");
+						} else {
+							Reflect.callMethod(h.getDelegate(), Reflect.field(h.getDelegate(), "onPointerMoved"), [pointerObj]);
+						}
+						//b = h.getDelegate().onPointerMoved(pointerObj);
 					}
 			}
 			if (b) {

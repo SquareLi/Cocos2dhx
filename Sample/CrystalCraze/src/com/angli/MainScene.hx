@@ -12,6 +12,7 @@ import cc.extensions.ccbreader.CCBReader;
 import cc.CCDirector;
 import cc.particlenodes.CCParticleSystem;
 import cc.spritenodes.CCSpriteFrameCache;
+import cc.layersscenestransitionsnodes.CCScene;
 /**
  * ...
  * @author Ang Li
@@ -37,9 +38,7 @@ import cc.spritenodes.CCSpriteFrameCache;
 	public function new() 
 	{
 		star = null;
-		fallingGems = new Array<Gem>();
-		trace("ctor");
-		
+		fallingGems = new Array<Gem>();	
 	}
 	
 	@:keep public function onDidLoadFromCCB() {
@@ -49,6 +48,8 @@ import cc.spritenodes.CCSpriteFrameCache;
 		this.menuSelection = kMenuSelectionNone;
 		this.lblLastScore.setString('$gLastScore');
 		//this.rootNode = animationManager.getRootNode();
+		
+		this.rootNode.animationManager.setCompletedAnimationCallback(this, this.onAnimationComplete);
 		
 		this.rootNode.schedule(this.onUpdate, 0.01);
 		
@@ -62,48 +63,38 @@ import cc.spritenodes.CCSpriteFrameCache;
 	}
 	@:keep public function onPressPlay() {
 		this.menuSelection = kMenuSelectionPlay;
-	}
-	@:keep public function fuck() {
-		if (menu == null) {
-			trace("menu is null");
-		} else {
-			trace("menu is not null");
+		this.rootNode.animationManager.runAnimationsForSequenceNamed("Outro");
+
+		//gAudioEngine.playEffect("sounds/click.wav");
+
+		// Fade out gems
+		for (i in 0...this.fallingGems.length)
+		{
+			var gem = this.fallingGems[i];
+			gem.sprt.runAction(CCFadeOut.create(0.5));
 		}
+		
 	}
 	
 	@:keep public function onPressAbout() {
-		trace("onPressAbout");
-		
-		if (menu == null) {
-			trace("menu is null");
-		}
 		this.menu.setEnabled(false);
 		
 		var aboutNode : CCNode = CCBuilderReader.load("crystal/AboutScene.ccbi", null, null, "crystal/");
 
 		this.rootNode.addChild(aboutNode, 10);
-		trace("about");
 	}
 	
 	@:keep public function onAnimationComplete() {
-		//if (this.menuSelection == kMenuSelectionPlay)
-		//{
-			//var scene = CCBuilderReader.loadAsScene("GameScene.ccbi");
-			//cc.Director.getInstance().replaceScene(scene);
+		if (this.menuSelection == kMenuSelectionPlay)
+		{
+			var scene : CCScene = CCBuilderReader.loadAsScene("crystal/GameScene.ccbi", null, null, "crystal/");
+			CCDirector.getInstance().replaceScene(scene);
 			//gAudioEngine.stopMusic();
-		//}
+		}
 	}
 	
 	var isNull : Bool = false;
 	@:keep public function onUpdate() {
-		
-		//if (this.menu != null) {
-			//trace("menu is no null");
-		//}
-		if (!isNull && this.menu == null ) {
-			trace("menu is null!!!");
-			isNull = true;
-		}
 		
 		var kGemSize : Float = 80;
 		

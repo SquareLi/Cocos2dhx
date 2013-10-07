@@ -59,7 +59,7 @@ class CCBuilderAnimationManager {
     var _keyframeCallFuncs : Map<String, CCCallFunc>;
 
     var _animationCompleteCallbackFunc : Void -> Void;
-    var _target : CCNode;
+    var _target : Dynamic;
 	var _jsControlled : Bool = false;
 	public function new() {
 		this._rootContainerSize = new CCSize(0, 0);
@@ -374,12 +374,12 @@ class CCBuilderAnimationManager {
 		this.runAnimationsForSequenceIdTweenDuration(nSeqId, tweenDuration);
 	}
 	
-	public function setAnimationCompletedCallback(target : CCNode,callbackFunc : Void -> Void){
+	public function setAnimationCompletedCallback(target : Dynamic,callbackFunc : Void -> Void){
         this._target = target;
         this._animationCompleteCallbackFunc = callbackFunc;
     }
 
-    public function setCompletedAnimationCallback(target : CCNode,callbackFunc : Void -> Void){
+    public function setCompletedAnimationCallback(target : Dynamic,callbackFunc : Void -> Void){
         this.setAnimationCompletedCallback(target,callbackFunc);
     }
 	
@@ -658,8 +658,9 @@ class CCBuilderAnimationManager {
         if (this._delegate != null)
             this._delegate.completedAnimationSequenceNamed(locRunningSequence.getName());
 
-        if(this._target != null && this._animationCompleteCallbackFunc != null){
-            this._animationCompleteCallbackFunc();
+        if (this._target != null && this._animationCompleteCallbackFunc != null) {
+			Reflect.callMethod(this._target, _animationCompleteCallbackFunc, []);
+            //this._animationCompleteCallbackFunc();
         }
 
         var nextSeqId = locRunningSequence.getChainedSequenceId();

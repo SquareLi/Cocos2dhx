@@ -35,7 +35,7 @@ import cc.extensions.ccbreader.CCBReader;
 	var kBoardWidth : Int = 8;
 	var kBoardHeight : Int = 10;
 	var kNumTotalGems : Int;
-	var kTimeBetweenGemAdds : Float = 8;
+	var kTimeBetweenGemAdds : Float = 3;
 	var kTotalGameTime : Float = 60000;
 	var kIntroTime : Float = 1800;
 	var kNumRemovalFrames : Int = 8;
@@ -56,7 +56,7 @@ import cc.extensions.ccbreader.CCBReader;
 	var gBoard : Array<Int>;
 	var gBoardSprites : Array<CCSprite>;
 	var gNumGemsInColumn : Array<Int>;
-	var gTimeSinceAddInColumn : Array<Int>;
+	var gTimeSinceAddInColumn : Array<Float>;
 	var gScore : Int;
 
 	var gLastTakenGemTime : Float ;
@@ -99,7 +99,7 @@ import cc.extensions.ccbreader.CCBReader;
 		gBoardSprites = new Array<CCSprite>();
 
 		gNumGemsInColumn = new Array<Int>();
-		gTimeSinceAddInColumn = new Array<Int>();
+		gTimeSinceAddInColumn = new Array<Float>();
 		
 		for (x in 0...kBoardWidth)
 		{
@@ -124,7 +124,7 @@ import cc.extensions.ccbreader.CCBReader;
 		if (y < 0 || y >= kBoardHeight) return;
 
 		var idx : Int = x + y*kBoardWidth;
-
+		//trace('type = ${gBoard[idx]}');
 		 //Make sure that the gems type match
 		if (gBoard[idx] != gemType) return;
 
@@ -161,7 +161,7 @@ import cc.extensions.ccbreader.CCBReader;
 
 		var connected : Array<Int> = findConnectedGems(x,y);
 		var removedGems : Bool = false;
-
+		//trace(connected.length);
 		if (connected.length >= 3)
 		{
 			gBoardChangedSinceEvaluation = true;
@@ -191,7 +191,7 @@ import cc.extensions.ccbreader.CCBReader;
 				gBoardSprites[idx] = null;
 
 				 //Add particle effect
-				var particle : CCParticleSystem = CCParticleSystem.create("crystal/particles/taken-gem.plist");
+				var particle : CCParticleSystem = CCParticleSystem.create("crystal/particles/taken-gem");
 				particle.setPosition(gemX * kGemSize+kGemSize/2, gemY*kGemSize+kGemSize/2);
 				//particle.setAutoRemoveOnFinish(true);
 				gParticleLayer.addChild(particle);
@@ -201,13 +201,13 @@ import cc.extensions.ccbreader.CCBReader;
 				{
 					gBoard[idx] = kBoardTypePup0;
 
-					var sprt : CCSprite = CCSprite.create("crystal/crystals/bomb.png");
+					var sprt : CCSprite = CCSprite.createWithSpriteFrameName("crystals/bomb.png");
 					sprt.setPosition(Std.parseFloat('${gemX*kGemSize}'), Std.parseFloat('${gemY*kGemSize}'));
 					sprt.setAnchorPoint(new Point(0,0));
 					sprt.setOpacity(0);
 					sprt.runAction(CCFadeIn.create(0.4));
 
-					var sprtGlow :CCSprite = CCSprite.create("crystal/crystals/bomb-hi.png");
+					var sprtGlow :CCSprite = CCSprite.createWithSpriteFrameName("crystals/bomb-hi.png");
 					sprtGlow.setAnchorPoint(new Point(0,0));
 					sprtGlow.setOpacity(0);
 					sprtGlow.runAction(CCRepeatForever.create(CCSequence.create([CCFadeIn.create(0.4),CCFadeOut.create(0.4)])));
@@ -219,7 +219,7 @@ import cc.extensions.ccbreader.CCBReader;
 				else if (idxPup != -1)
 				{
 					 //Animate effect for power-up
-					var sprtLight : CCSprite = CCSprite.create("crystals/bomb-light.png");
+					var sprtLight : CCSprite = CCSprite.createWithSpriteFrameName("crystals/bomb-light.png");
 					sprtLight.setPosition(Std.parseFloat('{gemX*kGemSize+kGemSize/2}'), Std.parseFloat('${gemY*kGemSize+kGemSize/2}'));
 					sprtLight.setBlendFunc(BlendMode.Add);
 					gEffectsLayer.addChild(sprtLight);
@@ -288,21 +288,21 @@ import cc.extensions.ccbreader.CCBReader;
 			}
 
 			 //Add particle effects
-			var hp = CCParticleSystem.create("crystal/particles/taken-hrow.plist");
-			hp.setPosition(kBoardWidth/2*kGemSize+kGemSize/2, y*kGemSize+kGemSize/2);
+			//var hp = CCParticleSystem.create("crystal/particles/taken-hrow");
+			//hp.setPosition(kBoardWidth/2*kGemSize+kGemSize/2, y*kGemSize+kGemSize/2);
 			//hp.setAutoRemoveOnFinish(true);
-			gParticleLayer.addChild(hp);
-
-			var vp = CCParticleSystem.create("crystal/particles/taken-vrow.plist");
-			vp.setPosition(x*kGemSize+kGemSize/2, kBoardHeight/2*kGemSize+kGemSize/2);
+			//gParticleLayer.addChild(hp);
+//
+			//var vp = CCParticleSystem.create("crystal/particles/taken-vrow");
+			//vp.setPosition(x*kGemSize+kGemSize/2, kBoardHeight/2*kGemSize+kGemSize/2);
 			//vp.setAutoRemoveOnFinish(true);
-			gParticleLayer.addChild(vp);
+			//gParticleLayer.addChild(vp);
 
 			 //Add explo anim
 			var center = new Point(x*kGemSize+kGemSize/2, y*kGemSize+kGemSize/2);
 
 			 //Horizontal
-			var sprtH0 = CCSprite.create("crystal/crystals/bomb-explo.png");
+			var sprtH0 = CCSprite.createWithSpriteFrameName("crystals/bomb-explo.png");
 			sprtH0.setBlendFunc(BlendMode.Add);
 			sprtH0.setPosition(center.x, center.y);
 			sprtH0.setScaleX(5);
@@ -311,7 +311,7 @@ import cc.extensions.ccbreader.CCBReader;
 			gEffectsLayer.addChild(sprtH0);
 
 			 //Vertical
-			var sprtV0 = CCSprite.create("crystal/crystals/bomb-explo.png");
+			var sprtV0 = CCSprite.createWithSpriteFrameName("crystals/bomb-explo.png");
 			sprtV0.setBlendFunc(BlendMode.Add);
 			sprtV0.setPosition(center.x, center.y);
 			sprtV0.setScaleY(5);
@@ -320,7 +320,7 @@ import cc.extensions.ccbreader.CCBReader;
 			gEffectsLayer.addChild(sprtV0);
 
 			 //Horizontal
-			var sprtH1 = CCSprite.create("crystal/crystals/bomb-explo-inner.png");
+			var sprtH1 = CCSprite.createWithSpriteFrameName("crystals/bomb-explo-inner.png");
 			sprtH1.setBlendFunc(BlendMode.Add);
 			sprtH1.setPosition(center.x, center.y);
 			sprtH1.setScaleX(0.5);
@@ -329,7 +329,7 @@ import cc.extensions.ccbreader.CCBReader;
 			gEffectsLayer.addChild(sprtH1);
 
 			 //Vertical
-			var sprtV1 = CCSprite.create("crystal/crystals/bomb-explo-inner.png");
+			var sprtV1 = CCSprite.createWithSpriteFrameName("crystals/bomb-explo-inner.png");
 			sprtV1.setRotation(90);
 			sprtV1.setBlendFunc(BlendMode.Add);
 			sprtV1.setPosition(center.x, center.y);
@@ -338,7 +338,6 @@ import cc.extensions.ccbreader.CCBReader;
 			sprtV1.runAction(CCSequence.create([CCFadeOut.create(0.5), CCCallFunc.createWithParams(onRemoveFromParent, rootNode, sprtV1)]));
 			gEffectsLayer.addChild(sprtV1);
 		}
-
 		return removedGems;
 	}
 	
@@ -360,7 +359,9 @@ import cc.extensions.ccbreader.CCBReader;
 						gBoardChangedSinceEvaluation = true;
 
 						 //Transform any gem above this to a falling gem
-						for (yAbove in y+1...kBoardHeight)
+						var yAbove : Int = y - 1;
+						while (yAbove >= 0) 
+						//for (yAbove in 0...y)
 						{
 							var idxAbove = x + yAbove*kBoardWidth;
 
@@ -369,25 +370,30 @@ import cc.extensions.ccbreader.CCBReader;
 								gNumGemsInColumn[x]--;
 								gBoard[idxAbove] = -1;
 							}
-							if (gBoard[idxAbove] == -1) continue;
+							if (gBoard[idxAbove] == -1) {
+								yAbove--;
+								continue;
+							}
 
 							 //The gem is not connected, make it into a falling gem
 							var gemType = gBoard[idxAbove];
 							var gemSprite = gBoardSprites[idxAbove];
 							
 							var gem : TempGem = new TempGem(gemType, gemSprite, yAbove, 0);
-							gFallingGems[x].push(gem);
-
+							//gFallingGems[x].push(gem);
+							gFallingGems[x].insert(0, gem);
 							 //Remove from board
 							gBoard[idxAbove] = -1;
 							gBoardSprites[idxAbove] = null;
 
 							gNumGemsInColumn[x]--;
+							yAbove--;
 						}
 					}
 				}
 			}
 		}
+		
 	}
 	
 	public function getGemType(x : Int, y : Int) : Int {
@@ -415,7 +421,7 @@ import cc.extensions.ccbreader.CCBReader;
 		 //Remove old gem and insert a new one
 		gGameLayer.removeChild(gBoardSprites[idx], true);
 
-		var gemSprite = CCSprite.create("crystals/"+newType+".png");
+		var gemSprite = CCSprite.createWithSpriteFrameName("crystals/"+newType+".png");
 		gemSprite.setPosition(Utils.toFloat(x * kGemSize), Utils.toFloat(y * kGemSize));
 		gemSprite.setAnchorPoint(new Point(0, 0));
 
@@ -552,7 +558,7 @@ import cc.extensions.ccbreader.CCBReader;
 			var actionSeq = CCSequence.create([actionFadeIn, actionFadeOut]);
 			var action = CCRepeatForever.create(actionSeq);
 
-			var hintSprite = CCSprite.create("crystals/hint.png");
+			var hintSprite = CCSprite.createWithSpriteFrameName("crystals/hint.png");
 			hintSprite.setOpacity(0);
 			hintSprite.setPosition(Utils.toFloat(x*kGemSize), Utils.toFloat(y*kGemSize));
 			hintSprite.setAnchorPoint(new Point(0, 0));
@@ -576,11 +582,11 @@ import cc.extensions.ccbreader.CCBReader;
 
 	public function setupShimmer()
 	{
-		CCSpriteFrameCache.getInstance().addSpriteFrames("gamescene/shimmer.plist");
+		CCSpriteFrameCache.getInstance().addSpriteFrames("crystal/gamescene/shimmer.plist");
 
 		for (i in 0...2)
 		{
-			var sprt : CCSprite = CCSprite.create("gamescene/shimmer/bg-shimmer-"+i+".png");
+			var sprt : CCSprite = CCSprite.createWithSpriteFrameName("gamescene/shimmer/bg-shimmer-"+i+".png");
 
 			var seqRot : CCActionInterval = null;
 			var seqMov : CCActionInterval = null;
@@ -656,7 +662,7 @@ import cc.extensions.ccbreader.CCBReader;
 
 		if (gemSprite.getChildren().length > 0) return;
 
-		var sprite = CCSprite.create("crystal/crystals/sparkle.png");
+		var sprite = CCSprite.createWithSpriteFrameName("crystals/sparkle.png");
 		sprite.runAction(CCRepeatForever.create(CCRotateBy.create(3, 360)));
 
 		sprite.setOpacity(0);
@@ -733,10 +739,14 @@ import cc.extensions.ccbreader.CCBReader;
 	
 	
 	@:keep public function processClick(loc : Point) {
-		loc = CCPointExtension.pSub(loc, this.gameLayer.getPosition());
-
+		//trace(gBoard);
+		
+		loc = CCPointExtension.pSub(loc,new Point(0, 80));
+		//trace(this.gameLayer.getPosition());
+		
 		var x = Math.floor(loc.x/kGemSize);
-		var y = Math.floor(loc.y/kGemSize);
+		var y = Math.floor(loc.y / kGemSize);
+		//trace(x + "," + y);
 
 		if (!gIsGameOver)
 		{
@@ -769,7 +779,7 @@ import cc.extensions.ccbreader.CCBReader;
 	
 	@:keep public function onAnimationComplete() {
 		if (gIsGameOver) {
-			var scene : CCScene = CCBuilderReader.loadAsScene("crystals/MainScene.ccbi");
+			var scene : CCScene = CCBuilderReader.loadAsScene("crystal/MainScene.ccbi", null, null, "crystal/");
 			CCDirector.getInstance().replaceScene(scene);
 		}
 	}
@@ -793,43 +803,55 @@ import cc.extensions.ccbreader.CCBReader;
 					gTimeSinceAddInColumn[x] >= kTimeBetweenGemAdds)
 				{
 					// A gem should be added to this column!
+					//trace('num of column = $x');
 					var gemType = Math.floor(Math.random()*5);
-					var gemSprite = CCSprite.create("crystal/crystals/"+gemType+".png");
-					gemSprite.setPosition(x * kGemSize, kBoardHeight * kGemSize);
+					var gemSprite : CCSprite = CCSprite.createWithSpriteFrameName("crystals/"+gemType+".png");
+					//gemSprite.setPosition(x * kGemSize, kBoardHeight * kGemSize);
+					gemSprite.setPosition(x * kGemSize, -30);
 					gemSprite.setAnchorPoint(new Point(0,0));
 
-					gem = new TempGem(gemType, gemSprite, kBoardHeight, 0);
-					gFallingGems[x].push(gem);
-
+					gem = new TempGem(gemType, gemSprite, -30, 0);
+					//gFallingGems[x].push(gem);
+					gFallingGems[x].insert(0, gem);
+					//trace(gem);
 					gGameLayer.addChild(gemSprite);
 
 					gTimeSinceAddInColumn[x] = 0;
 				}
+				//gFallingGems[x].reverse();
 
-				gTimeSinceAddInColumn[x]++;
+				gTimeSinceAddInColumn[x] += 1;
 			}
+			
+			
 
 			// Move falling gems
-			var gemLanded : Bool= false;
+			var gemLanded : Bool = false;
+			//var x = kBoardWidth - 1;
+			//while(x >= 0) 
 			for (x in 0...kBoardWidth)
 			{
 				var column : Array<TempGem> = gFallingGems[x];
+				
 				var numFallingGems = gFallingGems[x].length;
+				
+				
 				var i = numFallingGems - 1;
 				while ( i >= 0) {
+					
 					gem = column[i];
-
-					gem.ySpeed += 0.06;
-					gem.ySpeed *= 0.99;
-					gem.yPos -= Std.int(gem.ySpeed);
-
-					if (gem.yPos <= gNumGemsInColumn[x])
+					//trace(gem);
+					gem.ySpeed += 0.5;
+					//gem.ySpeed *= 0.99;
+					gem.yPos += Std.int(gem.ySpeed);
+					//trace(gem.yPos);
+					if (gem.yPos >= 10 - gNumGemsInColumn[x])
 					{
 						// The gem hit the ground or a fixed gem
 						if (!gemLanded)
 						{
 							//gAudioEngine.playEffect("sounds/tap-"+Math.floor(Math.random()*4)+".wav");
-							//gemLanded = true;
+							gemLanded = true;
 						}
 
 						column.splice(i, 1);
@@ -837,16 +859,16 @@ import cc.extensions.ccbreader.CCBReader;
 						// Insert into board
 						var y = gNumGemsInColumn[x];
 
-						if (gBoard[x + y*kBoardWidth] != -1)
+						if (gBoard[x + (kBoardHeight - 1- y)*kBoardWidth] != -1)
 						{
-							trace("Warning! Overwriting board idx: "+x + y*kBoardWidth+" type: "+gBoard[x + y*kBoardWidth]);
+							//trace("Warning! Overwriting board idx: "+x + y*kBoardWidth+" type: "+gBoard[x + y*kBoardWidth]);
 						}
 
-						gBoard[x + y*kBoardWidth] = gem.gemType;
-						gBoardSprites[x + y*kBoardWidth] = gem.sprite;
+						gBoard[x + (kBoardHeight - 1- y)*kBoardWidth] = gem.gemType;
+						gBoardSprites[x + (kBoardHeight - 1- y)*kBoardWidth] = gem.sprite;
 
 						// Update fixed position
-						gem.sprite.setPosition(Utils.toFloat(x*kGemSize), Utils.toFloat(y*kGemSize));
+						gem.sprite.setPosition(Utils.toFloat(x*kGemSize), Utils.toFloat((9 - y)*kGemSize));
 						gNumGemsInColumn[x] ++;
 
 						gBoardChangedSinceEvaluation = true;
@@ -858,6 +880,7 @@ import cc.extensions.ccbreader.CCBReader;
 					}
 					i--;
 				}
+				//x--;
 			}
 
 			// Check if there are possible moves and no gems falling
@@ -928,6 +951,8 @@ import cc.extensions.ccbreader.CCBReader;
 			// It's game over
 			updateGameOver();
 		}
+		
+		
 	}
 	
 	
@@ -957,7 +982,9 @@ import cc.extensions.ccbreader.CCBReader;
 			return true;
 		};
 		
-		Reflect.setProperty(layer, "onPointerDown", f);
+		gameLayer.onPointerDown = f;
+		
+		
 
 		// Setup timer
 		//this.sprtTimer.setVisible(false);
@@ -1021,6 +1048,8 @@ import cc.extensions.ccbreader.CCBReader;
 
 		// Setup score label
 		gScoreLabel = this.lblScore;
+		
+		CCSpriteFrameCache.getInstance().addSpriteFrames("crystal/crystals.plist");
 	
 	}
 }
@@ -1035,6 +1064,17 @@ class TempGem {
 		this.sprite = gemSprite;
 		this.yPos = yPos;
 		this.ySpeed = ySpeed;
+	}
+	
+	public function toString() : String {
+		switch (gemType) {
+			case 0 : return "blue";
+			case 1 : return "green";
+			case 2 : return "purple";
+			case 3 : return "yellow";
+			case 4 : return "red";
+			default : return null;
+		}
 	}
 }
 

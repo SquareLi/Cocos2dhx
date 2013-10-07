@@ -609,8 +609,9 @@ class CCNodeLoader
     public function onHandlePropTypePoint(node : CCNode, parent : CCNode, propertyName : String, position : Point, ccbReader : CCBuilderReader) {
         if (propertyName == PROPERTY_ANCHORPOINT) {
 			var p : Point = new Point(position.x, position.y);
+			node.isOriginTopLeft = false;
 			node.setAnchorPoint(p);
-            
+			
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
         }
