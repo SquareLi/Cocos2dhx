@@ -238,8 +238,6 @@ class CCNodeLoader
 		var x = ccbReader.readFloat();
 		var y = ccbReader.readFloat();
 		
-		//trace('x = $x, y = $y');
-		
 		
 		var type = ccbReader.readInt(false);
 		
@@ -597,10 +595,13 @@ class CCNodeLoader
         return [x,y];
     }
 
+
     public function onHandlePropTypePosition(node : CCNode, parent : CCNode, propertyName : String, position : Point, ccbReader : CCBuilderReader) {
         if (propertyName == PROPERTY_POSITION) {
             node.setPosition(position.x, position.y);
-			//trace(position);
+			//if ( Std.is(node, CCMenu)) {
+				//node.setPo
+			//}
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
         }
@@ -611,7 +612,6 @@ class CCNodeLoader
 			var p : Point = new Point(position.x, position.y);
 			node.isOriginTopLeft = false;
 			node.setAnchorPoint(p);
-			
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
         }
@@ -689,7 +689,8 @@ class CCNodeLoader
         if (propertyName == PROPERTY_VISIBLE) {
             node.setVisible(check);
         } else if (propertyName == PROPERTY_IGNOREANCHORPOINTFORPOSITION) {
-            node.ignoreAnchorPointForPosition(check);
+			var containerSize = ccbReader.getAnimationManager().getContainerSize(parent);
+            node.ignoreAnchorPointForPosition(check, containerSize);
         } else {
             ASSERT_FAIL_UNEXPECTED_PROPERTY(propertyName);
         }

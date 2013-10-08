@@ -41,9 +41,10 @@ import cc.extensions.ccbreader.CCBReader;
 	var kNumRemovalFrames : Int = 8;
 	var kDelayBeforeHint : Float = 3000;
 	var kMaxTimeBetweenConsecutiveMoves : Float = 1000;
-
-	var kGameOverGemSpeed : Float = 0.1;
-	var kGameOverGemAcceleration : Float = 0.005;
+	
+	var kGameOverGemSpeedX : Float = 0.2;
+	var kGameOverGemSpeed : Float = 0.2;
+	var kGameOverGemAcceleration : Float = 0.08;
 
 	var kBoardTypeGem0 : Int = 0;
 	var kBoardTypeGem1 : Int = 1;
@@ -510,9 +511,10 @@ import cc.extensions.ccbreader.CCBReader;
 				if (gBoardSprites[i1] != null)
 				{
 					var ySpeed1 : Float = (Math.random()*2-1)*kGameOverGemSpeed;
-					var xSpeed1 : Float = (Math.random()*2-1)*kGameOverGemSpeed;
-					
+					var xSpeed1 : Float = (Math.random()*2-1)*kGameOverGemSpeedX;
+					//trace('xSpeed1 = $xSpeed1, ySpeed1 = $ySpeed1');
 					var gameOverGem1 = new GameOverGem(gBoardSprites[i1], x, y, ySpeed1, xSpeed1);
+					//trace(gameOverGem1.xSpeed);
 					gGameOverGems.push(gameOverGem1);
 				}
 			}
@@ -523,6 +525,7 @@ import cc.extensions.ccbreader.CCBReader;
 		removeShimmer();
 	}
 
+	//var a : Bool = true;
 	public function updateGameOver()
 	{
 		for (i in 0...gGameOverGems.length)
@@ -531,10 +534,19 @@ import cc.extensions.ccbreader.CCBReader;
 
 			gem.xPos = gem.xPos + Std.int(gem.xSpeed);
 			gem.yPos = gem.yPos + Std.int(gem.ySpeed);
-			gem.ySpeed -= kGameOverGemAcceleration;
+			gem.ySpeed += kGameOverGemAcceleration;
+			//gem.xSpeed += 0.1;
+			
+			//if (a) {
+				//trace('xPos = ${gem.xPos}');
+				//
+				//a = false;
+			//}
+			
 
-			gem.sprite.setPosition(gem.xPos*kGemSize, gem.yPos*kGemSize);
+			gem.sprite.setPosition(gem.xPos * kGemSize, gem.yPos * kGemSize);
 		}
+		//a = true;
 	}
 
 	public function displayHint()
@@ -744,8 +756,8 @@ import cc.extensions.ccbreader.CCBReader;
 		loc = CCPointExtension.pSub(loc,new Point(0, 80));
 		//trace(this.gameLayer.getPosition());
 		
-		var x = Math.floor(loc.x/kGemSize);
-		var y = Math.floor(loc.y / kGemSize);
+		var x = Math.floor(loc.x/(kGemSize * 0.8));
+		var y = Math.floor(loc.y / (kGemSize * 0.8));
 		//trace(x + "," + y);
 
 		if (!gIsGameOver)
@@ -841,7 +853,7 @@ import cc.extensions.ccbreader.CCBReader;
 					
 					gem = column[i];
 					//trace(gem);
-					gem.ySpeed += 0.5;
+					gem.ySpeed += 4;
 					//gem.ySpeed *= 0.99;
 					gem.yPos += Std.int(gem.ySpeed);
 					//trace(gem.yPos);
@@ -949,10 +961,10 @@ import cc.extensions.ccbreader.CCBReader;
 		else
 		{
 			// It's game over
+			//trace("gameover");
 			updateGameOver();
+			
 		}
-		
-		
 	}
 	
 	
@@ -1009,7 +1021,7 @@ import cc.extensions.ccbreader.CCBReader;
 		//this.rootNode.onUpdate = function(dt) {
 			//this.controller.onUpdate();
 		//};
-		this.rootNode.schedule(this.onUpdate, 0.01);
+		this.rootNode.schedule(this.onUpdate, 0.015);
 
 		// TODO: Make into batch node
 
@@ -1050,6 +1062,11 @@ import cc.extensions.ccbreader.CCBReader;
 		gScoreLabel = this.lblScore;
 		
 		CCSpriteFrameCache.getInstance().addSpriteFrames("crystal/crystals.plist");
+		
+		//this.rootNode.ignoreAnchorPointForPosition(false);
+		//this.rootNode.setAnchorPoint(new Point(0, 1));
+		//this.rootNode.setPosition(0, 0);
+		//this.rootNode.setScale(0.8);
 	
 	}
 }

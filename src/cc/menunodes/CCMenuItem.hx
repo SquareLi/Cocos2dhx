@@ -165,8 +165,8 @@ class CCMenuItem extends CCNode
 		//trace('locPosition = $locPosition');
 		var locContentSize : CCSize = this._contentSize;
 		var locAnchorPoint : Point = this._anchorPoint;
-		var ret : Rectangle = new Rectangle(locPosition.x - locContentSize.width * locAnchorPoint.x,
-            locPosition.y - locContentSize.height * locAnchorPoint.y,
+		var ret : Rectangle = new Rectangle(locPosition.x,
+            locPosition.y,
             locContentSize.width, locContentSize.height);
 			//trace(ret);
         return ret;
@@ -388,9 +388,14 @@ class CCMenuItemSprite extends CCMenuItem {
 			this.removeChild(this._normalImage, true);
 		}
 		
+		
+		
 		this._normalImage = normalImage;
 		this.setContentSize(this._normalImage.getContentSize());
+		
+		this._normalImage.isOriginTopLeft = this.isOriginTopLeft;
 		this._normalImage.setAnchorPoint(this.getAnchorPoint());
+		//this._normalImage.setPosition(100, 200);
 		this._updateImagesVisibility();
 	}
 	
@@ -410,7 +415,9 @@ class CCMenuItemSprite extends CCMenuItem {
             this.removeChild(this._selectedImage, true);
         }
 
+		
         this._selectedImage = selectedImage;
+		this._selectedImage.isOriginTopLeft = this.isOriginTopLeft;
 		this._selectedImage.setAnchorPoint(this.getAnchorPoint());
         this._updateImagesVisibility();
 	}
@@ -420,6 +427,7 @@ class CCMenuItemSprite extends CCMenuItem {
 	}
 	
 	public function setDisabledImage(disabledImage : CCSprite) {
+		
 		if (this._disabledImage == disabledImage)
             return;
 
@@ -431,7 +439,9 @@ class CCMenuItemSprite extends CCMenuItem {
             this.removeChild(this._disabledImage, true);
         }
 
+		
         this._disabledImage = disabledImage;
+		this._disabledImage.isOriginTopLeft = this.isOriginTopLeft;
 		this._disabledImage.setAnchorPoint(this.getAnchorPoint());
         this._updateImagesVisibility();
 	}

@@ -206,8 +206,6 @@ class CCMenuItemImageLoader extends CCMenuItemLoader {
             if (spriteFrame != null) {
 				var n : CCMenuItemImage = cast (node, CCMenuItemImage);
                 n.setNormalSpriteFrame(spriteFrame);
-				//trace("setNormal");
-				//trace(spriteFrame.getTexture().);
             }
         } else if (propertyName == PROPERTY_SELECTEDDISPLAYFRAME) {
             if (spriteFrame != null) {

@@ -57,44 +57,11 @@ class CCMenu extends CCLayer
 	public function new() 
 	{
 		super();
-		//this.sprite = new Sprite();
-		//this.sprite = new FillSprite(0x000000, 0, 0);
-		//this.sprite.setAnchor(0, 0);
-		//this.sprite.y._ = 200;
-		//var f : FillSprite = cast(this.sprite, FillSprite);
-		//sprite.alpha._ = 1;
-		//var f : FillSprite = cast(this.sprite, FillSprite);
-		//f.alpha 
-		//this.entity.add(sprite);
-		//this.component = new CCComponent(this);
-		//this.entity.add(component);
-		//_color = new CCColor3B();
+		this.setContentSize(new CCSize(0, 0));
+		//trace(this._contentSize.height);
 	}
 	
 	
-	
-	//override public function setAnchorPoint(point:Point)
-	//{
-		//
-		//super.setAnchorPoint(new Point(0, 0));
-		//
-		//this.sprite.anchorX._ = 0;
-		//this.sprite.anchorY._ = _contentSize.height;
-	//}
-	
-	//public function getColor() : CCColor3B {
-		//return this._color;
-	//}
-	//
-	//public function setColor(color : CCColor3B) {
-		//this._color = color;
-		//
-		//if (this._children != null && this._children.length > 0) {
-			//for (i in this._children) {
-				//i.setColor
-			//}
-		//}
-	//}
 	
 	var _enabled : Bool = false;
 	
@@ -127,7 +94,7 @@ class CCMenu extends CCLayer
      * initializes a cc.Menu with a Array of cc.MenuItem objects
      */
 	public function initWithArray(arrayOfItems : Array<CCMenuItem>) : Bool{
-		if (this.init()) {
+		if (true) {
 			//this.registerWithTouchDispatcher();
 			this._enabled = true;
 			
@@ -138,7 +105,7 @@ class CCMenu extends CCLayer
 			//this.sprite.getNaturalHeight
 			//this.setCenterAnchor();
 			
-			this.setContentSize(winSize);
+			//this.setContentSize(winSize);
 			//this.sprite.centerAnchor();
 			//this.setPosition(winSize.width / 2, winSize.height / 2);
 			
@@ -182,14 +149,7 @@ class CCMenu extends CCLayer
 				height += this._children[i].getContentSize().height * this._children[i].getScaleY() + padding;
 			}
 		}
-		
-		//var y = height;
-		//if (this._children != null && this._children.length > 0) {
-			//for (i in 0..._children.length) {
-				//this._children[i].setPosition(0, y - this._children[i].getContentSize().height * this._children[i].getScaleY() / 2);
-				//y -= this._children[i].getContentSize().height * this._children[i].getScaleY() + padding;
-			//}
-		//}
+
 	}
 	
 	/**
@@ -497,7 +457,7 @@ class CCMenu extends CCLayer
 		var ret : CCMenu = new CCMenu();
 		if (args == null) {
 			ret.initWithItems(null);
-			ret.initWithArray([]);
+			//ret.initWithArray([]);
 			return ret;
 		}
 		

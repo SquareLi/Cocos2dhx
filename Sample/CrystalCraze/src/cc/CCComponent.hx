@@ -49,7 +49,6 @@ class CCComponent extends Component
 	{
 		
 		super.onUpdate(dt);
-		//trace("Update");
 		_node.update(dt);
 	}
 	

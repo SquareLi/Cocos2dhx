@@ -7,12 +7,14 @@ import cc.layersscenestransitionsnodes.CCLayer;
 import cc.menunodes.CCMenu;
 import cc.spritenodes.CCSprite;
 import cc.action.CCActionInterval;
+import flambe.display.Sprite;
 import flambe.math.Point;
 import cc.extensions.ccbreader.CCBReader;
 import cc.CCDirector;
 import cc.particlenodes.CCParticleSystem;
 import cc.spritenodes.CCSpriteFrameCache;
 import cc.layersscenestransitionsnodes.CCScene;
+import flambe.System;
 /**
  * ...
  * @author Ang Li
@@ -59,6 +61,15 @@ import cc.layersscenestransitionsnodes.CCScene;
 		//if (menu == null) {
 			//trace("menu is null");
 		//}
+		
+		
+		//To resize the game to fit mobile safari.
+		//If  you don't want to resize the game, just change the content size in index file to 320 * 480
+		//and comment this part. 
+		var s : Sprite = new Sprite();
+		System.root.add(s);
+		s.setScale(0.8);
+		
 
 	}
 	@:keep public function onPressPlay() {

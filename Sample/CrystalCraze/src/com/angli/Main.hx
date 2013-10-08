@@ -1,5 +1,6 @@
 package com.angli;
 
+import cc.extensions.ccbreader.CCSpriteLoader;
 import flambe.display.Font;
 import flambe.display.TextSprite;
 import flambe.Entity;
@@ -15,7 +16,7 @@ import cc.CCDirector;
 
 import cc.layersscenestransitionsnodes.CCLayer;
 import cc.menunodes.CCMenu;
-
+import cc.cocoa.CCGeometry;
 class Main
 {
     private static function main ()
@@ -43,10 +44,14 @@ class Main
 		var game : GameScene = new GameScene();
 		var main : MainScene = new MainScene();
 		CCBReader.CCB_CLASS_ROOT_PATH = "com.angli.";
+		var director : CCDirector = CCDirector.getInstance();
+		
+		director.setWinSize(new CCSize(320, 480));
 		
 		var scene : CCScene = CCBuilderReader.loadAsScene("crystal/MainScene.ccbi", null, null, "crystal/");
 		
-		var director : CCDirector = CCDirector.getInstance();
+		
+		
 		director.runWithScene(scene);
     }
 }

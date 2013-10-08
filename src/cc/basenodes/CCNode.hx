@@ -52,6 +52,7 @@ class CCNode
 	
 	public static var s_globalOrderOfArrival : Int = 1;
 	
+	
 	//For Flambe
 	public var entity : Entity;
 	public var sprite : Sprite;
@@ -104,12 +105,16 @@ class CCNode
 	var _scheduler : CCScheduler;
 	var _initializedNode : Bool = false;
 	//var _orderOfArrival : Int = 0;
+	
+	public var isOriginTopLeft : Bool = true;
 	public function new() 
 	{
+		//trace("ctor in CCNode");
 		init();
 	}
 	
 	private function _initNode() {
+		//trace('_initNode');
 		if (CCConfig.NODE_TRANSFORM_USING_AFFINE_MATRIX == 1) {
 			this._transformGLDirty = true;
 		}
@@ -312,7 +317,7 @@ class CCNode
 		return new Point(this._anchorPoint.x, this._anchorPoint.y);
 	}
 	
-	public var isOriginTopLeft : Bool = true;
+	
 	
 	public function setAnchorPoint(point : Point) {
 		if (isIgnoreAnchorPointForPosition()) {
@@ -329,7 +334,9 @@ class CCNode
 		if (isOriginTopLeft) {
 			sprite.setAnchor(this._anchorPoint.x * width, this._anchorPoint.y * height);
 		} else {
+			//trace("else");
 			sprite.setAnchor(this._anchorPoint.x * width, (1 - this._anchorPoint.y) * height);
+			//trace('height = $height');
 		}
 		
 	}
@@ -370,24 +377,36 @@ class CCNode
 	}
 	
 	var _hasSetPosition : Bool = false;
-	public function ignoreAnchorPointForPosition(newValue : Bool) {
+	public function ignoreAnchorPointForPosition(newValue : Bool, ?containerSize : CCSize) {
 		//if (Std.is(this, CCMenu)) {
 			//trace("CCMenu ignore");
 		//}
-		
-		if (newValue) {
-			this._ignoreAnchorPointForPosition = newValue;
+		this._ignoreAnchorPointForPosition = newValue;
+		if (newValue && !isOriginTopLeft) {
+			
 			
 			this._anchorPoint = new Point(0, 0);
 			this.sprite.anchorX._ = 0;
 			this.sprite.anchorY._ = _contentSize.height;
 			
-			if (!_hasSetPosition) {
-				this.setPosition(0, _contentSize.height);
+			//trace(sprite.anchorY._);
+			
+			if (containerSize != null && !_hasSetPosition) {
+				this.setPosition(_position.x, containerSize.height - _position.y);
 				_hasSetPosition = true;
 			} else {
 				this.setPosition(_position.x, _position.y);
 			}
+			
+			//if (containerSize != null ) {
+				//
+				//_hasSetPosition = true;
+			//} else {
+				//this.setPosition(_position.x, _position.y);
+				//_hasSetPosition = true;
+			//}
+			//this.setPosition(_position.x, _contentSize.height - _position.y);
+			//_hasSetPosition = true;
 			
 			//trace(this._position.y);
 			//trace("ignore");
@@ -398,6 +417,8 @@ class CCNode
 			//}
 			
 			//this.setCenterAnchor();
+		} else if (newValue) {
+			
 		}
 	}
 	public function getTag() : Int {

@@ -276,6 +276,9 @@ class CCDirector
 		 return this._winSizeInPoints;
 	 }
 	 
+	 public function setWinSize(s : CCSize) {
+		 this._winSizeInPoints = new CCSize(s.width, s.height);
+	 }
 	 public function getWinSizeInPixels() : CCSize {
 		 return this._winSizeInPixels; 
 	 }

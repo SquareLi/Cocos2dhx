@@ -51,10 +51,12 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 	
 	public function new() 
 	{
+		//trace('ctor in CCLayer');
 		super();
 	}
 	
 	private function _initLayer() {
+		//trace("_initLayer");
 		this.setAnchorPoint(new Point(0, 0));
 		this._ignoreAnchorPointForPosition = true;
 		
@@ -64,7 +66,7 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 		this._isPointerEnabled = false;
 		this._pointerPriority = 0;
 		addComponent();
-		//trace("_initLayer");
+		
 	}
 	
 	public function addComponent() {
@@ -82,8 +84,10 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 	
 	override public function init():Bool 
 	{
+		//trace("init in CCLayer");
 		super.init();
 		this._initLayer();
+		
 		return true;
 	}
 	
@@ -146,23 +150,6 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 	}
 	
 	
-	//override public function setAnchorPoint(point:Point)
-	//{
-		//if (Std.is(this, CCMenu)) {
-			//trace("ccmenu ignore");
-		//}
-		//
-		//this._anchorPoint = new Point(0, 0);
-		//this.sprite.anchorX._ = 0;
-		//this.sprite.anchorY._ = _contentSize.height;
-		//
-		//if (!_hasSetPosition) {
-			//
-			//this.setPosition(0, _contentSize.height);
-			//this._hasSetPosition = true;
-		//}
-	//}
-	
 	override public function draw() 
 	{
 		//trace("Layer dras");
@@ -217,7 +204,7 @@ class CCLayer extends CCNode implements CCPointerEventDelegate implements CCKeyb
 	
 	public static function create() : CCLayer {
 		var ret : CCLayer = new CCLayer();
-		if (ret != null && ret.init()) {
+		if (ret != null) {
 			return ret;
 		}
 		return null;
