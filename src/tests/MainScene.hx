@@ -10,6 +10,8 @@ import cc.action.CCActionInterval;
 import flambe.math.Point;
 import cc.extensions.ccbreader.CCBReader;
 import cc.CCDirector;
+import cc.particlenodes.CCParticleSystem;
+import cc.spritenodes.CCSpriteFrameCache;
 /**
  * ...
  * @author Ang Li
@@ -40,18 +42,18 @@ import cc.CCDirector;
 	}
 	
 	@:keep public function onDidLoadFromCCB() {
-		//trace("onDidLoadFromCCB");
+		//var starParticles = CCParticleSystem.create("crystal/particles/bg-stars");
+		//this.starNode.addChild(starParticles);
+		
 		this.menuSelection = kMenuSelectionNone;
 		this.lblLastScore.setString('$gLastScore');
 		//this.rootNode = animationManager.getRootNode();
 		
-		this.rootNode.schedule(this.onUpdate, 0.005);
+		this.rootNode.schedule(this.onUpdate, 0.01);
 		
-		//trace(menu.getPosition());
-		//trace(menu.getContentSize());
-		//trace(menu.getSprite().anchorY._);
-		
-		//menu.setPosition(0, 100);
+		// Load sprite sheets
+		CCSpriteFrameCache.getInstance().addSpriteFrames("crystal/crystals.plist");
+
 	}
 	@:keep public function onPressPlay() {
 		this.menuSelection = kMenuSelectionPlay;
@@ -84,7 +86,7 @@ import cc.CCDirector;
 		
 		if (Math.random() < 0.02) {
 			var type : Int = Math.floor(Math.random()*5);
-			var sprt : CCSprite = CCSprite.create("crystal/crystals/" + Std.string(type));
+			var sprt : CCSprite = CCSprite.createWithSpriteFrameName("crystals/" + Std.string(type) + ".png");
 			//var sprt = cc.Sprite.create("crystals/"+type+".png");
 			//var p = cc.ParticleSystem.create("particles/falling-gem.plist");
 
@@ -121,7 +123,7 @@ import cc.CCDirector;
 			//trace('gem.y = ${pos.y}');
 			//gem.particle.setPosition(pos);
 
-			if (pos.y > 400)
+			if (pos.y > 480)
 			{
 				this.fallingGemsLayer.removeChild(gem.sprt, true);
 				//gem.particle.stopSystem();

@@ -11,7 +11,6 @@ import cc.platform.CCTypes;
 import cc.cocoa.CCGeometry;
 import cc.platform.CCCommon;
 import cc.basenodes.CCAffineTransform;
-import flash.automation.StageCaptureEvent;
 import cc.spritenodes.CCSpriteBatchNode;
 /**
  * ...

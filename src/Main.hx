@@ -46,6 +46,7 @@ import tests.TestTileMap;
 import tests.TestCCBreader;
 import tests.TestScale9Sprite;
 import tests.TestEase;
+import tests.TestBox2D;
 /**
  * ...
  * @author Ang Li
@@ -110,10 +111,11 @@ class Main
 		//var s = Type.createInstance(Type.resolveClass("tests.MainScene"), []);
 		
 
-		TestCCBreader.run();
+		//TestCCBreader.run();
 		//TestEase.run();
 		
 		//TestScale9Sprite.run();
+		TestBox2D.run();
     }
 
     private static function main () 
