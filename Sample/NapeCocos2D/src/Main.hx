@@ -2,6 +2,7 @@ package ;
 
 import cc.layersscenestransitionsnodes.CCScene;
 import flambe.Entity;
+import flambe.SpeedAdjuster;
 import flambe.System;
 import flambe.asset.AssetPack;
 import flambe.asset.Manifest;
@@ -22,6 +23,7 @@ class Main
         var manifest = Manifest.build("bootstrap");
         var loader = System.loadAssetPack(manifest);
         loader.get(onSuccess);
+	
     }
 
     private static function onSuccess (pack :AssetPack)
@@ -33,6 +35,6 @@ class Main
 		var scene : CCScene = CCScene.create();
 		scene.addChild(new MyLayer());
 		d.runWithScene(scene);
-       
+       System.root.add(new SpeedAdjuster(0.5));
     }
 }

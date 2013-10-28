@@ -7,7 +7,7 @@ id:
 main: Main
 
 # The platform to use when invoking `run` or `build` with no arguments
-default_platform: flash
+default_platform: html
 
 # Additional flags to pass to the Haxe compiler
 haxe_flags: -lib nape -D foobar

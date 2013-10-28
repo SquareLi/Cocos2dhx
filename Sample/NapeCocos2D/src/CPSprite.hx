@@ -10,6 +10,7 @@ import nape.phys.BodyType;
 import nape.shape.Polygon;
 import cc.cocoa.CCGeometry;
 import cc.platform.CCMacro;
+import flambe.math.FMath;
 
 /**
  * ...
@@ -45,8 +46,11 @@ class CPSprite extends CCSprite
 		if (this.body != null) {
 			var pos : Vec2 = this.body.position;
 			this.setPosition(pos.x, pos.y);
-			this.setRotation(CCMacro.RADIANS_TO_DEGREES( -1 * this.body.rotation));
-			
+			this.setRotation(CCMacro.RADIANS_TO_DEGREES( this.body.rotation));
+			//trace(this.getSprite().anchorX);
+			//trace(this.body.rotation);
+			//trace(CCMacro.RADIANS_TO_DEGREES( this.body.rotation));
+			//FMath.toDegrees
 		} else {
 			trace("no body?");
 		}
