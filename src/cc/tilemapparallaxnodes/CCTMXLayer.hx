@@ -6,6 +6,7 @@ import flambe.math.Point;
 import flambe.tmx.data.TiledAttributes;
 import haxe.Int64;
 import cc.tilemapparallaxnodes.CCTMXXMLParser;
+import cc.platform.CCCommon;
 /**
  * ...
  * @author Ang Li
@@ -42,6 +43,14 @@ class CCTMXLayer extends CCSprite
 	
 	public function setLayerSize(v : CCSize) {
 		this._layerSize = v;
+	}
+	
+	public function getLayerName() : String {
+		return this._layerName;
+	}
+	
+	public function setLayerName(layerName : String) {
+		this._layerName = layerName;
 	}
 	
 	public function getMapTileSize() : CCSize {
@@ -84,6 +93,19 @@ class CCTMXLayer extends CCSprite
 		this._properties = v;
 	}
 	
+	public function getTileGIDAt(pos : Point) : Int {
+		CCCommon.assert(pos.x < this._layerSize.width && pos.y < this._layerSize.height && pos.x >= 0 && pos.y >= 0, "TMXLayer: invalid position");
+        //CCCommon.assert(this._tiles != null && this._atlasIndexArray, "TMXLayer: the tiles map has been released");
+
+        //var idx = 0 | (pos.x + pos.y * this._layerSize.width);
+        // Bits on the far end of the 32-bit global tile ID are used for tile flags
+		
+        var tile = this._tiles[Std.int(pos.y)][Std.int(pos.x)];
+
+        //return (tile & cc.TMX_TILE_FLIPPED_MASK) >>> 0;
+		return tile;
+	}
+	
 	public function initWithTilesetInfo(layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) : Bool {
 		var size = layerInfo._layerSize;
 		var totalNumberOfTiles = Std.int(size.width * size.height);
@@ -96,8 +118,15 @@ class CCTMXLayer extends CCSprite
 		
 		this.setContentSize(new CCSize(this.sprite.getNaturalWidth(), this.sprite.getNaturalHeight()));
 		this._layerSize = this.getContentSize();
+		this._layerName = layerInfo.name;
+		this._tiles = layerInfo._tiles;
+		this._minGID = layerInfo._minGID;
+		this._maxGID = layerInfo._maxGID;
+		this.setProperties(layerInfo.getProperties());
 		this._opacity = layerInfo._opacity;
 		this.setOpacity(this._opacity);
+		
+		
 		return true;
 	}
 	

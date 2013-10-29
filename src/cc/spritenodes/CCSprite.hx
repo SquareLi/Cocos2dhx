@@ -187,7 +187,7 @@ class CCSprite extends CCNode
 		
 		this._flipX = this._flipY = false;
 		
-		this.setAnchorPoint(new Point(0, 0));
+		this.setAnchorPoint(new Point(0.5, 0.5));
 		
 		this._offsetPosition = new Point(0, 0);
 		this._hasChildren = false;
@@ -253,6 +253,7 @@ class CCSprite extends CCNode
 		
 		if (rect == null) {
 			this.sprite = new ImageSprite(t);
+			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new CCSize(sprite.getNaturalWidth(), sprite.getNaturalHeight());
 			this.entity.add(sprite);
 			this.component = new CCComponent(this);

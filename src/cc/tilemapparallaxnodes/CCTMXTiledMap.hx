@@ -136,6 +136,26 @@ class CCTMXTiledMap extends CCSprite
 		}
 	}
 	
+	/** return the TMXLayer for the specific layer
+     * @param {String} layerName
+     * @return {cc.TMXLayer}
+     */
+	 public function getLayer(layerName : String) : CCTMXLayer {
+        CCCommon.assert(layerName != null && layerName.length > 0, "Invalid layer name!");
+
+        for (i in 0...this._children.length) {
+            var layer : CCTMXLayer = cast (this._children[i], CCTMXLayer);
+            if (layer != null) {
+                if (layer.getLayerName() == layerName) {
+                    return layer;
+                }
+            }
+        }
+
+        // layer not found
+        return null;
+    }
+	
 	public function getObjectGroup(groupName : String) : CCTMXObjectGroup {
 		CCCommon.assert(groupName != null && groupName.length > 0, "Invalid group name!");
 		if (this._objectGroups != null) {

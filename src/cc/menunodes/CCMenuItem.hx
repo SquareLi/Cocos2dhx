@@ -597,29 +597,33 @@ class CCMenuItemImage extends CCMenuItemSprite {
 		this.setDisabledImage(CCSprite.createWithSpriteFrame(frame));
 	}
 	
-	public function initWithNormalImage(normalImage : CCSpriteFrame, selectedImage : CCSpriteFrame, disabledImage : CCSpriteFrame, selector : Void -> Void, target : CCNode) : Bool{
+	public function initWithNormalImage(normalImage : String, selectedImage : String, 
+		disabledImage : String, selector : Void -> Void, target : CCNode) : Bool{
 		var normalSprite : CCSprite = null;
 		var selectedSprite : CCSprite = null;
 		var disabledSprite : CCSprite = null;
 		
 		if (normalImage != null) {
-            normalSprite = CCSprite.createWithSpriteFrame(normalImage);
+            normalSprite = CCSprite.create(normalImage);
         }
         if (selectedImage != null) {
-            selectedSprite = CCSprite.createWithSpriteFrame(selectedImage);
+            selectedSprite = CCSprite.create(selectedImage);
         }
         if (disabledImage != null) {
-            disabledSprite = CCSprite.createWithSpriteFrame(disabledImage);
+            disabledSprite = CCSprite.create(disabledImage);
         }
         return this.initWithNormalSprite(normalSprite, selectedSprite, disabledSprite, selector, target);
 	}
 	
-	public static function create(?normalImage : CCSpriteFrame, ?selectedImage : CCSpriteFrame, ?three : CCSpriteFrame, ?four : Void -> Void, ?five : CCNode) : CCMenuItemImage {
+	public static function create(?normalImage : String, ?selectedImage : String, ?three : String, ?four : Void -> Void, ?five : CCNode) : CCMenuItemImage {
 		var ret : CCMenuItemImage = new CCMenuItemImage();
 		if (ret.initWithNormalImage(normalImage, selectedImage, three, four, five)) {
 			return ret;
 		}
 		return null;
+		//var ret = new CCMenuItemImage();
+		
+		
 	}
 }
 

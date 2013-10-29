@@ -464,10 +464,11 @@ class CCTMXMapInfo {
 				//layer._tiles = 
 			case "zlib" :
 				//isCompression = true;
+				layer._tiles = CCBase64.unzip(xml.firstChild().nodeValue, Std.int(layer._layerSize.width));
 				//layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), isCompression);
 			case "":
 				if (encoding == "base64") {
-					//layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), isCompression);
+					layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width));
 				} else if (encoding == "csv") {
 					layer._tiles = csvToArray(xml.firstChild().nodeValue);
 				} else {

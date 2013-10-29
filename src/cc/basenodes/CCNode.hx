@@ -605,7 +605,7 @@ class CCNode
 		this.removeFromParent(true);
 	}
 	
-	public function removeChild(child : CCNode, cleanup : Bool) {
+	public function removeChild(child : CCNode, cleanup : Bool = true) {
 		if (this._children == null) {
 			return;
 		}
