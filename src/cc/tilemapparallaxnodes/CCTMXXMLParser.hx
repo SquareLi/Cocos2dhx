@@ -9,6 +9,7 @@ import flambe.math.Rectangle;
 import cc.CCLoader;
 import cc.platform.CCCommon;
 import cc.platform.CCBase64;
+import cc.platform.CCZipUtils;
 /**
  * ...
  * @author Ang Li
@@ -460,8 +461,8 @@ class CCTMXMapInfo {
 		
 		var isCompression : Bool = false;
 		switch(compression) {
-			//case "gzip" :
-				//layer._tiles = 
+			case "gzip" :
+				layer._tiles = CCZipUtils.unzipBase64AsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), 4);
 			case "zlib" :
 				//isCompression = true;
 				layer._tiles = CCBase64.unzip(xml.firstChild().nodeValue, Std.int(layer._layerSize.width));
