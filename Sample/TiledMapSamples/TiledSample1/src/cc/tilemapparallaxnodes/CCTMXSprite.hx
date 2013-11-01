@@ -47,6 +47,7 @@ class CCTMXSprite extends Sprite
 							* (row + col) - tilesetInfo._tileSize.height;
 					}
 					
+					
 					var rect : Rectangle = tilesetInfo.rectForGID(gid);
 					
 					g.drawSubImage(tilesetInfo.texture, x, y, rect.x, rect.y, rect.width, rect.height);
