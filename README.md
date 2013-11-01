@@ -1,8 +1,12 @@
 Cocos2dhx
 =========
 
-Cocos2dhx is based on flambe.
+Cocos2dhx is a haxe port of Cocos2d-x. 
 
-The sample game, MoonWarriors, is under src/sample. You can see the demo if you run the project directly.
+
+Demos
+----------------------------------
+
+### Crystal Craze 
 
 You have to replace some flambe classes with the classed in the "flambe classes" folder.
