@@ -3,10 +3,10 @@ import cc.basenodes.CCNode;
 import cc.spritenodes.CCSprite;
 import flambe.display.Sprite;
 import flambe.Entity;
-import flambe.tmx.data.TiledMap;
 import cc.cocoa.CCGeometry;
 import cc.platform.CCCommon;
 import cc.tilemapparallaxnodes.CCTMXXMLParser;
+import flambe.math.Point;
 
 /**
  * ...
@@ -126,9 +126,12 @@ class CCTMXTiledMap extends CCSprite
 		var layers = mapInfo.getLayers();
 		if (layers != null) {
 			for (l in layers) {
-				var child = CCTMXLayer.create(l, mapInfo);
+				var child : CCTMXLayer = this._parseLayer(l, mapInfo);
+				child.setAnchorPoint(new Point(0, 0));
+				child.setPosition(0, 0);
 				this.addChild(child, idx, idx);
 				idx++;
+				
 				
 				var childSize = child.getContentSize();
 				var currentSize = this.getContentSize();
@@ -139,6 +142,43 @@ class CCTMXTiledMap extends CCSprite
 				
 			}
 		}
+	}
+	
+	private function _parseLayer(layerInfo, mapInfo) : CCTMXLayer {
+		var tileset = this._tilesetForLayer(layerInfo, mapInfo);
+		var layer : CCTMXLayer = CCTMXLayer.create(tileset, layerInfo, mapInfo);
+		layer.setupTiles();
+		return layer;
+	}
+	
+	private function _tilesetForLayer(layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) : CCTMXTilesetInfo {
+		var size = layerInfo._layerSize;
+        var tilesets = mapInfo.getTilesets();
+        if (tilesets != null) {
+			var i = tilesets.length - 1;
+			while ( i >= 0) {
+            //for (var i = tilesets.length - 1; i >= 0; i--) {
+                var tileset = tilesets[i];
+                if (tileset != null) {
+                    for (y in 0...Std.int(size.height)) {
+                        for (x in 0...Std.int(size.width)) {
+                            //var pos = x + size.width * y;
+                            var gid = layerInfo._tiles[Std.int(y * size.width) + x];
+                            if (gid != 0) {
+                                // Optimization: quick return
+                                // if the layer is invalid (more than 1 tileset per layer) an cc.Assert will be thrown later
+                                if (((gid & CCTMXXMLParser.TMX_TILE_FLIPPED_MASK)>>>0) >= tileset.firstGid) {
+                                    return tileset;
+                                }
+                            }
+
+                        }
+                    }
+                }
+				i--;
+            }
+		}
+		return null;
 	}
 	
 	/** return the TMXLayer for the specific layer

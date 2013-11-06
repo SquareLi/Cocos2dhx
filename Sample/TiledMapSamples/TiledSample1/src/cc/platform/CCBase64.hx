@@ -83,7 +83,7 @@ class CCBase64
 		return o;
 	}
 	
-	public static function decodeAsArray(input : String , lineWidth : Int , ?bytes : Int = 4) : Array<Array<Int>> {
+	public static function decodeAsArray(input : String , lineWidth : Int , ?bytes : Int = 4) : Array<Int> {
 		//trace(input);
 		var dec : String  = decode(input);
 		var ar : Array<Int> = [];
@@ -102,26 +102,8 @@ class CCBase64
 		}
 		//trace(ar.length);
 		//trace(lineWidth);
-		var ret : Array<Array<Int>> = new Array<Array<Int>>();
-		for (i in 0...lineWidth) {
-			ret[i] = new Array<Int>();
-		}
-		//ret.push(row);
-		var count : Int = 0;
-		var row : Int = 0;
-		var col : Int = 0;
-		for (i in 0...ar.length) {
-			if (col == lineWidth) {
-				row++;
-				col = 0;
-			}
-			
-			ret[row][col] = ar[i];
-			col++;
-			
-		}
-		//trace(ret);
-		return ret;
+		
+		return ar;
 	}
 	
 	private static function decodeAsOneArray(input : String , lineWidth : Int , ?bytes : Int = 4) : Array<Int> {
@@ -144,7 +126,7 @@ class CCBase64
 		return ar;
 	}
 	
-	private static function decodeAsArrayBytes(byte : Bytes , lineWidth : Int , ?bytes : Int = 4) : Array<Array<Int>> {
+	private static function decodeAsArrayBytes(byte : Bytes , lineWidth : Int , ?bytes : Int = 4) : Array<Int> {
 		//trace(input);
 		//var dec : String  = decode(input);
 		var ar : Array<Int> = [];
@@ -162,30 +144,30 @@ class CCBase64
 			}
 		}
 		//trace(ar);
-		var ret : Array<Array<Int>> = new Array<Array<Int>>();
-		for (i in 0...lineWidth) {
-			ret[i] = new Array<Int>();
-		}
+		//var ret : Array<Array<Int>> = new Array<Array<Int>>();
+		//for (i in 0...lineWidth) {
+			//ret[i] = new Array<Int>();
+		//}
 		//ret.push(row);
-		var count : Int = 0;
-		var row : Int = 0;
-		var col : Int = 0;
-		for (i in 0...ar.length) {
-			if (col == lineWidth) {
-				row++;
-				col = 0;
-			}
-			
-			ret[row][col] = ar[i];
-			col++;
-			
-		}
+		//var count : Int = 0;
+		//var row : Int = 0;
+		//var col : Int = 0;
+		//for (i in 0...ar.length) {
+			//if (col == lineWidth) {
+				//row++;
+				//col = 0;
+			//}
+			//
+			//ret[row][col] = ar[i];
+			//col++;
+			//
+		//}
 		//trace(ret);
-		return ret;
+		return ar;
 	}
 	
 	#if js
-	public static function unzip(input : String, lineWidth : Int ) : Array<Array<Int>> {
+	public static function unzip(input : String, lineWidth : Int ) : Array<Int> {
 		var tempString1 : String = decode(input);
 		var arr : Array<Int> = CCBase64.decodeAsOneArray(input, 0, 1);
 		//trace(arr);
@@ -195,25 +177,22 @@ class CCBase64
 		//trace(bytes.toString());
 		//trace('b.length = ${b.length}, arr.length = ${arr.length}');
 		//trace(bytes.length);
-		var ret : Array<Array<Int>> = CCBase64.decodeAsArrayBytes(bytes, lineWidth);
+		var ret : Array<Int> = CCBase64.decodeAsArrayBytes(bytes, lineWidth);
 		
 		return ret;
 	}
 	#end
 	
 	#if flash
-	public static function unzip(chunk : String, lineWidth : Int) : Array<Array<Int>> {
-		var result:Array<Array<Int>> = new Array<Array<Int>>();
+	public static function unzip(chunk : String, lineWidth : Int) : Array<Int> {
+		var result:Array<Int> = new Array<Int>();
 		var data:ByteArray = base64ToByteArray(chunk);
 		data.uncompress();
 		data.endian = Endian.LITTLE_ENDIAN;
 		while(data.position < data.length)
 		{
-			var resultRow:Array<Int> = new Array<Int>();
-			var i:Int;
-			for (i in 0...lineWidth)
-				resultRow.push(data.readInt());
-			result.push(resultRow);
+
+			result.push(data.readInt());
 		}
 		return result;
 	}

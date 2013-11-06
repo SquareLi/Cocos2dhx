@@ -92,6 +92,18 @@ class CCTMXXMLParser
 	 */
 	public static var TMX_TILE_DIAGONAL_FLAG : Int = 0x20000000;
 	
+	/**
+	 * @constant
+	 * @type Number
+	 */
+	public static var TMX_TILE_FLIPPED_ALL : Int = (TMX_TILE_HORIZONTAL_FLAG | TMX_TILE_VERTICAL_FLAG | TMX_TILE_DIAGONAL_FLAG) >>> 0;
+
+	/**
+	 * @constant
+	 * @type Number
+	 */
+	public static var TMX_TILE_FLIPPED_MASK : Int = (~(TMX_TILE_FLIPPED_ALL)) >>> 0;
+	
 	public function new() 
 	{
 		
@@ -103,7 +115,7 @@ class CCTMXLayerInfo {
 	public var _properties : Map<String, String>;
 	public var name : String = "";
 	public var _layerSize : CCSize;
-	public var _tiles : Array<Array<Int>>;
+	public var _tiles : Array<Int>;
 	public var visible : Bool;
 	public var _opacity : Int;
 	public var ownTiles : Bool = true;
@@ -114,7 +126,7 @@ class CCTMXLayerInfo {
 	public function new() {
 		offset = new Point();
 		_properties = new Map<String, String>();
-		_tiles = new Array<Array<Int>>();
+		_tiles = new Array<Int>();
 	}
 	
 	public function getProperties() : Map < String, String > {
@@ -482,17 +494,18 @@ class CCTMXMapInfo {
 					for (elem in xml.elements()) {
 						switch (elem.nodeName) {
 							case "tile" : 
-								var g : Int = Std.parseInt(elem.get("gid"));
-								tilesRow.push(g);
-								
-								if (indexX == widthMap - 1) {
-									indexX = 0;
-									indexY++;
-									layer._tiles.push(tilesRow);
-									tilesRow = [];
-								} else {
-									indexX++;
-								}
+								//var g : Int = Std.parseInt(elem.get("gid"));
+								//tilesRow.push(g);
+								//
+								//if (indexX == widthMap - 1) {
+									//indexX = 0;
+									//indexY++;
+									//layer._tiles.push(tilesRow);
+									//tilesRow = [];
+								//} else {
+									//indexX++;
+								//}
+								layer._tiles.push(Std.parseInt(elem.get("gid")));
 
 							default: null;
 						}
@@ -594,9 +607,9 @@ class CCTMXMapInfo {
 	 * @param	input
 	 * @return
 	 */
-	public static function csvToArray(input:String):Array<Array<Int>>
+	public static function csvToArray(input:String):Array<Int>
 	{
-		var result:Array<Array<Int>> = new Array<Array<Int>>();
+		var result:Array<Int> = new Array<Int>();
 		var rows:Array<String> = input.split("\n");
 		var row:String;
 		for (row in rows)
@@ -606,8 +619,8 @@ class CCTMXMapInfo {
 			var entries:Array<String> = row.split(",");
 			var entry:String;
 			for (entry in entries)
-				resultRow.push(Std.parseInt(entry)); //convert to int
-			result.push(resultRow);
+				result.push(Std.parseInt(entry)); //convert to int
+			//result.push(resultRow);
 		}
 		return result;
 	}

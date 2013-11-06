@@ -18,7 +18,7 @@ class CCZipUtils
 		return CCGZip.gunzip(tmpInput);
 	}
 	
-	public static function unzipBase64AsArray(input : String, lineWidth : Int, ?bytes : Int = 1) : Array<Array<Int>>{
+	public static function unzipBase64AsArray(input : String, lineWidth : Int, ?bytes : Int = 1) : Array<Int>{
 		var dec : String  = unzipBase64(input);
 		var ar : Array<Int> = [];
 		var len : Int = Std.int(dec.length / bytes);
@@ -35,25 +35,25 @@ class CCZipUtils
 			}
 		}
 		//trace(ar);
-		var ret : Array<Array<Int>> = new Array<Array<Int>>();
-		for (i in 0...lineWidth) {
-			ret[i] = new Array<Int>();
-		}
+		//var ret : Array<Array<Int>> = new Array<Array<Int>>();
+		//for (i in 0...lineWidth) {
+			//ret[i] = new Array<Int>();
+		//}
 		//ret.push(row);
-		var count : Int = 0;
-		var row : Int = 0;
-		var col : Int = 0;
-		for (i in 0...ar.length) {
-			if (col == lineWidth) {
-				row++;
-				col = 0;
-			}
-			
-			ret[row][col] = ar[i];
-			col++;
-			
-		}
+		//var count : Int = 0;
+		//var row : Int = 0;
+		//var col : Int = 0;
+		//for (i in 0...ar.length) {
+			//if (col == lineWidth) {
+				//row++;
+				//col = 0;
+			//}
+			//
+			//ret[row][col] = ar[i];
+			//col++;
+			//
+		//}
 		//trace(ret);
-		return ret;
+		return ar;
 	}
 }
