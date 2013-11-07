@@ -7,6 +7,7 @@ import cc.cocoa.CCGeometry;
 import cc.platform.CCCommon;
 import cc.tilemapparallaxnodes.CCTMXXMLParser;
 import flambe.math.Point;
+import flambe.math.Rectangle;
 
 /**
  * ...
@@ -14,6 +15,8 @@ import flambe.math.Point;
  */
 class CCTMXTiledMap extends CCSprite
 {
+	public static var useViewPort : Bool = false;
+	public static var viewPort : Rectangle = new Rectangle();
 	/**
 	 Orthogonal orientation
 	 * @constant
@@ -55,6 +58,7 @@ class CCTMXTiledMap extends CCSprite
 		_tileSize = new CCSize();
 		_objectGroups = new Array<CCTMXObjectGroup>();
 		_TMXLayers = new Array<CCTMXLayer>();
+
 	}
 	
 	public function getMapSize() : CCSize {

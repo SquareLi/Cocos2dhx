@@ -223,7 +223,7 @@ class CCSprite extends CCNode
 			this.component = new CCComponent(this);
 			this.entity.add(component);
 		} else {
-			this.sprite = new CCSpriteSheet();
+			this.sprite = new CCSpriteSheet(this.isTiledMap);
 			var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
 			var f : CCSpriteFrame = CCSpriteFrame.createWithTexture(texture, rect, rotated, _position, new CCSize());
 			s.updateFrame(f);
@@ -398,13 +398,16 @@ class CCSprite extends CCNode
 		return null;
 	}
 	
-	public static function createWithTexture(texture : CCTexture2D, ?rect : Rectangle) : CCSprite {
+	public var isTiledMap : Bool = false;
+	public static function createWithTexture(texture : CCTexture2D, ?rect : Rectangle, ?isTiledMap : Bool = false) : CCSprite {
 		var sprite : CCSprite = new CCSprite();
+		sprite.isTiledMap = isTiledMap;
 		if (rect == null) {
 			sprite.initWithTexture(texture);
 		} else {
 			sprite.initWithTexture(texture, rect);
 		}
+		
 		
 		return sprite;
 	}

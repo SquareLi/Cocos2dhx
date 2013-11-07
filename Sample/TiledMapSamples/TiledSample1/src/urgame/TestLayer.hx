@@ -10,6 +10,7 @@ import flambe.input.Key;
 import cc.cocoa.CCGeometry;
 import cc.support.CCPointExtension;
 import cc.CCDirector;
+import flambe.math.Rectangle;
 /**
  * ...
  * @author Ang Li(李昂)
@@ -22,23 +23,38 @@ class TestLayer extends CCLayer
 	var player : CCSprite;
 	var offset : Point;
 	var isMove : Bool = false;
+	var viewPort : Rectangle;
 	public function new() 
 	{
 		super();
+		
+		//Only draw the map in the viewport to improve the performence
+		CCTMXTiledMap.useViewPort = true;
+		CCTMXTiledMap.viewPort = new Rectangle(0, 0, 3000, 1500);
 		map = CCTMXTiledMap.create("Resources/level-1.tmx", "Resources");
+		
 		this.addChild(map);
 		setPointerEnabled(true);
 		//
 		player = CCSprite.create("Resources/Player");
-		
-		player.setPosition(map.getMapSize().width * map.getTileSize().width / 2 + 32, 16);
+		//Set the player in the center of the map
+		player.setPosition(map.getMapSize().width * map.getTileSize().width / 2 + 32, 16 + map.getMapSize().height * map.getTileSize().height / 2);
 		player.setAnchorPoint(new Point(0.5, 1));
 		tilePosFromLocation(player.getPosition());
 		this.setKeyboardEnabled(true);
 		offset = new Point();
 		metaLayer = map.getLayer("Meta");
+		
+		
+		//Get the objects layer
 		map.getLayer("Houses").addChild(player);
 		
+		//Adjust the viewport
+		initCenterPoint(player.getPosition());
+		
+		
+		viewPort = new Rectangle(0, 0, CCDirector.getInstance().getWinSize().width, CCDirector.getInstance().getWinSize().height);
+
 		
 	}
 	
@@ -49,14 +65,49 @@ class TestLayer extends CCLayer
 			var p = CCPointExtension.pAdd(player.getPosition(), offset);
 			if (!checkCollision(p)) {
 				player.setPosition(p.x, p.y);
+				this.setPosition(this.getPositionX() - offset.x, this.getPositionY() - offset.y);
+				updateZOrder();
+				var width = CCDirector.getInstance().getWinSize().width;
+				var height = CCDirector.getInstance().getWinSize().height;
+				viewPort.x = 0 - this.getPositionX();
+				viewPort.y = 0 - this.getPositionY();
+				//Update the viewport
+				CCTMXTiledMap.viewPort = viewPort;
+				//trace(viewPort);
+			} else {
+				isMove = false;
+				offset.x = 0;
+				offset.y = 0;
 			}
-			updateZOrder();
+			
+			
 		}
 		
 	}
 	
+	public function initCenterPoint(pos : Point) {
+		trace("pos = " + pos);
+		var x : Float = this.getPositionX();
+		var y : Float = this.getPositionY();
+		
+		var width = CCDirector.getInstance().getWinSize().width;
+		var height = CCDirector.getInstance().getWinSize().height;
+		
+		var diffx = x + width / 2 - pos.x;
+		var diffy = y + height / 2 - pos.y;
+		trace(diffx, diffy);
+		
+		this.setPosition(x + diffx, y + diffy);
+	}
+	
 	private function checkCollision(pos : Point) : Bool {
+		
+		
 		var pt : Point = tilePosFromLocation(pos);
+		if (pt.x < 0 || pt.x > map.getMapSize().width - 1
+			|| pt.y < 0 || pt.y > map.getMapSize().height - 1) {
+				return true;
+		}
 		//trace(pt);
 		var array = metaLayer.getTiles();
 		
@@ -66,7 +117,6 @@ class TestLayer extends CCLayer
 				var y = Math.floor(count / map.getMapSize().width);
 				var x = count % map.getMapSize().width;
 				if (pt.x == x && pt.y == y) {
-					trace('x = $x, y = $y');
 					return true;
 				}
 			}

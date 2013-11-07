@@ -189,7 +189,7 @@ class CCTMXLayer extends CCSpriteBatchNode
 					
 					var rect : Rectangle = _tileSet.rectForGID(gid);
 					
-					var sprite : CCSprite = CCSprite.createWithTexture(this._texture, rect);
+					var sprite : CCSprite = CCSprite.createWithTexture(this._texture, rect, true);
 					sprite.setAnchorPoint(new Point(0, 0));
 					sprite.setPosition(x, y);
 					//trace('x = $x, y = $y');
