@@ -29,7 +29,7 @@ import cc.cocoa.CCGeometry;
 import flambe.math.Rectangle;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCMacro 

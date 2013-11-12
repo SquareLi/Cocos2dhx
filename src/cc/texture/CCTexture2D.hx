@@ -29,7 +29,7 @@ import cc.platform.CCMacro;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCTexture2D 

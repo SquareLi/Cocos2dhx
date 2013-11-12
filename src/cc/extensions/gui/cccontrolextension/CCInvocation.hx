@@ -4,7 +4,7 @@ import cc.action.CCActionInstant;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCInvocation
 {

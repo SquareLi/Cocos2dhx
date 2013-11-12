@@ -2,7 +2,7 @@ package cc.tilemapparallaxnodes;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXObject
 {

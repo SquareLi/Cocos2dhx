@@ -5,7 +5,7 @@ import flambe.input.KeyboardEvent;
 import flambe.System;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCKeyboardDispatcher
 {

@@ -2,7 +2,7 @@ package cc.particlenodes;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCParticleSystemQuad extends CCParticleSystem
 {

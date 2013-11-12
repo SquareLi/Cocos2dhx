@@ -12,7 +12,7 @@ import cc.platform.CCCommon;
 import cc.texture.CCTextureCache;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXLayer extends CCSpriteBatchNode
 {
@@ -143,7 +143,6 @@ class CCTMXLayer extends CCSpriteBatchNode
 			this._maxGID = layerInfo._maxGID;
 			this.setProperties(layerInfo.getProperties());
 			this._opacity = layerInfo._opacity;
-			this.setOpacity(this._opacity);
 			this._parseInternalProperties();
 			
 			this._tileSet = tilesetInfo;
@@ -164,10 +163,13 @@ class CCTMXLayer extends CCSpriteBatchNode
 	public function setupTiles()
 	{
 		var count : Int = 0;
-
-		for (row in 0...Std.int(_layerInfo._layerSize.width)) {
-			for (col in 0...Std.int(_layerInfo._layerSize.height)) {
+		//trace(Std.int(_layerInfo._layerSize.width));
+		//trace(Std.int(_layerInfo._layerSize.height));
+		for (row in 0...Std.int(_layerInfo._layerSize.height)) {
+			for (col in 0...Std.int(_layerInfo._layerSize.width)) {
 				var gid = _layerInfo._tiles[Std.int(col + row * _layerInfo._layerSize.width)];
+				//if (col == 39)
+						//trace(gid);
 				if (gid == 0) {
 					continue;
 				} else {
@@ -181,7 +183,7 @@ class CCTMXLayer extends CCSpriteBatchNode
 						//trace("ortho");
 					} else if (o == CCTMXTiledMap.TMX_ORIENTATION_ISO) {
 						x = this._mapTileSize.width / 2 
-							* ( this._layerSize.width + col - row);
+							* ( this._layerSize.height + col - row);
 						y = this._mapTileSize.height / 2 
 							* (row + col + 2) - this._tileSet._tileSize.height;
 					}
@@ -189,11 +191,17 @@ class CCTMXLayer extends CCSpriteBatchNode
 					
 					var rect : Rectangle = _tileSet.rectForGID(gid);
 					
-					var sprite : CCSprite = CCSprite.createWithTexture(this._texture, rect, true);
+					
+					var sprite : CCSprite = CCSprite.createWithTexture(this._texture, rect, CCTMXTiledMap.useViewPort);
 					sprite.setAnchorPoint(new Point(0, 0));
 					sprite.setPosition(x, y);
-					//trace('x = $x, y = $y');
+					sprite.setOpacity(this._opacity);
 					this.addChild(sprite, _vertexZForPos(row, col));
+					//if (this._layerName == "WorldItems")
+						//trace(sprite.getZOrder());
+					//if (row == 13 && col == 39) {
+						//trace(gid);
+					//}
 				}
 			}
 		}

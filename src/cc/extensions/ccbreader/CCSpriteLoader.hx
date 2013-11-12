@@ -15,7 +15,7 @@ import cc.labelnodes.CCLabelBMFont;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCSpriteLoader extends CCNodeLoader
 {

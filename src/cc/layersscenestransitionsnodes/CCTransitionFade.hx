@@ -6,7 +6,7 @@ import cc.platform.CCTypes;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCTransitionFade extends CCTransitionScene

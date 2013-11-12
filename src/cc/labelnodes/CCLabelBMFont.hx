@@ -31,7 +31,7 @@ import cc.CCLoader;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCLabelBMFont extends CCNode
 {

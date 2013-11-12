@@ -13,7 +13,7 @@ import cc.action.CCActionInterval;
 import cc.action.CCActionInstant;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCControlButton extends CCControl
 {

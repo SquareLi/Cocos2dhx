@@ -7,7 +7,7 @@ import flambe.math.Rectangle;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXSprite extends Sprite
 {

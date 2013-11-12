@@ -2,7 +2,7 @@ package cc.layersscenestransitionsnodes;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 /**
  * <p>

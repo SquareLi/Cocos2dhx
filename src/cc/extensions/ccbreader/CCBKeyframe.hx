@@ -2,7 +2,7 @@ package cc.extensions.ccbreader;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBKeyframe
 {

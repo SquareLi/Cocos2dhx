@@ -39,7 +39,7 @@ import cc.CCLoader;
 import cc.texture.CCTextureCache;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCSprite extends CCNode
