@@ -217,26 +217,24 @@ class CCSprite extends CCNode
 			rect.width = texture.getPixelsWide();
 			rect.height = texture.getPixelsHigh();
 			this.sprite = new ImageSprite(texture.getTexture());
-			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new CCSize(sprite.getNaturalWidth(), sprite.getNaturalHeight());
 			this.entity.add(sprite);
-		
+			this.setAnchorPoint(this.getAnchorPoint());
 			this.component = new CCComponent(this);
 			this.entity.add(component);
 		} else {
 			this.sprite = new CCSpriteSheet(this.isTiledMap);
 			var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
 			var f : CCSpriteFrame = CCSpriteFrame.createWithTexture(texture, rect, rotated, _position, new CCSize());
-			
 			s.updateFrame(f);
 			this.entity.add(s);
 			this.component = new CCComponent(this);
 			this.entity.add(component);
-			
+			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new CCSize(rect.width, rect.height);
 			
 			this._isAdded = true;
-			this.setAnchorPoint(this.getAnchorPoint());
+			//trace(f.toString());
 		}
 		
 		this.setTexture(texture);

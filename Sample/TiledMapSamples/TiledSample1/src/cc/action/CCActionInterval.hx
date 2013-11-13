@@ -33,8 +33,8 @@ import flambe.swf.MovieSprite;
 
 import cc.support.CCPointExtension;
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 
 class CCActionInterval extends CCFiniteTimeAction

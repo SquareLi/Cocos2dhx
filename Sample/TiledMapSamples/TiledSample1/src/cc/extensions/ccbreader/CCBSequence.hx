@@ -3,7 +3,7 @@ import cc.spritenodes.CCSpriteFrame;
 import cc.extensions.ccbreader.CCBKeyframe;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBSequence {
 	

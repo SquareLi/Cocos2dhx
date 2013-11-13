@@ -33,7 +33,7 @@ import cc.layersscenestransitionsnodes.CCLayer;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCPointerDispatcher 

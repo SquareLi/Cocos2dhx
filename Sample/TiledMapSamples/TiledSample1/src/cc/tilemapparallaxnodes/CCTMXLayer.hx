@@ -12,7 +12,7 @@ import cc.platform.CCCommon;
 import cc.texture.CCTextureCache;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXLayer extends CCSpriteBatchNode
 {
@@ -122,19 +122,20 @@ class CCTMXLayer extends CCSpriteBatchNode
 	
 	var _mapInfo : CCTMXMapInfo = null;
 	var _layerInfo : CCTMXLayerInfo = null;
-	public function initWithTilesetInfo(tilesetInfo : CCTMXTilesetInfo, layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) : Bool {
+	public function initWithTilesetInfo(layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) : Bool {
 		var size = layerInfo._layerSize;
 		var totalNumberOfTiles = Std.int(size.width * size.height);
 		_mapInfo = mapInfo;
 		this._layerInfo = layerInfo;
 		var capacity : Int = Std.int(totalNumberOfTiles * 0.35 + 1);
 		
-		var texture : CCTexture2D = null;
-		if (tilesetInfo != null) {
-			texture = CCTextureCache.getInstance().addImage(tilesetInfo.sourceImage);
-		}
 		
-		if (this.initWithTexture(texture, capacity)) {
+		//var texture : CCTexture2D = null;
+		//if (tilesetInfo != null) {
+			//texture = CCTextureCache.getInstance().addImage(tilesetInfo.sourceImage);
+		//}
+		
+		//if (this.initWithTexture(texture, capacity)) {
 			this.setContentSize(new CCSize(this.sprite.getNaturalWidth(), this.sprite.getNaturalHeight()));
 			this._layerSize = layerInfo._layerSize;
 			this._layerName = layerInfo.name;
@@ -143,10 +144,9 @@ class CCTMXLayer extends CCSpriteBatchNode
 			this._maxGID = layerInfo._maxGID;
 			this.setProperties(layerInfo.getProperties());
 			this._opacity = layerInfo._opacity;
-			this.setOpacity(this._opacity);
 			this._parseInternalProperties();
 			
-			this._tileSet = tilesetInfo;
+			//this._tileSet = tilesetInfo;
 			
 			this._mapTileSize = mapInfo.getTileSize();
 			this._layerOrientation = mapInfo.getOrientation();
@@ -154,24 +154,28 @@ class CCTMXLayer extends CCSpriteBatchNode
 			//var offset = this._calculateLayerOffset(layerInfo.offset);
 			this._vertexZvalue = 0;
 			return true;
-		}
+		//}
 		
 		
 		
-		return false;
+		//return false;
 	}
 	
 	public function setupTiles()
 	{
 		var count : Int = 0;
-
-		for (row in 0...Std.int(_layerInfo._layerSize.width)) {
-			for (col in 0...Std.int(_layerInfo._layerSize.height)) {
+		//trace(Std.int(_layerInfo._layerSize.width));
+		//trace(Std.int(_layerInfo._layerSize.height));
+		for (row in 0...Std.int(_layerInfo._layerSize.height)) {
+			for (col in 0...Std.int(_layerInfo._layerSize.width)) {
 				var gid = _layerInfo._tiles[Std.int(col + row * _layerInfo._layerSize.width)];
+				//if (col == 39)
+						//trace(gid);
 				if (gid == 0) {
 					continue;
 				} else {
-					//var tilesetInfo : CCTMXTilesetInfo = getTilesetInfo(gid);
+					var tilesetInfo : CCTMXTilesetInfo = getTilesetInfo(gid);
+					var t : CCTexture2D = CCTextureCache.getInstance().addImage(tilesetInfo.sourceImage);
 					var o : Int = this._layerOrientation;
 					var x : Float = 0;
 					var y : Float = 0;
@@ -181,22 +185,46 @@ class CCTMXLayer extends CCSpriteBatchNode
 						//trace("ortho");
 					} else if (o == CCTMXTiledMap.TMX_ORIENTATION_ISO) {
 						x = this._mapTileSize.width / 2 
-							* ( this._layerSize.width + col - row);
+							* ( this._layerSize.height + col - row);
 						y = this._mapTileSize.height / 2 
-							* (row + col + 2) - this._tileSet._tileSize.height;
+							* (row + col + 2) - tilesetInfo._tileSize.height;
 					}
 					
 					
-					var rect : Rectangle = _tileSet.rectForGID(gid);
+					var rect : Rectangle = tilesetInfo.rectForGID(gid);
 					
-					var sprite : CCSprite = CCSprite.createWithTexture(this._texture, rect, true);
+					
+					var sprite : CCSprite = CCSprite.createWithTexture(t, rect, CCTMXTiledMap.useViewPort);
 					sprite.setAnchorPoint(new Point(0, 0));
 					sprite.setPosition(x, y);
-					//trace('x = $x, y = $y');
+					sprite.setOpacity(this._opacity);
 					this.addChild(sprite, _vertexZForPos(row, col));
+					//if (this._layerName == "WorldItems")
+						//trace(sprite.getZOrder());
+					//if (row == 13 && col == 39) {
+						//trace(gid);
+					//}
 				}
 			}
 		}
+	}
+	
+	private function getTilesetInfo(gid : Int) : CCTMXTilesetInfo {
+		//trace(gid);
+		var a = _mapInfo.getTilesets();
+		//var tileset : CCTMXTilesetInfo = new CCTMXTilesetInfo();
+		for (i in 0..._mapInfo.getTilesets().length) {
+			//trace(a[i].firstGid);
+			if (a[i + 1] != null) {
+				if (gid >= a[i].firstGid && gid < a[i + 1].firstGid) {
+					//trace(gid);
+					return a[i];
+				}
+			} else {
+				return a[i];
+			}
+		}
+		return null;
 	}
 	
 	private function _vertexZForPos(row : Int, col : Int) : Int {
@@ -219,9 +247,9 @@ class CCTMXLayer extends CCSpriteBatchNode
 	}
 	
 	
-	public static function create(tilesetInfo : CCTMXTilesetInfo, layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) {
+	public static function create(layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) {
 		var ret = new CCTMXLayer();
-		if (ret.initWithTilesetInfo(tilesetInfo, layerInfo, mapInfo)) {
+		if (ret.initWithTilesetInfo(layerInfo, mapInfo)) {
 			return ret;
 		}
 		

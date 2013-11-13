@@ -25,8 +25,8 @@ import cc.action.CCActionInterval;
 import cc.basenodes.CCNode;
 import cc.platform.CCCommon;
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 class CCActionEase extends CCActionInterval
 {

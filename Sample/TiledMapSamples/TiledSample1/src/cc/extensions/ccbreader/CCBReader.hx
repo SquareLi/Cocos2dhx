@@ -26,7 +26,7 @@ import cc.extensions.ccbreader.CCBValue;
 import cc.spritenodes.CCSprite;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBReader
 {

@@ -219,7 +219,7 @@ class CCSprite extends CCNode
 			this.sprite = new ImageSprite(texture.getTexture());
 			this._contentSize = new CCSize(sprite.getNaturalWidth(), sprite.getNaturalHeight());
 			this.entity.add(sprite);
-		
+			this.setAnchorPoint(this.getAnchorPoint());
 			this.component = new CCComponent(this);
 			this.entity.add(component);
 		} else {
@@ -230,7 +230,7 @@ class CCSprite extends CCNode
 			this.entity.add(s);
 			this.component = new CCComponent(this);
 			this.entity.add(component);
-			
+			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new CCSize(rect.width, rect.height);
 			
 			this._isAdded = true;

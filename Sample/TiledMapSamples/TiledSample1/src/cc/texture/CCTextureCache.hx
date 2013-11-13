@@ -26,7 +26,7 @@ import cc.CCLoader;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTextureCache
 {

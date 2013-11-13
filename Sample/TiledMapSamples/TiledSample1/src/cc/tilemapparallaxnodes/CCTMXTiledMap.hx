@@ -11,7 +11,7 @@ import flambe.math.Rectangle;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXTiledMap extends CCSprite
 {
@@ -149,8 +149,8 @@ class CCTMXTiledMap extends CCSprite
 	}
 	
 	private function _parseLayer(layerInfo, mapInfo) : CCTMXLayer {
-		var tileset = this._tilesetForLayer(layerInfo, mapInfo);
-		var layer : CCTMXLayer = CCTMXLayer.create(tileset, layerInfo, mapInfo);
+		//var tileset = this._tilesetForLayer(layerInfo, mapInfo);
+		var layer : CCTMXLayer = CCTMXLayer.create(layerInfo, mapInfo);
 		layer.setupTiles();
 		return layer;
 	}
@@ -216,7 +216,7 @@ class CCTMXTiledMap extends CCSprite
 		}
 		return null;
 	}
-	public static function create(tmxFile : String, resourcePath : String) : CCTMXTiledMap {
+	public static function create(tmxFile : String, ?resourcePath : String) : CCTMXTiledMap {
 		var ret = new CCTMXTiledMap();
 		if (ret.initWithTMXFile(tmxFile, resourcePath)) {
 			return ret;

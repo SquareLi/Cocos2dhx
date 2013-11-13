@@ -12,7 +12,7 @@ import cc.platform.CCBase64;
 import cc.platform.CCZipUtils;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXXMLParser
 {
@@ -617,11 +617,19 @@ class CCTMXMapInfo {
 			if (row == "") continue;
 			var resultRow:Array<Int> = new Array<Int>();
 			var entries:Array<String> = row.split(",");
+			//trace(entries);
 			var entry:String;
-			for (entry in entries)
-				result.push(Std.parseInt(entry)); //convert to int
-			//result.push(resultRow);
+			for (entry in entries) {
+				var t = Std.parseInt(entry);
+				if (t != null) {
+					result.push(t); //convert to int
+				}
+			}
+			
+
 		}
+		
+		//trace(result);
 		return result;
 	}
 	

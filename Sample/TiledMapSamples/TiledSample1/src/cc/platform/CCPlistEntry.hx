@@ -24,7 +24,7 @@ package cc.platform;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCPlistEntry
 {

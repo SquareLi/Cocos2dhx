@@ -26,7 +26,7 @@ import haxe.Log;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCCommon 

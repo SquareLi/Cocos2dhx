@@ -10,7 +10,7 @@ import cc.CCLoader;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
  //Point pixels to points has not finished

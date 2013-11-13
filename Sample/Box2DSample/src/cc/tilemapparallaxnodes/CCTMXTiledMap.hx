@@ -149,8 +149,8 @@ class CCTMXTiledMap extends CCSprite
 	}
 	
 	private function _parseLayer(layerInfo, mapInfo) : CCTMXLayer {
-		var tileset = this._tilesetForLayer(layerInfo, mapInfo);
-		var layer : CCTMXLayer = CCTMXLayer.create(tileset, layerInfo, mapInfo);
+		//var tileset = this._tilesetForLayer(layerInfo, mapInfo);
+		var layer : CCTMXLayer = CCTMXLayer.create(layerInfo, mapInfo);
 		layer.setupTiles();
 		return layer;
 	}

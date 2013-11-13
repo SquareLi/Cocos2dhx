@@ -2,7 +2,7 @@ package cc.platform;
 
 /**
  * //Todo
- * @author Ang Li
+ * @author
  */
 class CCGZip
 {

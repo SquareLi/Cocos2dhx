@@ -42,7 +42,7 @@ import flambe.display.FillSprite;
 import cc.menunodes.CCMenu;
 /**
  * 
- * @author Ang Li
+ * @author Ang L1
  */
 class CCNode 
 {
@@ -586,6 +586,7 @@ class CCNode
 		//trace("parent");
 		//trace("CCNode.addChild" + zOrder);
 		entity.addChild(child.entity, true, zOrder);
+		child._zOrder = zOrder;
 		
 		this._children.push(child);
 	}

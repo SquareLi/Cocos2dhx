@@ -14,7 +14,7 @@ import cc.basenodes.CCAffineTransform;
 import cc.spritenodes.CCSpriteBatchNode;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCScale9Sprite extends CCNode
 {

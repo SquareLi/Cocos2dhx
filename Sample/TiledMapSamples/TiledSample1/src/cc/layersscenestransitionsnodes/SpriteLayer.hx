@@ -3,7 +3,7 @@ import flambe.display.Sprite;
 import cc.cocoa.CCGeometry;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class SpriteLayer extends Sprite
 {

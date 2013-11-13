@@ -2,7 +2,7 @@ package cc.extensions.ccbreader;
 import cc.basenodes.CCNode;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBReaderUtil
 {

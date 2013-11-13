@@ -93,7 +93,7 @@ class CCLabelBMFont extends CCNode
      * @param {cc.Point} imageOffset
      * @return {Boolean}
      */
-	public function initWithString(str : String, fntFile : String, ?width, ?alignment, ?imageOffset) : Bool {
+	public function initWithString(str : String, fntFile : String, ?width : Float = 0, ?alignment : Int = 0, ?imageOffset : Point) : Bool {
 		if (imageOffset == null) {
 			imageOffset = new Point(0, 0);
 		}
@@ -102,19 +102,11 @@ class CCLabelBMFont extends CCNode
 		this._initialString = str;
 		
 		if (fntFile != null) {
-
 			_font = new Font(CCLoader.pack, fntFile);
 			this.sprite = new TextSprite(_font, theString);
-
 			this._spriteText = cast(sprite, TextSprite);
-			if (alignment != null) {
-				this._spriteText.align = getAlign(alignment);
-			}
-			
-			if (width != null) {
-				this._spriteText.wrapWidth._ = width;
-			}
-			
+			this._spriteText.align = getAlign(alignment);
+			this._spriteText.wrapWidth._ = width;
 			
 			this._contentSize.width = this.sprite.getNaturalWidth();
 			this._contentSize.height = this.sprite.getNaturalHeight();
@@ -287,11 +279,11 @@ class CCLabelBMFont extends CCNode
         //}
     //}
 	
-	public static function create(?str : String, ?fntFile : String, ?width, ?alignment, ?imageOffset) : CCLabelBMFont{
+	public static function create(?str : String, ?fntFile : String, ?width : Float = 0, ?alignment : Int = 0, ?imageOffset : Point) : CCLabelBMFont{
 		var ret : CCLabelBMFont = new CCLabelBMFont();
 		
 		if (str == null && fntFile == null && width == null && alignment == null && imageOffset == null) {
-			if (ret != null) {
+			if (ret != null && ret.init()) {
 				return ret;
 			}
 			return null;

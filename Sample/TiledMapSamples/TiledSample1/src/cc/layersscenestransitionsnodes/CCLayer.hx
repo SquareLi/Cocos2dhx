@@ -37,7 +37,7 @@ import cc.touchdispatcher.CCPointerEventDelegate;
 import cc.menunodes.CCMenu;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
  

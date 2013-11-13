@@ -3,7 +3,7 @@ import flambe.math.Point;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXObjectGroup
 {
