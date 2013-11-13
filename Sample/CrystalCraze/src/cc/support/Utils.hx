@@ -2,7 +2,7 @@ package cc.support;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class Utils
 {

@@ -24,7 +24,7 @@ package cc.touchdispatcher;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCPointerHandler
@@ -32,6 +32,8 @@ class CCPointerHandler
 	var _delegate : CCPointerEventDelegate;
 	var _priority : Int = 0;
 	var _enabledSelectors : Int = 0;
+	
+	var _claimedPointers : Array<CCPointer>;
 	
 	public function new() {
 		
@@ -61,9 +63,14 @@ class CCPointerHandler
 		this._enabledSelectors = value;
 	}
 	
+	public function getClaimedTouches() : Array<CCPointer> {
+		return this._claimedPointers;
+	}
+	
 	public function initWithDelegate(delegate : CCPointerEventDelegate, priority : Int) {
 		this._delegate = delegate;
 		this._priority = priority;
+		this._claimedPointers = new Array<CCPointer>();
 	}
 	
 	public static function create(delegate : CCPointerEventDelegate, priority : Int) : CCPointerHandler {

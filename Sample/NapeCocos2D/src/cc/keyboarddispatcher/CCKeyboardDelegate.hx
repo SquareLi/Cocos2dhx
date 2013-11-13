@@ -4,7 +4,7 @@ import cc.platform.CCCommon;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 interface CCKeyboardDelegate
 {

@@ -24,7 +24,7 @@ package cc.spritenodes;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCAnimationCache
 {

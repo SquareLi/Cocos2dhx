@@ -25,7 +25,7 @@ import cc.basenodes.CCNode;
 import cc.touchdispatcher.CCPointerHandler;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCScheduler 

@@ -27,7 +27,7 @@ import flambe.sound.Sound;
 import cc.CCLoader;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCAudioEngine

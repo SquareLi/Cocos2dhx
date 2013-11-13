@@ -132,6 +132,22 @@ StringBuf.prototype = {
 }
 var StringTools = function() { }
 StringTools.__name__ = true;
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+}
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+}
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+}
 StringTools.hex = function(n,digits) {
 	var s = "";
 	var hexChars = "0123456789ABCDEF";
@@ -248,6 +264,10 @@ Xml.prototype = {
 		if(this.nodeType != Xml.Element) throw "bad nodeType";
 		this._attributes.set(att,value);
 	}
+	,get: function(att) {
+		if(this.nodeType != Xml.Element) throw "bad nodeType";
+		return this._attributes.get(att);
+	}
 	,set_nodeValue: function(v) {
 		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
 		return this._nodeValue = v;
@@ -315,7 +335,7 @@ cc.CCComponent.prototype = $extend(flambe.Component.prototype,{
 		this._node.onEnter();
 	}
 	,get_name: function() {
-		return "CCComponent_3";
+		return "CCComponent_4";
 	}
 	,__class__: cc.CCComponent
 });
@@ -374,6 +394,7 @@ cc.CCDirector.prototype = {
 		this._actionManager = new cc.action.CCActionManager();
 		this._winSizeInPoints = new cc.cocoa.CCSize(flambe.System._platform.getStage().get_width(),flambe.System._platform.getStage().get_height());
 		this._pointerDispatcher = new cc.touchdispatcher.CCPointerDispatcher();
+		this._keyboardDispatcher = cc.keyboarddispatcher.CCKeyboardDispatcher.getInstance();
 		this.length = 0;
 		this.director = new flambe.scene.Director();
 		flambe.System.root.add(this.director);
@@ -597,7 +618,14 @@ cc.action.CCCallFunc.prototype = $extend(cc.action.CCActionInstant.prototype,{
 		this.execute();
 	}
 	,execute: function() {
-		if(this._callFunc != null) this._callFunc();
+		if(this._callFunc != null) {
+			this._callFunc();
+			return;
+		}
+		if(this._callFuncWithParams != null) {
+			this._callFuncWithParams(this._data);
+			return;
+		}
 	}
 	,__class__: cc.action.CCCallFunc
 });
@@ -609,12 +637,16 @@ cc.action.CCSequence.__name__ = true;
 cc.action.CCSequence.create = function(tempArray) {
 	var paraArray = tempArray;
 	var prev = paraArray[0];
+	var ret = null;
 	var _g1 = 1, _g = paraArray.length;
 	while(_g1 < _g) {
 		var i = _g1++;
-		if(paraArray[i] != null) prev = cc.action.CCSequence._actionOneTwo(prev,paraArray[i]);
+		if(paraArray[i] != null) {
+			prev = cc.action.CCSequence._actionOneTwo(prev,paraArray[i]);
+			ret = js.Boot.__cast(prev , cc.action.CCSequence);
+		}
 	}
-	return prev;
+	return ret;
 }
 cc.action.CCSequence._actionOneTwo = function(actionOne,actionTwo) {
 	var sequence = new cc.action.CCSequence();
@@ -1025,6 +1057,8 @@ cc.action.MapElement = function() { }
 cc.action.MapElement.__name__ = true;
 cc.basenodes = {}
 cc.basenodes.CCNode = function() {
+	this._hasSetPosition = false;
+	this.isOriginTopLeft = true;
 	this._initializedNode = false;
 	this._ignoreAnchorPointForPosition = false;
 	this._running = false;
@@ -1032,7 +1066,8 @@ cc.basenodes.CCNode = function() {
 	this._scaleY = 1;
 	this._scaleX = 1;
 	this._rotation = 0;
-	this._initNode();
+	this._zOrder = 0;
+	this.init();
 };
 cc.basenodes.CCNode.__name__ = true;
 cc.basenodes.CCNode.prototype = {
@@ -1119,6 +1154,14 @@ cc.basenodes.CCNode.prototype = {
 	}
 	,onExit: function() {
 		this._running = false;
+		if(this._children != null) {
+			var _g = 0, _g1 = this._children;
+			while(_g < _g1.length) {
+				var c = _g1[_g];
+				++_g;
+				c.onExit();
+			}
+		}
 	}
 	,onEnter: function() {
 		this._running = true;
@@ -1126,10 +1169,12 @@ cc.basenodes.CCNode.prototype = {
 	,_detachChild: function(child,doCleanup) {
 		HxOverrides.remove(this._children,child);
 		this.entity.removeChild(child.getEntity());
+		child.onExit();
 		child._parent = null;
 		if(doCleanup) child.cleanup();
 	}
 	,removeChild: function(child,cleanup) {
+		if(cleanup == null) cleanup = true;
 		if(this._children == null) return;
 		this._detachChild(child,cleanup);
 	}
@@ -1151,31 +1196,18 @@ cc.basenodes.CCNode.prototype = {
 		child._tag = tempTag;
 		child.setParent(this);
 		this.entity.addChild(child.entity,true,zOrder);
+		child._zOrder = zOrder;
 		this._children.push(child);
-	}
-	,getChildByTag: function(aTag) {
-		cc.platform.CCCommon.assert(aTag != cc.basenodes.CCNode.NODE_TAG_INVALID,"Invalid tag");
-		if(this._children != null) {
-			var _g1 = 0, _g = this._children.length;
-			while(_g1 < _g) {
-				var i = _g1++;
-				var node = this._children[i];
-				if(node != null && node._tag == aTag) return node;
-			}
-		}
-		return null;
 	}
 	,cleanup: function() {
 		this.unscheduleAllCallbacks();
+		this.entity.dispose();
 	}
 	,getTag: function() {
 		return this._tag;
 	}
-	,ignoreAnchorPointForPosition: function(newValue) {
-		if(newValue != this._ignoreAnchorPointForPosition) {
-			this._ignoreAnchorPointForPosition = newValue;
-			this.setCenterAnchor();
-		}
+	,isIgnoreAnchorPointForPosition: function() {
+		return this._ignoreAnchorPointForPosition;
 	}
 	,setParent: function(v) {
 		this._parent = v;
@@ -1190,12 +1222,17 @@ cc.basenodes.CCNode.prototype = {
 		return this._contentSize;
 	}
 	,setCenterAnchor: function() {
-		this.sprite.centerAnchor();
-		this._anchorPoint.set(this.sprite.anchorX._value,this.sprite.anchorY._value);
+		this.setAnchorPoint(new flambe.math.Point(0.5,0.5));
 	}
 	,setAnchorPoint: function(point) {
-		this._anchorPoint.set(point.x,point.y);
-		this.sprite.setAnchor(point.x,point.y);
+		if(this.isIgnoreAnchorPointForPosition()) return;
+		this._anchorPoint = new flambe.math.Point(point.x,point.y);
+		var width = this.sprite.getNaturalWidth();
+		var height = this.sprite.getNaturalHeight();
+		if(this.isOriginTopLeft) this.sprite.setAnchor(this._anchorPoint.x * width,this._anchorPoint.y * height); else this.sprite.setAnchor(this._anchorPoint.x * width,(1 - this._anchorPoint.y) * height);
+	}
+	,getAnchorPoint: function() {
+		return new flambe.math.Point(this._anchorPoint.x,this._anchorPoint.y);
 	}
 	,setVisible: function(v) {
 		this._visible = v;
@@ -1215,6 +1252,7 @@ cc.basenodes.CCNode.prototype = {
 		this._position = new flambe.math.Point(xValue,yValue);
 		this.sprite.x.set__(this._position.x);
 		this.sprite.y.set__(this._position.y);
+		this._hasSetPosition = true;
 	}
 	,getScaleY: function() {
 		return this._scaleY;
@@ -1256,7 +1294,7 @@ cc.basenodes.CCNode.prototype = {
 		this._scaleX = 1;
 		this._scaleY = 1;
 		this._children = new Array();
-		this._contentSize = director.getWinSize();
+		this._contentSize = new cc.cocoa.CCSize(director.getWinSize().width,director.getWinSize().height);
 		this.entity = new flambe.Entity();
 		this.sprite = new flambe.display.Sprite();
 		this.cbUpdate = new Array();
@@ -1327,14 +1365,7 @@ cc.denshion.CCAudioEngine.getInstance = function() {
 	return cc.denshion.CCAudioEngine._instance;
 }
 cc.denshion.CCAudioEngine.prototype = {
-	stopMusic: function() {
-		if(this._playingMusic == null) return;
-		this._playingMusic.dispose();
-		this._playingMusic = null;
-		this._cacheMusic = null;
-		this._isMusicPlaying = false;
-	}
-	,set__musicVolume: function(volume) {
+	set__musicVolume: function(volume) {
 		if(volume <= 0) volume = 0; else if(volume > 1) volume = 1;
 		return this._musicVolume = volume;
 	}
@@ -1373,6 +1404,121 @@ cc.denshion.CCAudioEngine.prototype = {
 	}
 	,__class__: cc.denshion.CCAudioEngine
 }
+cc.keyboarddispatcher = {}
+cc.keyboarddispatcher.CCKeyboardDelegate = function() { }
+cc.keyboarddispatcher.CCKeyboardDelegate.__name__ = true;
+cc.keyboarddispatcher.CCKeyboardDelegate.prototype = {
+	__class__: cc.keyboarddispatcher.CCKeyboardDelegate
+}
+cc.keyboarddispatcher.CCKeyboardHandler = function() {
+};
+cc.keyboarddispatcher.CCKeyboardHandler.__name__ = true;
+cc.keyboarddispatcher.CCKeyboardHandler.create = function(delegate) {
+	var handler = new cc.keyboarddispatcher.CCKeyboardHandler();
+	handler.initWithDelegate(delegate);
+	return handler;
+}
+cc.keyboarddispatcher.CCKeyboardHandler.prototype = {
+	initWithDelegate: function(delegate) {
+		cc.platform.CCCommon.assert(delegate != null,"It's a wrong delegate!");
+		this._delegate = delegate;
+		return true;
+	}
+	,getDelegate: function() {
+		return this._delegate;
+	}
+	,__class__: cc.keyboarddispatcher.CCKeyboardHandler
+}
+cc.keyboarddispatcher.CCKeyboardDispatcher = function() {
+	this._toRemove = false;
+	this._toAdd = false;
+	this._locked = false;
+	this._handlersToAdd = new Array();
+	this._handlersToRemove = new Array();
+	this._delegates = new Array();
+};
+cc.keyboarddispatcher.CCKeyboardDispatcher.__name__ = true;
+cc.keyboarddispatcher.CCKeyboardDispatcher.getInstance = function() {
+	if(cc.keyboarddispatcher.CCKeyboardDispatcher.keyboardDispatcher == null) {
+		cc.keyboarddispatcher.CCKeyboardDispatcher.keyboardDispatcher = new cc.keyboarddispatcher.CCKeyboardDispatcher();
+		flambe.System._platform.getKeyboard().up.connect(function(event) {
+			cc.keyboarddispatcher.CCKeyboardDispatcher.keyboardDispatcher.displatchKeyboardMSG(event,false);
+		});
+		flambe.System._platform.getKeyboard().down.connect(function(event) {
+			cc.keyboarddispatcher.CCKeyboardDispatcher.keyboardDispatcher.displatchKeyboardMSG(event,true);
+		});
+	}
+	return cc.keyboarddispatcher.CCKeyboardDispatcher.keyboardDispatcher;
+}
+cc.keyboarddispatcher.CCKeyboardDispatcher.prototype = {
+	displatchKeyboardMSG: function(event,keydown) {
+		this._locked = true;
+		var i = 0;
+		if(keydown && event != null) {
+			var _g = 0, _g1 = this._delegates;
+			while(_g < _g1.length) {
+				var d = _g1[_g];
+				++_g;
+				d.getDelegate().onKeyDown(event);
+			}
+		} else if(!keydown && event != null) {
+			var _g = 0, _g1 = this._delegates;
+			while(_g < _g1.length) {
+				var d = _g1[_g];
+				++_g;
+				d.getDelegate().onKeyUp(event);
+			}
+		}
+		this._locked = false;
+		if(this._toRemove) {
+			this._toRemove = false;
+			var _g = 0, _g1 = this._handlersToRemove;
+			while(_g < _g1.length) {
+				var h = _g1[_g];
+				++_g;
+				this.forceRemoveDelegate(h);
+			}
+			this._handlersToRemove = [];
+		}
+		if(this._toAdd) {
+			this._toAdd = false;
+			var _g = 0, _g1 = this._handlersToAdd;
+			while(_g < _g1.length) {
+				var h = _g1[_g];
+				++_g;
+				this.forceAddDelegate(h);
+			}
+			this._handlersToAdd = [];
+		}
+		return true;
+	}
+	,forceRemoveDelegate: function(delegate) {
+		var remove = null;
+		var _g = 0, _g1 = this._delegates;
+		while(_g < _g1.length) {
+			var d = _g1[_g];
+			++_g;
+			if(d.getDelegate() == delegate) {
+				remove = d;
+				break;
+			}
+		}
+		if(remove != null) HxOverrides.remove(this._delegates,remove);
+	}
+	,forceAddDelegate: function(delegate) {
+		var handler = cc.keyboarddispatcher.CCKeyboardHandler.create(delegate);
+		if(handler != null) {
+			var _g = 0, _g1 = this._delegates;
+			while(_g < _g1.length) {
+				var d = _g1[_g];
+				++_g;
+				if(d.getDelegate() == handler.getDelegate()) return;
+			}
+			this._delegates.push(handler);
+		}
+	}
+	,__class__: cc.keyboarddispatcher.CCKeyboardDispatcher
+}
 cc.labelnodes = {}
 cc.labelnodes.CCLabelBMFont = function() {
 	this._initialString = "";
@@ -1382,9 +1528,11 @@ cc.labelnodes.CCLabelBMFont = function() {
 };
 cc.labelnodes.CCLabelBMFont.__name__ = true;
 cc.labelnodes.CCLabelBMFont.create = function(str,fntFile,width,alignment,imageOffset) {
-	if(alignment == null) alignment = 0;
-	if(width == null) width = 0;
 	var ret = new cc.labelnodes.CCLabelBMFont();
+	if(str == null && fntFile == null && width == null && alignment == null && imageOffset == null) {
+		if(ret != null) return ret;
+		return null;
+	}
 	if(imageOffset == null) imageOffset = new flambe.math.Point(0,0);
 	ret.initWithString(str,fntFile,width,alignment,imageOffset);
 	return ret;
@@ -1400,7 +1548,12 @@ cc.labelnodes.CCLabelBMFont.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		}
 	}
 	,updateString: function(fromUpdate) {
-		if(!fromUpdate) this._spriteText.set_text(this._string);
+		if(!fromUpdate) {
+			this._spriteText.set_text(this._string);
+			this._contentSize.width = this._spriteText.getNaturalWidth();
+			this._contentSize.height = this._spriteText.getNaturalHeight();
+			this.setAnchorPoint(this._anchorPoint);
+		}
 	}
 	,getAlign: function(a) {
 		var ret = flambe.display.TextAlign.Left;
@@ -1418,22 +1571,22 @@ cc.labelnodes.CCLabelBMFont.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		return ret;
 	}
 	,initWithString: function(str,fntFile,width,alignment,imageOffset) {
-		if(alignment == null) alignment = 0;
-		if(width == null) width = 0;
 		if(imageOffset == null) imageOffset = new flambe.math.Point(0,0);
 		var theString = str;
 		this._initialString = str;
-		this._font = new flambe.display.Font(cc.CCLoader.pack,fntFile);
-		this.sprite = new flambe.display.TextSprite(this._font,theString);
-		this._spriteText = js.Boot.__cast(this.sprite , flambe.display.TextSprite);
-		this._spriteText.set_align(this.getAlign(alignment));
-		this._spriteText.wrapWidth.set__(width);
+		if(fntFile != null) {
+			this._font = new flambe.display.Font(cc.CCLoader.pack,fntFile);
+			this.sprite = new flambe.display.TextSprite(this._font,theString);
+			this._spriteText = js.Boot.__cast(this.sprite , flambe.display.TextSprite);
+			if(alignment != null) this._spriteText.set_align(this.getAlign(alignment));
+			if(width != null) this._spriteText.wrapWidth.set__(width);
+			this._contentSize.width = this.sprite.getNaturalWidth();
+			this._contentSize.height = this.sprite.getNaturalHeight();
+		}
 		this._imageOffset = imageOffset;
 		this.component = new cc.CCComponent(this);
 		this.entity.add(this.sprite);
 		this.entity.add(this.component);
-		this._contentSize.width = this.sprite.getNaturalWidth();
-		this._contentSize.height = this.sprite.getNaturalHeight();
 		return true;
 	}
 	,setOpacity: function(v) {
@@ -1466,10 +1619,14 @@ cc.layersscenestransitionsnodes.CCLayer = function() {
 	cc.basenodes.CCNode.call(this);
 };
 cc.layersscenestransitionsnodes.CCLayer.__name__ = true;
-cc.layersscenestransitionsnodes.CCLayer.__interfaces__ = [cc.touchdispatcher.CCPointerEventDelegate];
+cc.layersscenestransitionsnodes.CCLayer.__interfaces__ = [cc.keyboarddispatcher.CCKeyboardDelegate,cc.touchdispatcher.CCPointerEventDelegate];
 cc.layersscenestransitionsnodes.CCLayer.__super__ = cc.basenodes.CCNode;
 cc.layersscenestransitionsnodes.CCLayer.prototype = $extend(cc.basenodes.CCNode.prototype,{
-	onPointerUp: function(event) {
+	onKeyUp: function(event) {
+	}
+	,onKeyDown: function(event) {
+	}
+	,onPointerUp: function(event) {
 		return false;
 	}
 	,onPointerMoved: function(event) {
@@ -1497,6 +1654,7 @@ cc.layersscenestransitionsnodes.CCLayer.prototype = $extend(cc.basenodes.CCNode.
 		cc.CCDirector.getInstance().getPointerDispatcher().addPointerDelegate(this,this._pointerPriority);
 	}
 	,init: function() {
+		cc.basenodes.CCNode.prototype.init.call(this);
 		this._initLayer();
 		return true;
 	}
@@ -1504,10 +1662,7 @@ cc.layersscenestransitionsnodes.CCLayer.prototype = $extend(cc.basenodes.CCNode.
 		if(this.component == null) {
 			this.component = new cc.CCComponent(this);
 			this.entity.add(this.component);
-			if(this.sprite == null) {
-				this.sprite = new flambe.display.Sprite();
-				this.entity.add(this.sprite);
-			}
+			if(!(this.entity._compMap.Sprite_2 != null)) this.entity.add(this.sprite);
 		}
 	}
 	,_initLayer: function() {
@@ -1585,14 +1740,15 @@ cc.menunodes.CCMenu = function() {
 	this._enabled = false;
 	this._state = -1;
 	cc.layersscenestransitionsnodes.CCLayer.call(this);
-	this.sprite = new flambe.display.Sprite();
-	this.entity.add(this.sprite);
-	this.component = new cc.CCComponent(this);
-	this.entity.add(this.component);
+	this.setContentSize(new cc.cocoa.CCSize(0,0));
 };
 cc.menunodes.CCMenu.__name__ = true;
 cc.menunodes.CCMenu.create = function(args) {
 	var ret = new cc.menunodes.CCMenu();
+	if(args == null) {
+		ret.initWithItems(null);
+		return ret;
+	}
 	if(args.length == 0) ret.initWithItems(null);
 	ret.initWithArray(args);
 	return ret;
@@ -1608,7 +1764,11 @@ cc.menunodes.CCMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.
 				var child = js.Boot.__cast(this._children[i] , cc.menunodes.CCMenuItem);
 				if(child.isVisible() && child.isEnabled()) {
 					var r = child.rect();
-					if(r.contains(touch.getLocation().x,touch.getLocation().y)) return child;
+					var temp = null;
+					var isContain = false;
+					var tempNode = child.getCurrentNode();
+					if(tempNode != null) isContain = tempNode.getSprite().contains(touch.getLocation().x,touch.getLocation().y);
+					if(isContain) return child;
 				}
 			}
 		}
@@ -1622,7 +1782,11 @@ cc.menunodes.CCMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.
 		}
 		cc.layersscenestransitionsnodes.CCLayer.prototype.onExit.call(this);
 	}
+	,onPointerMoved: function(event) {
+		return true;
+	}
 	,onPointerDragged: function(event) {
+		if(!this._enabled) return true;
 		var currentItem = this._itemForTouch(event);
 		if(currentItem != this._selectedItem) {
 			if(this._selectedItem != null) this._selectedItem.unselected();
@@ -1632,6 +1796,7 @@ cc.menunodes.CCMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.
 		return true;
 	}
 	,onPointerUp: function(event) {
+		if(!this._enabled) return true;
 		if(this._selectedItem != null) {
 			this._selectedItem.unselected();
 			this._selectedItem.activate();
@@ -1640,7 +1805,7 @@ cc.menunodes.CCMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.
 		return true;
 	}
 	,onPointerDown: function(event) {
-		if(this._state != cc.menunodes.CCMenu.MENU_STATE_WAITING || !this._visible || !this._enabled) return false;
+		if(this._state != cc.menunodes.CCMenu.MENU_STATE_WAITING || !this._visible || !this._enabled) return true;
 		var c = this._parent;
 		while(c != null) {
 			if(!c.isVisible()) return false;
@@ -1657,7 +1822,6 @@ cc.menunodes.CCMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.
 		return false;
 	}
 	,registerWithTouchDispatcher: function() {
-		cc.layersscenestransitionsnodes.CCLayer.prototype.registerWithTouchDispatcher.call(this);
 		cc.CCDirector.getInstance().getPointerDispatcher().addPointerDelegate(this,cc.menunodes.CCMenu.MENU_HANDLER_PRIORITY);
 	}
 	,alignVerticallyWithPadding: function(padding) {
@@ -1676,24 +1840,19 @@ cc.menunodes.CCMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.
 		cc.layersscenestransitionsnodes.CCLayer.prototype.addChild.call(this,child,zOrder,tag);
 	}
 	,initWithArray: function(arrayOfItems) {
-		if(this.init()) {
-			this.registerWithTouchDispatcher();
-			this._enabled = true;
-			var winSize = cc.CCDirector.getInstance().getWinSize();
-			this.ignoreAnchorPointForPosition(true);
-			this.setContentSize(winSize);
-			if(arrayOfItems != null) {
-				var _g1 = 0, _g = arrayOfItems.length;
-				while(_g1 < _g) {
-					var i = _g1++;
-					this.addChild(arrayOfItems[i],i);
-					arrayOfItems[i].setPosition(0,0);
-				}
+		this._enabled = true;
+		var winSize = cc.CCDirector.getInstance().getWinSize();
+		if(arrayOfItems != null) {
+			var _g1 = 0, _g = arrayOfItems.length;
+			while(_g1 < _g) {
+				var i = _g1++;
+				this.addChild(arrayOfItems[i],i);
+				arrayOfItems[i].setPosition(0,0);
 			}
-			this._selectedItem = null;
-			this._state = cc.menunodes.CCMenu.MENU_STATE_WAITING;
-			return true;
 		}
+		this._selectedItem = null;
+		this._state = cc.menunodes.CCMenu.MENU_STATE_WAITING;
+		return true;
 		return false;
 	}
 	,initWithItems: function(args) {
@@ -1721,12 +1880,11 @@ cc.menunodes.CCMenuItem = function() {
 cc.menunodes.CCMenuItem.__name__ = true;
 cc.menunodes.CCMenuItem.__super__ = cc.basenodes.CCNode;
 cc.menunodes.CCMenuItem.prototype = $extend(cc.basenodes.CCNode.prototype,{
-	activate: function() {
-		if(this._isEnabled && this._selector != null) this._selector();
+	getCurrentNode: function() {
+		return null;
 	}
-	,setCallback: function(selector,rec) {
-		this._listener = rec;
-		this._selector = selector;
+	,activate: function() {
+		if(this._isEnabled && this._selector != null) this._selector.apply(this._listener,[]);
 	}
 	,unselected: function() {
 		this._isSelected = false;
@@ -1735,7 +1893,11 @@ cc.menunodes.CCMenuItem.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._isSelected = true;
 	}
 	,rect: function() {
-		return new flambe.math.Rectangle(this._position.x + this._parent._position.x - this._anchorPoint.x,this._position.y + this._parent._position.y - this._anchorPoint.y,this._contentSize.width,this._contentSize.height);
+		var locPosition = this._position;
+		var locContentSize = this._contentSize;
+		var locAnchorPoint = this._anchorPoint;
+		var ret = new flambe.math.Rectangle(locPosition.x,locPosition.y,locContentSize.width,locContentSize.height);
+		return ret;
 	}
 	,initWithCallback: function(selector,rec) {
 		this._listener = rec;
@@ -1743,9 +1905,6 @@ cc.menunodes.CCMenuItem.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._isEnabled = true;
 		this._isSelected = false;
 		return true;
-	}
-	,setEnabled: function(enable) {
-		this._isEnabled = enable;
 	}
 	,isEnabled: function() {
 		return this._isEnabled;
@@ -1764,7 +1923,10 @@ cc.menunodes.CCMenuItemLabel.create = function(label,selector,target) {
 }
 cc.menunodes.CCMenuItemLabel.__super__ = cc.menunodes.CCMenuItem;
 cc.menunodes.CCMenuItemLabel.prototype = $extend(cc.menunodes.CCMenuItem.prototype,{
-	unselected: function() {
+	getCurrentNode: function() {
+		return this._label;
+	}
+	,unselected: function() {
 		if(this._isEnabled) {
 			cc.menunodes.CCMenuItem.prototype.unselected.call(this);
 			this.stopActionByTag(cc.menunodes.CCMenuItem.ZOOM_ACTION_TAG);
@@ -1801,14 +1963,6 @@ cc.menunodes.CCMenuItemLabel.prototype = $extend(cc.menunodes.CCMenuItem.prototy
 	,setOpacity: function(opacity) {
 		this._label.setOpacity(opacity);
 	}
-	,setEnabled: function(enable) {
-		if(this._isEnabled != enable) {
-			if(!enable) {
-			} else {
-			}
-		}
-		cc.menunodes.CCMenuItem.prototype.setEnabled.call(this,enable);
-	}
 	,setLabel: function(label) {
 		if(label != null) {
 			this.addChild(label);
@@ -1830,31 +1984,38 @@ cc.menunodes.CCMenuItemSprite.create = function(normalSprite,selectedSprite,thre
 }
 cc.menunodes.CCMenuItemSprite.__super__ = cc.menunodes.CCMenuItem;
 cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.prototype,{
-	_updateImagesVisibility: function() {
+	getCurrentNode: function() {
+		return this._currentImage;
+	}
+	,_updateImagesVisibility: function() {
 		if(this._isEnabled) {
 			if(this._normalImage != null) this._normalImage.setVisible(true);
 			if(this._selectedImage != null) this._selectedImage.setVisible(false);
 			if(this._disabledImage != null) this._disabledImage.setVisible(false);
+			this._currentImage = this._normalImage;
 		} else if(this._disabledImage != null) {
 			if(this._normalImage != null) this._normalImage.setVisible(false);
 			if(this._selectedImage != null) this._selectedImage.setVisible(false);
 			if(this._disabledImage != null) this._disabledImage.setVisible(true);
+			this._currentImage = this._disabledImage;
 		} else {
 			if(this._normalImage != null) this._normalImage.setVisible(true);
 			if(this._selectedImage != null) this._selectedImage.setVisible(false);
 			if(this._disabledImage != null) this._disabledImage.setVisible(false);
+			this._currentImage = this._normalImage;
 		}
 	}
-	,setEnabled: function(bEnabled) {
-		if(this._isEnabled != bEnabled) {
-			cc.menunodes.CCMenuItem.prototype.setEnabled.call(this,bEnabled);
-			this._updateImagesVisibility();
-		}
+	,setAnchorPoint: function(point) {
+		cc.menunodes.CCMenuItem.prototype.setAnchorPoint.call(this,point);
+		if(this._normalImage != null) this._normalImage.setAnchorPoint(point);
+		if(this._disabledImage != null) this._disabledImage.setAnchorPoint(point);
+		if(this._selectedImage != null) this._selectedImage.setAnchorPoint(point);
 	}
 	,unselected: function() {
 		cc.menunodes.CCMenuItem.prototype.unselected.call(this);
 		if(this._normalImage != null) {
 			this._normalImage.setVisible(true);
+			this._currentImage = this._normalImage;
 			if(this._selectedImage != null) this._selectedImage.setVisible(false);
 			if(this._disabledImage != null) this._disabledImage.setVisible(false);
 		}
@@ -1866,7 +2027,11 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 			if(this._selectedImage != null) {
 				this._normalImage.setVisible(false);
 				this._selectedImage.setVisible(true);
-			} else this._normalImage.setVisible(true);
+				this._currentImage = this._selectedImage;
+			} else {
+				this._normalImage.setVisible(true);
+				this._currentImage = this._selectedImage;
+			}
 		}
 	}
 	,getOpacity: function() {
@@ -1890,6 +2055,8 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 		if(disabledImage != null) this.addChild(disabledImage,0,cc.menunodes.CCMenuItem.DISABLE_TAG);
 		if(this._disabledImage != null) this.removeChild(this._disabledImage,true);
 		this._disabledImage = disabledImage;
+		this._disabledImage.isOriginTopLeft = this.isOriginTopLeft;
+		this._disabledImage.setAnchorPoint(this.getAnchorPoint());
 		this._updateImagesVisibility();
 	}
 	,setSelectedImage: function(selectedImage) {
@@ -1897,6 +2064,8 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 		if(selectedImage != null) this.addChild(selectedImage,0,cc.menunodes.CCMenuItem.SELECTED_TAG);
 		if(this._selectedImage != null) this.removeChild(this._selectedImage,true);
 		this._selectedImage = selectedImage;
+		this._selectedImage.isOriginTopLeft = this.isOriginTopLeft;
+		this._selectedImage.setAnchorPoint(this.getAnchorPoint());
 		this._updateImagesVisibility();
 	}
 	,setNormalImage: function(normalImage) {
@@ -1905,99 +2074,139 @@ cc.menunodes.CCMenuItemSprite.prototype = $extend(cc.menunodes.CCMenuItem.protot
 		if(this._normalImage != null) this.removeChild(this._normalImage,true);
 		this._normalImage = normalImage;
 		this.setContentSize(this._normalImage.getContentSize());
+		this._normalImage.isOriginTopLeft = this.isOriginTopLeft;
+		this._normalImage.setAnchorPoint(this.getAnchorPoint());
 		this._updateImagesVisibility();
 	}
 	,__class__: cc.menunodes.CCMenuItemSprite
 });
-cc.menunodes.CCMenuItemToggle = function() {
-	this._selectedIndex = 0;
-	this._opacity = 0;
-	cc.menunodes.CCMenuItem.call(this);
-	this._subItems = new Array();
+cc.menunodes.CCMenuItemImage = function() {
+	cc.menunodes.CCMenuItemSprite.call(this);
 };
-cc.menunodes.CCMenuItemToggle.__name__ = true;
-cc.menunodes.CCMenuItemToggle.create = function(items,fn,target) {
-	var ret = new cc.menunodes.CCMenuItemToggle();
-	ret.initWithItems(items,fn,target);
-	return ret;
+cc.menunodes.CCMenuItemImage.__name__ = true;
+cc.menunodes.CCMenuItemImage.create = function(normalImage,selectedImage,three,four,five) {
+	var ret = new cc.menunodes.CCMenuItemImage();
+	if(ret.initWithNormalImage(normalImage,selectedImage,three,four,five)) return ret;
+	return null;
 }
-cc.menunodes.CCMenuItemToggle.__super__ = cc.menunodes.CCMenuItem;
-cc.menunodes.CCMenuItemToggle.prototype = $extend(cc.menunodes.CCMenuItem.prototype,{
-	onEnter: function() {
-		cc.menunodes.CCMenuItem.prototype.onEnter.call(this);
-		this.setSelectedIndex(this._selectedIndex);
+cc.menunodes.CCMenuItemImage.__super__ = cc.menunodes.CCMenuItemSprite;
+cc.menunodes.CCMenuItemImage.prototype = $extend(cc.menunodes.CCMenuItemSprite.prototype,{
+	initWithNormalImage: function(normalImage,selectedImage,disabledImage,selector,target) {
+		var normalSprite = null;
+		var selectedSprite = null;
+		var disabledSprite = null;
+		if(normalImage != null) normalSprite = cc.spritenodes.CCSprite.create(normalImage);
+		if(selectedImage != null) selectedSprite = cc.spritenodes.CCSprite.create(selectedImage);
+		if(disabledImage != null) disabledSprite = cc.spritenodes.CCSprite.create(disabledImage);
+		return this.initWithNormalSprite(normalSprite,selectedSprite,disabledSprite,selector,target);
 	}
-	,setEnabled: function(enable) {
-		if(this._isEnabled == enable) {
-			cc.menunodes.CCMenuItem.prototype.setEnabled.call(this,enable);
-			if(this._subItems != null && this._subItems.length > 0) {
-				var _g = 0, _g1 = this._subItems;
-				while(_g < _g1.length) {
-					var i = _g1[_g];
-					++_g;
-					i.setEnabled(enable);
-				}
-			}
-		}
-	}
-	,unselected: function() {
-		cc.menunodes.CCMenuItem.prototype.unselected.call(this);
-		this._subItems[this._selectedIndex].unselected();
-	}
-	,selected: function() {
-		cc.menunodes.CCMenuItem.prototype.selected.call(this);
-		this._subItems[this._selectedIndex].selected();
-	}
-	,activate: function() {
-		if(this._isEnabled) {
-			var newIndex = (this._selectedIndex + 1) % this._subItems.length;
-			this.setSelectedIndex(newIndex);
-		}
-		cc.menunodes.CCMenuItem.prototype.activate.call(this);
-	}
-	,initWithItems: function(items,fns,target) {
-		this.initWithCallback(fns,target);
-		var _g = 0;
-		while(_g < items.length) {
-			var i = items[_g];
-			++_g;
-			if(i != null) this._subItems.push(i);
-		}
-		this._selectedIndex = cc.platform.CCMacro.UINT_MAX;
-		this.setSelectedIndex(0);
-		return true;
-	}
-	,setSelectedIndex: function(selectedIndex) {
-		if(selectedIndex != this._selectedIndex) {
-			this._selectedIndex = selectedIndex;
-			var currItem = this.getChildByTag(cc.menunodes.CCMenuItem.CURRENT_ITEM);
-			if(currItem != null) currItem.removeFromParent(false);
-			var item = this._subItems[this._selectedIndex];
-			this.addChild(item,0,cc.menunodes.CCMenuItem.CURRENT_ITEM);
-			var s = item.getContentSize();
-			this.setContentSize(s);
-			item.setPosition(s.width / 2,s.height / 2);
-		}
-	}
-	,setOpacity: function(opacity) {
-		this._opacity = opacity;
-		if(this._subItems != null && this._subItems.length > 0) {
-			var _g = 0, _g1 = this._subItems;
-			while(_g < _g1.length) {
-				var i = _g1[_g];
-				++_g;
-				i.setOpacity(opacity);
-			}
-		}
-	}
-	,getOpacity: function() {
-		return this._opacity;
-	}
-	,__class__: cc.menunodes.CCMenuItemToggle
+	,__class__: cc.menunodes.CCMenuItemImage
 });
 cc.platform = {}
+cc.platform.CCBase64 = function() { }
+cc.platform.CCBase64.__name__ = true;
+cc.platform.CCBase64.decode = function(input) {
+	input = StringTools.ltrim(input);
+	input = StringTools.rtrim(input);
+	var output = [];
+	var enc1;
+	var enc2;
+	var enc3;
+	var enc4;
+	var i = 0;
+	var chr1;
+	var chr2;
+	var chr3;
+	while(i < input.length) {
+		enc1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".indexOf(input.charAt(i++));
+		enc2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".indexOf(input.charAt(i++));
+		enc3 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".indexOf(input.charAt(i++));
+		enc4 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".indexOf(input.charAt(i++));
+		chr1 = enc1 << 2 | enc2 >> 4;
+		chr2 = (enc2 & 15) << 4 | enc3 >> 2;
+		chr3 = (enc3 & 3) << 6 | enc4;
+		output.push(String.fromCharCode(chr1));
+		if(enc3 != 64) output.push(String.fromCharCode(chr2));
+		if(enc4 != 64) output.push(String.fromCharCode(chr3));
+	}
+	var o = output.join("");
+	var count = 0;
+	var _g = 0;
+	while(_g < output.length) {
+		var i1 = output[_g];
+		++_g;
+		var x = HxOverrides.cca(i1,0);
+		if(x != 0) {
+		}
+		count++;
+	}
+	return o;
+}
+cc.platform.CCBase64.decodeAsArray = function(input,lineWidth,bytes) {
+	if(bytes == null) bytes = 4;
+	var dec = cc.platform.CCBase64.decode(input);
+	var ar = [];
+	var len = dec.length / bytes | 0;
+	var _g = 0;
+	while(_g < len) {
+		var i = _g++;
+		ar[i] = 0;
+		var j = bytes - 1;
+		while(j >= 0) {
+			var t = HxOverrides.cca(dec,i * bytes + j) << j * 8;
+			ar[i] += t;
+			j--;
+		}
+	}
+	return ar;
+}
+cc.platform.CCBase64.decodeAsOneArray = function(input,lineWidth,bytes) {
+	if(bytes == null) bytes = 4;
+	var dec = cc.platform.CCBase64.decode(input);
+	var ar = [];
+	var len = dec.length / bytes | 0;
+	var _g = 0;
+	while(_g < len) {
+		var i = _g++;
+		ar[i] = 0;
+		var j = bytes - 1;
+		while(j >= 0) {
+			var t = HxOverrides.cca(dec,i * bytes + j) << j * 8;
+			ar[i] += t;
+			j--;
+		}
+	}
+	return ar;
+}
+cc.platform.CCBase64.decodeAsArrayBytes = function($byte,lineWidth,bytes) {
+	if(bytes == null) bytes = 4;
+	var ar = [];
+	var len = $byte.length / bytes | 0;
+	var _g = 0;
+	while(_g < len) {
+		var i = _g++;
+		ar[i] = 0;
+		var j = bytes - 1;
+		while(j >= 0) {
+			var t = $byte.b[i * bytes + j] << j * 8;
+			ar[i] += t;
+			j--;
+		}
+	}
+	return ar;
+}
+cc.platform.CCBase64.unzip = function(input,lineWidth) {
+	var tempString1 = cc.platform.CCBase64.decode(input);
+	var arr = cc.platform.CCBase64.decodeAsOneArray(input,0,1);
+	var b = haxe.io.Bytes.ofData(arr);
+	var bytes = haxe.zip.InflateImpl.run(new haxe.io.BytesInput(b));
+	var ret = cc.platform.CCBase64.decodeAsArrayBytes(bytes,lineWidth);
+	return ret;
+}
 cc.platform.CCCommon = function() { }
 cc.platform.CCCommon.__name__ = true;
+cc.platform.CCCommon.log = function(message) {
+}
 cc.platform.CCCommon.assert = function(cond,message) {
 	if(!cond) throw message;
 }
@@ -2010,11 +2219,7 @@ flambe.math.Point = function(x,y) {
 };
 flambe.math.Point.__name__ = true;
 flambe.math.Point.prototype = {
-	set: function(x,y) {
-		this.x = x;
-		this.y = y;
-	}
-	,__class__: flambe.math.Point
+	__class__: flambe.math.Point
 }
 cc.platform.CCConfig = function() { }
 cc.platform.CCConfig.__name__ = true;
@@ -2034,8 +2239,438 @@ cc.platform.CCFileUtils.prototype = {
 	}
 	,__class__: cc.platform.CCFileUtils
 }
-cc.platform.CCMacro = function() { }
-cc.platform.CCMacro.__name__ = true;
+cc.platform.CCGZip = function(data) {
+	this.len = 0;
+	this.treepos = 0;
+	this.data = data;
+	this.debug = false;
+	this.gpflags = 0;
+	this.files = 0;
+	this.unzipped = [];
+	this.buf32k = new Array();
+	this.bIdx = 0;
+	this.modeZIP = false;
+	this.bytepos = 0;
+	this.bb = 1;
+	this.bits = 0;
+	this.nameBuf = [];
+	this.fileout = new Array();
+	this.literalTree = new Array();
+	this.literalTree[cc.platform.CCGZip.LITERALS - 1] = new cc.platform.HufNode();
+	this.distanceTree = new Array();
+	this.distanceTree[31] = new cc.platform.HufNode();
+	this.treepos = 0;
+	this.Places = null;
+	this.len = 0;
+	this.fpos = new Array();
+	this.fpos[16] = 0;
+	this.fpos[0] = 0;
+	this.flens = new Array();
+	this.fmax = 0;
+};
+cc.platform.CCGZip.__name__ = true;
+cc.platform.CCGZip.gunzip = function(data) {
+	var gzip = new cc.platform.CCGZip(data);
+	return gzip.gunzipLocal();
+}
+cc.platform.CCGZip.prototype = {
+	skipdir: function() {
+		var tmp = [];
+		var compSize, size, os, i, c;
+		if((this.gpflags & 8) != 0) {
+			tmp[0] = this.readByte();
+			tmp[1] = this.readByte();
+			tmp[2] = this.readByte();
+			tmp[3] = this.readByte();
+			compSize = this.readByte();
+			compSize |= this.readByte() << 8;
+			compSize |= this.readByte() << 16;
+			compSize |= this.readByte() << 24;
+			size = this.readByte();
+			size |= this.readByte() << 8;
+			size |= this.readByte() << 16;
+			size |= this.readByte() << 24;
+		}
+		if(this.modeZIP) this.nextFile();
+		tmp[0] = this.readByte();
+		if(tmp[0] != 8) return 0;
+		this.gpflags = this.readByte();
+		this.readByte();
+		this.readByte();
+		this.readByte();
+		this.readByte();
+		this.readByte();
+		os = this.readByte();
+		if((this.gpflags & 4) != 0) {
+			tmp[0] = this.readByte();
+			tmp[2] = this.readByte();
+			this.len = tmp[0] + 256 * tmp[1];
+			var _g1 = 0, _g = this.len;
+			while(_g1 < _g) {
+				var i1 = _g1++;
+				this.readByte();
+			}
+		}
+		if((this.gpflags & 8) != 0) {
+			i = 0;
+			this.nameBuf = [];
+			while((c = this.readByte()) != 0) {
+				if(String.fromCharCode(c) == "7" || String.fromCharCode(c) == ":") i = 0;
+				if(i < cc.platform.CCGZip.NAMEMAX - 1) this.nameBuf[i++] = String.fromCharCode(c);
+			}
+		}
+		if((this.gpflags & 2) != 0) {
+			this.readByte();
+			this.readByte();
+		}
+		this.deflateLoop();
+		size = this.readByte();
+		size |= this.readByte() << 8;
+		size |= this.readByte() << 16;
+		size |= this.readByte() << 24;
+		if(this.modeZIP) this.nextFile();
+		return 0;
+	}
+	,nextFile: function() {
+		this.outputArr = [];
+		this.modeZIP = false;
+		var tmp = [];
+		tmp[0] = this.readByte();
+		tmp[1] = this.readByte();
+		if(tmp[0] == 120 && tmp[1] == 218) {
+			this.deflateLoop();
+			this.unzipped[this.files] = [this.outputArr.join(""),"geonext.gxt"];
+			this.files++;
+		}
+		if(tmp[0] == 31 && tmp[1] == 139) {
+			this.skipdir();
+			this.unzipped[this.files] = [this.outputArr.join(""),"file"];
+			this.files++;
+		}
+		if(tmp[0] == 80 && tmp[1] == 75) {
+			this.modeZIP = true;
+			tmp[2] = this.readByte();
+			tmp[3] = this.readByte();
+			if(tmp[2] == 3 && tmp[3] == 4) {
+				tmp[0] = this.readByte();
+				tmp[1] = this.readByte();
+				this.gpflags = this.readByte();
+				this.gpflags |= this.readByte() << 8;
+				var method = this.readByte();
+				method |= this.readByte() << 8;
+				this.readByte();
+				this.readByte();
+				this.readByte();
+				this.readByte();
+				var compSize = this.readByte();
+				compSize |= this.readByte() << 8;
+				compSize |= this.readByte() << 16;
+				compSize |= this.readByte() << 24;
+				var size = this.readByte();
+				size |= this.readByte() << 8;
+				size |= this.readByte() << 16;
+				size |= this.readByte() << 24;
+				var filelen = this.readByte();
+				filelen |= this.readByte() << 8;
+				var extralen = this.readByte();
+				extralen |= this.readByte() << 8;
+				var i = 0;
+				this.nameBuf = [];
+				var c;
+				while(filelen-- != 0) {
+					c = this.readByte();
+					if(String.fromCharCode(c) == "/" || String.fromCharCode(c) == ":") i = 0; else if(i < cc.platform.CCGZip.NAMEMAX - 1) this.nameBuf[i++] = String.fromCharCode(c);
+				}
+				if(this.fileout == null) this.fileout = this.nameBuf;
+				i = 0;
+				while(i < extralen) {
+					c = this.readByte();
+					i++;
+				}
+				if(method == 8) {
+					this.deflateLoop();
+					this.unzipped[this.files] = [this.outputArr.join(""),this.nameBuf.join("")];
+					this.files++;
+				}
+				this.skipdir();
+			}
+		}
+	}
+	,deflateLoop: function() {
+		var last, c, type, len = 0, i;
+		do {
+			last = this.readBit();
+			type = this.readBits(2);
+			if(type == 0) {
+				var blockLen, cSum = 0;
+				this.byteAlign();
+				blockLen = this.readByte();
+				blockLen |= this.readByte() << 8;
+				cSum = this.readByte();
+				cSum |= this.readByte() << 8;
+				if(((blockLen ^ ~cSum) & 65535) != 0) throw "BlockLen checksum mismatch\n";
+				while(blockLen-- != 0) {
+					c = this.readByte();
+					this.addBuffer(c);
+				}
+			} else if(type == 1) {
+				var j;
+				while(true) {
+					j = cc.platform.CCGZip.bitReverse[this.readBits(7)] >> 1;
+					if(j > 23) {
+						j = j << 1 | this.readBit();
+						if(j > 199) {
+							j -= 128;
+							j = j << 1 | this.readBit();
+						} else {
+							j -= 48;
+							if(j > 143) j = j + 136;
+						}
+					} else j += 256;
+					if(j < 256) this.addBuffer(j); else if(j == 256) break; else {
+						var len1, dist;
+						j -= 257;
+						len1 = this.readBits(cc.platform.CCGZip.cplext[j]) + cc.platform.CCGZip.cplens[j];
+						j = cc.platform.CCGZip.bitReverse[this.readBits(5)] >> 3;
+						if(cc.platform.CCGZip.cpdext[j] > 8) {
+							dist = this.readBits(8);
+							dist |= this.readBits(cc.platform.CCGZip.cpdext[j] - 8) << 8;
+						} else dist = this.readBits(cc.platform.CCGZip.cpdext[j]);
+						dist += cc.platform.CCGZip.cpdist[j];
+						var _g = 0;
+						while(_g < len1) {
+							var j1 = _g++;
+							var c1 = this.buf32k[this.bIdx - dist & 32767];
+							this.addBuffer(c1);
+						}
+					}
+				}
+			} else if(type == 2) {
+				var j, n, literalCodes, distCodes, lenCodes;
+				var ll = new Array();
+				literalCodes = 257 + this.readBits(5);
+				distCodes = 1 + this.readBits(5);
+				lenCodes = 4 + this.readBits(4);
+				var _g = 0;
+				while(_g < 19) {
+					var j1 = _g++;
+					ll[j1] = 0;
+				}
+				var _g = 0;
+				while(_g < lenCodes) {
+					var j1 = _g++;
+					ll[cc.platform.CCGZip.border[j1]] = this.readBits(3);
+				}
+				len = this.distanceTree.length;
+				var _g = 0;
+				while(_g < len) {
+					var i1 = _g++;
+					this.distanceTree[i1] = new cc.platform.HufNode();
+				}
+				if(this.createTree(this.distanceTree,19,ll,0) != 0) {
+					this.flushBuffer();
+					return 1;
+				}
+				n = literalCodes + distCodes;
+				i = 0;
+				var z = -1;
+				while(i < n) {
+					z++;
+					j = this.decodeValue(this.distanceTree);
+					if(j < 16) ll[i++] = j; else if(j == 16) {
+						var l;
+						j = 3 + this.readBits(2);
+						if(i + j > n) {
+							this.flushBuffer();
+							return 1;
+						}
+						l = i != 0?ll[i - 1]:0;
+						while(j-- != 0) ll[i++] = l;
+					} else {
+						if(j == 17) j = 3 + this.readBits(3); else j = 11 + this.readBits(7);
+						if(i + j > n) {
+							this.flushBuffer();
+							return 1;
+						}
+						while(j-- != 0) ll[i++] = 0;
+					}
+				}
+				len = this.literalTree.length;
+				var _g = 0;
+				while(_g < len) {
+					var i1 = _g++;
+					this.literalTree[i1] = new cc.platform.HufNode();
+				}
+				if(this.createTree(this.literalTree,literalCodes,ll,0) != 0) {
+					this.flushBuffer();
+					return 1;
+				}
+				len = this.literalTree.length;
+				var _g = 0;
+				while(_g < len) {
+					var i1 = _g++;
+					this.distanceTree[i1] = new cc.platform.HufNode();
+				}
+				var ll2 = new Array();
+				var _g1 = literalCodes, _g = ll.length;
+				while(_g1 < _g) {
+					var i1 = _g1++;
+					ll2[i1 - literalCodes] = ll[i1];
+				}
+				if(this.createTree(this.distanceTree,distCodes,ll2,0) != 0) {
+					this.flushBuffer();
+					return 1;
+				}
+				while(true) {
+					j = this.decodeValue(this.literalTree);
+					if(j >= 256) {
+						var len1, dist;
+						j -= 256;
+						if(j == 0) break;
+						j--;
+						len1 = this.readBits(cc.platform.CCGZip.cplext[j]) + cc.platform.CCGZip.cplens[j];
+						j = this.decodeValue(this.distanceTree);
+						if(cc.platform.CCGZip.cpdext[j] > 8) {
+							dist = this.readBits(8);
+							dist |= this.readBits(cc.platform.CCGZip.cpdext[j] - 8) << 8;
+						} else dist = this.readBits(cc.platform.CCGZip.cpdext[j]);
+						dist += cc.platform.CCGZip.cpdist[j];
+						while(len1-- != 0) {
+							var c1 = this.buf32k[this.bIdx - dist & 32767];
+							this.addBuffer(c1);
+						}
+					} else this.addBuffer(j);
+				}
+			}
+		} while(last == 0);
+		this.flushBuffer();
+		this.byteAlign();
+		return 0;
+	}
+	,decodeValue: function(currentTree) {
+		var len = 0;
+		var xtreepos = 0;
+		var X = currentTree[xtreepos];
+		var b = 0;
+		while(true) {
+			b = this.readBit();
+			if(b != 0) {
+				if((X.b1 & 32768) == 0) return X.b1;
+				X = X.jump;
+				len = currentTree.length;
+				var _g = 0;
+				while(_g < len) {
+					var i = _g++;
+					if(currentTree[i] == X) {
+						xtreepos = i;
+						break;
+					}
+				}
+			} else {
+				if((X.b0 & 32768) == 0) return X.b0;
+				xtreepos++;
+				X = currentTree[xtreepos];
+			}
+		}
+		return -1;
+	}
+	,createTree: function(currentTree,numval,lengths,show) {
+		this.Places = currentTree;
+		this.treepos = 0;
+		this.flens = lengths;
+		this.fmax = numval;
+		var _g = 0;
+		while(_g < 17) {
+			var i = _g++;
+			this.fpos[i] = 0;
+		}
+		this.len = 0;
+		if(this.rec() != 0) return -1;
+		return 0;
+	}
+	,rec: function() {
+		var curplace = this.Places[this.treepos];
+		var tmp;
+		if(this.len == 17) return -1;
+		this.treepos++;
+		this.len++;
+		tmp = this.isPat();
+		if(tmp >= 0) curplace.b0 = tmp; else {
+			curplace.b0 = 32768;
+			if(this.rec() != 0) return -1;
+		}
+		tmp = this.isPat();
+		if(tmp >= 0) {
+			curplace.b1 = tmp;
+			curplace.jump = null;
+		} else {
+			curplace.b1 = 32768;
+			curplace.jump = this.Places[this.treepos];
+			curplace.jumppos = this.treepos;
+			if(this.rec() != 0) return -1;
+		}
+		this.len--;
+		return 0;
+	}
+	,isPat: function() {
+		while(true) {
+			if(this.fpos[this.len] >= this.fmax) return -1;
+			if(this.flens[this.fpos[this.len]] == this.len) return this.fpos[this.len]++;
+			this.fpos[this.len]++;
+		}
+	}
+	,addBuffer: function(a) {
+		this.buf32k[this.bIdx++] = a;
+		this.outputArr.push(String.fromCharCode(a));
+		if(this.bIdx == 32768) this.bIdx = 0;
+	}
+	,flushBuffer: function() {
+		this.bIdx = 0;
+	}
+	,readBits: function(a) {
+		var res = 0;
+		var i = a;
+		while(i != 0) {
+			res = res << 1 | this.readBit();
+			i--;
+		}
+		if(a != 0) res = cc.platform.CCGZip.bitReverse[res] >> 8 - a;
+		return res;
+	}
+	,readBit: function() {
+		this.bits++;
+		var carry = this.bb & 1;
+		this.bb >>= 1;
+		if(this.bb == 0) {
+			this.bb = this.readByte();
+			carry = this.bb & 1;
+			this.bb = this.bb >> 1 | 128;
+		}
+		return carry;
+	}
+	,byteAlign: function() {
+		this.bb = 1;
+	}
+	,readByte: function() {
+		this.bits += 8;
+		if(this.bytepos < this.data.length) return HxOverrides.cca(this.data,this.bytepos++); else return -1;
+	}
+	,gunzipLocal: function() {
+		this.outputArr = new Array();
+		this.nextFile();
+		return this.unzipped[0][0];
+	}
+	,__class__: cc.platform.CCGZip
+}
+cc.platform.HufNode = function() {
+	this.jumppos = -1;
+	this.b1 = 0;
+	this.b0 = 0;
+};
+cc.platform.HufNode.__name__ = true;
+cc.platform.HufNode.prototype = {
+	__class__: cc.platform.HufNode
+}
 cc.platform.CCPlistEntry = function(entry) {
 	if(entry == null) return;
 	this.name = entry.name;
@@ -2199,6 +2834,30 @@ cc.platform.CCV3F_C4B_T2F_Quad.__name__ = true;
 cc.platform.CCV3F_C4B_T2F_Quad.prototype = {
 	__class__: cc.platform.CCV3F_C4B_T2F_Quad
 }
+cc.platform.CCZipUtils = function() { }
+cc.platform.CCZipUtils.__name__ = true;
+cc.platform.CCZipUtils.unzipBase64 = function(input) {
+	var tmpInput = cc.platform.CCBase64.decode(input);
+	return cc.platform.CCGZip.gunzip(tmpInput);
+}
+cc.platform.CCZipUtils.unzipBase64AsArray = function(input,lineWidth,bytes) {
+	if(bytes == null) bytes = 1;
+	var dec = cc.platform.CCZipUtils.unzipBase64(input);
+	var ar = [];
+	var len = dec.length / bytes | 0;
+	var _g = 0;
+	while(_g < len) {
+		var i = _g++;
+		ar[i] = 0;
+		var j = bytes - 1;
+		while(j >= 0) {
+			var t = HxOverrides.cca(dec,i * bytes + j) << j * 8;
+			ar[i] += t;
+			j--;
+		}
+	}
+	return ar;
+}
 cc.spritenodes = {}
 cc.spritenodes.CCAnimation = function() {
 	this._frames = new Array();
@@ -2310,6 +2969,8 @@ cc.spritenodes.CCAnimationCache.prototype = {
 	,__class__: cc.spritenodes.CCAnimationCache
 }
 cc.spritenodes.CCSprite = function() {
+	this.isTiledMap = false;
+	this._isAdded = false;
 	this._opacity = 255;
 	cc.basenodes.CCNode.call(this);
 	this._color = cc.platform.CCColor3B.white();
@@ -2318,14 +2979,18 @@ cc.spritenodes.CCSprite = function() {
 	this._shouldBeHidden = false;
 };
 cc.spritenodes.CCSprite.__name__ = true;
-cc.spritenodes.CCSprite.createWithTexture = function(texture,rect) {
+cc.spritenodes.CCSprite.createWithTexture = function(texture,rect,isTiledMap) {
+	if(isTiledMap == null) isTiledMap = false;
 	var sprite = new cc.spritenodes.CCSprite();
+	sprite.isTiledMap = isTiledMap;
 	if(rect == null) sprite.initWithTexture(texture); else sprite.initWithTexture(texture,rect);
 	return sprite;
 }
 cc.spritenodes.CCSprite.create = function(fileName,rect) {
 	var sprite = new cc.spritenodes.CCSprite();
-	if(rect == null) {
+	if(fileName == null) {
+		if(sprite.init()) return sprite;
+	} else if(rect == null) {
 		sprite.init();
 		sprite.initWithFile(fileName);
 	} else {
@@ -2347,8 +3012,30 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		return null;
 	}
 	,setDisplayFrame: function(newFrame) {
-		var s = js.Boot.__cast(this.sprite , cc.spritenodes.CCSpriteSheet);
-		s.updateFrame(newFrame);
+		if(js.Boot.__instanceof(this.sprite,cc.spritenodes.CCSpriteSheet)) {
+			var s = js.Boot.__cast(this.sprite , cc.spritenodes.CCSpriteSheet);
+			s.updateFrame(newFrame);
+		} else {
+			var x = this.sprite.x._value;
+			var y = this.sprite.y._value;
+			var scaleX = this.sprite.scaleX._value;
+			var scaleY = this.sprite.scaleY._value;
+			var anchorX = this._anchorPoint.x;
+			var anchorY = this._anchorPoint.y;
+			this.sprite = new cc.spritenodes.CCSpriteSheet();
+			var s = js.Boot.__cast(this.sprite , cc.spritenodes.CCSpriteSheet);
+			s.updateFrame(newFrame);
+			this.setAnchorPoint(new flambe.math.Point(anchorX,anchorY));
+			this.setPosition(x,y);
+			this.setScale(scaleX,scaleY);
+			if(!this._isAdded) {
+				this.entity.add(s);
+				this.component = new cc.CCComponent(this);
+				this.entity.add(this.component);
+				this._contentSize = new cc.cocoa.CCSize(newFrame.getRect().width,newFrame.getRect().height);
+				this._isAdded = true;
+			}
+		}
 		this._rectRotated = newFrame.isRotated();
 		var pNewTexture = newFrame.getTexture();
 		if(pNewTexture != this._texture) this.setTexture(pNewTexture);
@@ -2375,6 +3062,7 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		var texture = cc.texture.CCTextureCache.getInstance().addImage(fileName);
 		if(rect == null) {
 			this.sprite = new flambe.display.ImageSprite(t);
+			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new cc.cocoa.CCSize(this.sprite.getNaturalWidth(),this.sprite.getNaturalHeight());
 			this.entity.add(this.sprite);
 			this.component = new cc.CCComponent(this);
@@ -2388,12 +3076,13 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 			rect.width = texture.getPixelsWide();
 			rect.height = texture.getPixelsHigh();
 			this.sprite = new flambe.display.ImageSprite(texture.getTexture());
+			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new cc.cocoa.CCSize(this.sprite.getNaturalWidth(),this.sprite.getNaturalHeight());
 			this.entity.add(this.sprite);
 			this.component = new cc.CCComponent(this);
 			this.entity.add(this.component);
 		} else {
-			this.sprite = new cc.spritenodes.CCSpriteSheet();
+			this.sprite = new cc.spritenodes.CCSpriteSheet(this.isTiledMap);
 			var s = js.Boot.__cast(this.sprite , cc.spritenodes.CCSpriteSheet);
 			var f = cc.spritenodes.CCSpriteFrame.createWithTexture(texture,rect,rotated,this._position,new cc.cocoa.CCSize());
 			s.updateFrame(f);
@@ -2401,6 +3090,8 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 			this.component = new cc.CCComponent(this);
 			this.entity.add(this.component);
 			this._contentSize = new cc.cocoa.CCSize(rect.width,rect.height);
+			this._isAdded = true;
+			this.setAnchorPoint(this.getAnchorPoint());
 		}
 		this.setTexture(texture);
 		this.setTextureRect(rect,rotated,new cc.cocoa.CCSize(rect.width,rect.height));
@@ -2414,7 +3105,7 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this._color = cc.platform.CCTypes.white();
 		this._colorUnmodified = cc.platform.CCTypes.white();
 		this._flipX = this._flipY = false;
-		this.setAnchorPoint(new flambe.math.Point(0,0));
+		this.setAnchorPoint(new flambe.math.Point(0.5,0.5));
 		this._offsetPosition = new flambe.math.Point(0,0);
 		this._hasChildren = false;
 		var tmpColor = new cc.platform.CCColor4B(255,255,255,1);
@@ -2438,6 +3129,20 @@ cc.spritenodes.CCSprite.prototype = $extend(cc.basenodes.CCNode.prototype,{
 		this.sprite.blendMode = blend;
 	}
 	,__class__: cc.spritenodes.CCSprite
+});
+cc.spritenodes.CCSpriteBatchNode = function() {
+	cc.basenodes.CCNode.call(this);
+	this.entity.add(this.sprite);
+};
+cc.spritenodes.CCSpriteBatchNode.__name__ = true;
+cc.spritenodes.CCSpriteBatchNode.__super__ = cc.basenodes.CCNode;
+cc.spritenodes.CCSpriteBatchNode.prototype = $extend(cc.basenodes.CCNode.prototype,{
+	initWithTexture: function(tex,capacity) {
+		this._originalTexture = tex;
+		this._texture = tex;
+		return true;
+	}
+	,__class__: cc.spritenodes.CCSpriteBatchNode
 });
 cc.spritenodes.CCSpriteFrame = function() {
 	this._offset = new flambe.math.Point(0,0);
@@ -2523,6 +3228,9 @@ cc.spritenodes.CCSpriteFrameCache.prototype = {
 }
 flambe.display = {}
 flambe.display.Sprite = function() {
+	this._parentViewMatrixUpdateCount = 0;
+	this._viewMatrixUpdateCount = 0;
+	this._viewMatrix = null;
 	this.scissor = null;
 	this.blendMode = null;
 	var _g = this;
@@ -2542,7 +3250,7 @@ flambe.display.Sprite = function() {
 };
 flambe.display.Sprite.__name__ = true;
 flambe.display.Sprite.hitTest = function(entity,x,y) {
-	var sprite = entity._compMap.Sprite_4;
+	var sprite = entity._compMap.Sprite_2;
 	if(sprite != null) {
 		if(!((sprite._flags & 3) == 3)) return null;
 		if(sprite.getLocalMatrix().inverseTransform(x,y,flambe.display.Sprite._scratchPoint)) {
@@ -2557,7 +3265,7 @@ flambe.display.Sprite.hitTest = function(entity,x,y) {
 	return sprite != null && sprite.containsLocal(x,y)?sprite:null;
 }
 flambe.display.Sprite.render = function(entity,g) {
-	var sprite = entity._compMap.Sprite_4;
+	var sprite = entity._compMap.Sprite_2;
 	if(sprite != null) {
 		var alpha = sprite.alpha._value;
 		if(!((sprite._flags & 1) != 0) || alpha <= 0) return;
@@ -2607,6 +3315,22 @@ flambe.display.Sprite.prototype = $extend(flambe.Component.prototype,{
 		this._flags = flambe.util.BitSets.set(this._flags,1,visible);
 		return visible;
 	}
+	,getParentSprite: function() {
+		if(this.owner == null) return null;
+		var entity = this.owner.parent;
+		while(entity != null) {
+			var sprite = entity._compMap.Sprite_2;
+			if(sprite != null) return sprite;
+			entity = entity.parent;
+		}
+		return null;
+	}
+	,isViewMatrixDirty: function() {
+		if((this._flags & 8) != 0) return true;
+		var parentSprite = this.getParentSprite();
+		if(parentSprite == null) return false;
+		return this._parentViewMatrixUpdateCount != parentSprite._viewMatrixUpdateCount || parentSprite.isViewMatrixDirty();
+	}
 	,draw: function(g) {
 	}
 	,onUpdate: function(dt) {
@@ -2629,15 +3353,20 @@ flambe.display.Sprite.prototype = $extend(flambe.Component.prototype,{
 		this.scaleY.set__(scale);
 		return this;
 	}
-	,centerAnchor: function() {
-		this.anchorX.set__(this.getNaturalWidth() / 2);
-		this.anchorY.set__(this.getNaturalHeight() / 2);
-		return this;
-	}
 	,setAnchor: function(x,y) {
 		this.anchorX.set__(x);
 		this.anchorY.set__(y);
 		return this;
+	}
+	,getViewMatrix: function() {
+		if(this.isViewMatrixDirty()) {
+			var parentSprite = this.getParentSprite();
+			this._viewMatrix = parentSprite != null?flambe.math.Matrix.multiply(parentSprite.getViewMatrix(),this.getLocalMatrix(),this._viewMatrix):this.getLocalMatrix().clone(this._viewMatrix);
+			this._flags = this._flags & -9;
+			if(parentSprite != null) this._parentViewMatrixUpdateCount = parentSprite._viewMatrixUpdateCount;
+			++this._viewMatrixUpdateCount;
+		}
+		return this._viewMatrix;
 	}
 	,getLocalMatrix: function() {
 		if((this._flags & 4) != 0) {
@@ -2650,6 +3379,11 @@ flambe.display.Sprite.prototype = $extend(flambe.Component.prototype,{
 	,containsLocal: function(localX,localY) {
 		return localX >= 0 && localX < this.getNaturalWidth() && localY >= 0 && localY < this.getNaturalHeight();
 	}
+	,contains: function(viewX,viewY) {
+		var a = this.getViewMatrix().inverseTransform(viewX,viewY,flambe.display.Sprite._scratchPoint);
+		var b = this.containsLocal(flambe.display.Sprite._scratchPoint.x,flambe.display.Sprite._scratchPoint.y);
+		return a && b;
+	}
 	,getNaturalHeight: function() {
 		return 0;
 	}
@@ -2657,21 +3391,25 @@ flambe.display.Sprite.prototype = $extend(flambe.Component.prototype,{
 		return 0;
 	}
 	,get_name: function() {
-		return "Sprite_4";
+		return "Sprite_2";
 	}
 	,__class__: flambe.display.Sprite
 });
-cc.spritenodes.CCSpriteSheet = function() {
+cc.spritenodes.CCSpriteSheet = function(isTiledMap) {
+	if(isTiledMap == null) isTiledMap = false;
 	flambe.display.Sprite.call(this);
+	this.isTiledMap = isTiledMap;
 	this._actionManager = cc.CCDirector.getInstance().getActionManager();
 };
 cc.spritenodes.CCSpriteSheet.__name__ = true;
 cc.spritenodes.CCSpriteSheet.__super__ = flambe.display.Sprite;
 cc.spritenodes.CCSpriteSheet.prototype = $extend(flambe.display.Sprite.prototype,{
 	getNaturalWidth: function() {
+		if(this.frame == null) return 0;
 		return this.frame.getRect().width;
 	}
 	,getNaturalHeight: function() {
+		if(this.frame == null) return 0;
 		return this.frame.getRect().height;
 	}
 	,onUpdate: function(dt) {
@@ -2686,6 +3424,13 @@ cc.spritenodes.CCSpriteSheet.prototype = $extend(flambe.display.Sprite.prototype
 			g.translate(this.frame.getOffset().x,this.frame.getOffset().y + this.frame.getRect().height);
 			g.rotate(-90);
 			g.drawSubImage(this.frame.getTexture().getTexture(),0,0,this.frame.getRect().x,this.frame.getRect().y,this.frame.getRect().height,this.frame.getRect().width);
+		} else if(this.isTiledMap) {
+			var t = new flambe.math.Rectangle(this.x._value,this.y._value,this.frame.getRect().width,this.frame.getRect().height);
+			if(cc.cocoa.CCGeometry.rectIntersectsRect(t,cc.tilemapparallaxnodes.CCTMXTiledMap.viewPort)) {
+				g.translate(this.frame.getOffset().x,this.frame.getOffset().y);
+				g.drawSubImage(this.frame.getTexture().getTexture(),0,0,this.frame.getRect().x,this.frame.getRect().y,this.frame.getRect().width,this.frame.getRect().height);
+			} else {
+			}
 		} else {
 			g.translate(this.frame.getOffset().x,this.frame.getOffset().y);
 			g.drawSubImage(this.frame.getTexture().getTexture(),0,0,this.frame.getRect().x,this.frame.getRect().y,this.frame.getRect().width,this.frame.getRect().height);
@@ -2707,6 +3452,7 @@ cc.support.CCPointExtension.pSub = function(v1,v2) {
 }
 cc.texture = {}
 cc.texture.CCTexture2D = function() {
+	this._contentSize = new cc.cocoa.CCSize();
 };
 cc.texture.CCTexture2D.__name__ = true;
 cc.texture.CCTexture2D.prototype = {
@@ -2718,6 +3464,8 @@ cc.texture.CCTexture2D.prototype = {
 	}
 	,setTexture: function(t) {
 		this._texture = t;
+		this._contentSize.width = Std.parseFloat(Std.string(this._texture.get_width()));
+		this._contentSize.height = Std.parseFloat(Std.string(this._texture.get_height()));
 	}
 	,getTexture: function() {
 		return this._texture;
@@ -2739,6 +3487,646 @@ cc.texture.CCTextureCache.prototype = {
 		return ret;
 	}
 	,__class__: cc.texture.CCTextureCache
+}
+cc.tilemapparallaxnodes = {}
+cc.tilemapparallaxnodes.CCTMXLayer = function() {
+	this._layerInfo = null;
+	this._mapInfo = null;
+	cc.spritenodes.CCSpriteBatchNode.call(this);
+	this._children = [];
+	this._layerSize = new cc.cocoa.CCSize();
+	this._mapTileSize = new cc.cocoa.CCSize();
+	this._opacity = 255;
+	this._layerName = "";
+	this._tiles = new Array();
+	this._properties = new haxe.ds.StringMap();
+	this._useAutomaticVertexZ = false;
+};
+cc.tilemapparallaxnodes.CCTMXLayer.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXLayer.create = function(tilesetInfo,layerInfo,mapInfo) {
+	var ret = new cc.tilemapparallaxnodes.CCTMXLayer();
+	if(ret.initWithTilesetInfo(tilesetInfo,layerInfo,mapInfo)) return ret;
+	return null;
+}
+cc.tilemapparallaxnodes.CCTMXLayer.__super__ = cc.spritenodes.CCSpriteBatchNode;
+cc.tilemapparallaxnodes.CCTMXLayer.prototype = $extend(cc.spritenodes.CCSpriteBatchNode.prototype,{
+	_parseInternalProperties: function() {
+		var vertexz = this.getProperty("cc_vertexz");
+		if(vertexz != null) {
+			if(vertexz == "automatic") this._useAutomaticVertexZ = true; else this._vertexZvalue = Std.parseInt(vertexz);
+		}
+	}
+	,getProperty: function(propertyName) {
+		return this._properties.get(propertyName);
+	}
+	,_vertexZForPos: function(row,col) {
+		var ret = 0;
+		var maxVal = 0;
+		if(this._useAutomaticVertexZ) {
+			var _g = this;
+			switch(_g._layerOrientation) {
+			case cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ISO:
+				ret = row + col;
+				break;
+			case cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ORTHO:
+				ret = row;
+				break;
+			default:
+				null;
+			}
+		} else ret = this._vertexZvalue;
+		return ret;
+	}
+	,setupTiles: function() {
+		var count = 0;
+		var _g1 = 0, _g = this._layerInfo._layerSize.height | 0;
+		while(_g1 < _g) {
+			var row = _g1++;
+			var _g3 = 0, _g2 = this._layerInfo._layerSize.width | 0;
+			while(_g3 < _g2) {
+				var col = _g3++;
+				var gid = this._layerInfo._tiles[col + row * this._layerInfo._layerSize.width | 0];
+				if(gid == 0) continue; else {
+					var o = this._layerOrientation;
+					var x = 0;
+					var y = 0;
+					if(o == cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ORTHO) {
+						x = col * this._mapTileSize.width;
+						y = row * this._mapTileSize.height;
+					} else if(o == cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ISO) {
+						x = this._mapTileSize.width / 2 * (this._layerSize.height + col - row);
+						y = this._mapTileSize.height / 2 * (row + col + 2) - this._tileSet._tileSize.height;
+					}
+					var rect = this._tileSet.rectForGID(gid);
+					var sprite = cc.spritenodes.CCSprite.createWithTexture(this._texture,rect,cc.tilemapparallaxnodes.CCTMXTiledMap.useViewPort);
+					sprite.setAnchorPoint(new flambe.math.Point(0,0));
+					sprite.setPosition(x,y);
+					sprite.setOpacity(this._opacity);
+					this.addChild(sprite,this._vertexZForPos(row,col));
+				}
+			}
+		}
+	}
+	,initWithTilesetInfo: function(tilesetInfo,layerInfo,mapInfo) {
+		var size = layerInfo._layerSize;
+		var totalNumberOfTiles = size.width * size.height | 0;
+		this._mapInfo = mapInfo;
+		this._layerInfo = layerInfo;
+		var capacity = totalNumberOfTiles * 0.35 + 1 | 0;
+		var texture = null;
+		if(tilesetInfo != null) texture = cc.texture.CCTextureCache.getInstance().addImage(tilesetInfo.sourceImage);
+		if(this.initWithTexture(texture,capacity)) {
+			this.setContentSize(new cc.cocoa.CCSize(this.sprite.getNaturalWidth(),this.sprite.getNaturalHeight()));
+			this._layerSize = layerInfo._layerSize;
+			this._layerName = layerInfo.name;
+			this._tiles = layerInfo._tiles;
+			this._minGID = layerInfo._minGID;
+			this._maxGID = layerInfo._maxGID;
+			this.setProperties(layerInfo.getProperties());
+			this._opacity = layerInfo._opacity;
+			this._parseInternalProperties();
+			this._tileSet = tilesetInfo;
+			this._mapTileSize = mapInfo.getTileSize();
+			this._layerOrientation = mapInfo.getOrientation();
+			this._vertexZvalue = 0;
+			return true;
+		}
+		return false;
+	}
+	,setProperties: function(v) {
+		this._properties = v;
+	}
+	,__class__: cc.tilemapparallaxnodes.CCTMXLayer
+});
+cc.tilemapparallaxnodes.CCTMXObject = function(name,x,y,type,width,height) {
+	this.name = name;
+	this.x = x;
+	this.y = y;
+	this.height = height;
+	this.width = width;
+	this.type = type;
+	this.properties = new haxe.ds.StringMap();
+};
+cc.tilemapparallaxnodes.CCTMXObject.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXObject.prototype = {
+	__class__: cc.tilemapparallaxnodes.CCTMXObject
+}
+cc.tilemapparallaxnodes.CCTMXObjectGroup = function() {
+	this._groupName = "";
+	this._properties = new haxe.ds.StringMap();
+	this._objects = new Array();
+};
+cc.tilemapparallaxnodes.CCTMXObjectGroup.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXObjectGroup.prototype = {
+	setObjects: function(object) {
+		this._objects.push(object);
+	}
+	,setGroupName: function(s) {
+		this._groupName = s;
+	}
+	,setPositionOffset: function(v) {
+		this._positionOffset = v;
+	}
+	,__class__: cc.tilemapparallaxnodes.CCTMXObjectGroup
+}
+flambe.math.Rectangle = function(x,y,width,height) {
+	if(height == null) height = 0;
+	if(width == null) width = 0;
+	if(y == null) y = 0;
+	if(x == null) x = 0;
+	this.set(x,y,width,height);
+};
+flambe.math.Rectangle.__name__ = true;
+flambe.math.Rectangle.prototype = {
+	equals: function(other) {
+		return this.x == other.x && this.y == other.y && this.width == other.width && this.height == other.height;
+	}
+	,clone: function(result) {
+		if(result == null) result = new flambe.math.Rectangle();
+		result.set(this.x,this.y,this.width,this.height);
+		return result;
+	}
+	,contains: function(x,y) {
+		x -= this.x;
+		if(this.width >= 0) {
+			if(x < 0 || x > this.width) return false;
+		} else if(x > 0 || x < this.width) return false;
+		y -= this.y;
+		if(this.height >= 0) {
+			if(y < 0 || y > this.height) return false;
+		} else if(y > 0 || y < this.height) return false;
+		return true;
+	}
+	,set: function(x,y,width,height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+	}
+	,__class__: flambe.math.Rectangle
+}
+cc.tilemapparallaxnodes.CCTMXTiledMap = function() {
+	cc.spritenodes.CCSprite.call(this);
+	this._mapOrientation = 0;
+	this._mapSize = new cc.cocoa.CCSize();
+	this._tileSize = new cc.cocoa.CCSize();
+	this._objectGroups = new Array();
+	this._TMXLayers = new Array();
+};
+cc.tilemapparallaxnodes.CCTMXTiledMap.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXTiledMap.create = function(tmxFile,resourcePath) {
+	var ret = new cc.tilemapparallaxnodes.CCTMXTiledMap();
+	if(ret.initWithTMXFile(tmxFile,resourcePath)) return ret;
+	return null;
+}
+cc.tilemapparallaxnodes.CCTMXTiledMap.__super__ = cc.spritenodes.CCSprite;
+cc.tilemapparallaxnodes.CCTMXTiledMap.prototype = $extend(cc.spritenodes.CCSprite.prototype,{
+	_tilesetForLayer: function(layerInfo,mapInfo) {
+		var size = layerInfo._layerSize;
+		var tilesets = mapInfo.getTilesets();
+		if(tilesets != null) {
+			var i = tilesets.length - 1;
+			while(i >= 0) {
+				var tileset = tilesets[i];
+				if(tileset != null) {
+					var _g1 = 0, _g = size.height | 0;
+					while(_g1 < _g) {
+						var y = _g1++;
+						var _g3 = 0, _g2 = size.width | 0;
+						while(_g3 < _g2) {
+							var x = _g3++;
+							var gid = layerInfo._tiles[(y * size.width | 0) + x];
+							if(gid != 0) {
+								if((gid & cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_FLIPPED_MASK) >>> 0 >= tileset.firstGid) return tileset;
+							}
+						}
+					}
+				}
+				i--;
+			}
+		}
+		return null;
+	}
+	,_parseLayer: function(layerInfo,mapInfo) {
+		var tileset = this._tilesetForLayer(layerInfo,mapInfo);
+		var layer = cc.tilemapparallaxnodes.CCTMXLayer.create(tileset,layerInfo,mapInfo);
+		layer.setupTiles();
+		return layer;
+	}
+	,_buildWithMapInfo: function(mapInfo) {
+		this._mapSize = mapInfo.getMapSize();
+		this._tileSize = mapInfo.getTileSize();
+		this._mapOrientation = mapInfo.getOrientation();
+		this._objectGroups = mapInfo.getObjectGroups();
+		this._properties = mapInfo.getProperties();
+		this._tileProperties = mapInfo.getTileProperties();
+		var idx = 0;
+		var layers = mapInfo.getLayers();
+		if(layers != null) {
+			var _g = 0;
+			while(_g < layers.length) {
+				var l = layers[_g];
+				++_g;
+				var child = this._parseLayer(l,mapInfo);
+				child.setAnchorPoint(new flambe.math.Point(0,0));
+				child.setPosition(0,0);
+				this.addChild(child,idx,idx);
+				idx++;
+				var childSize = child.getContentSize();
+				var currentSize = this.getContentSize();
+				currentSize.width = Math.max(currentSize.width,childSize.width);
+				currentSize.height = Math.max(currentSize.height,childSize.height);
+				this.setContentSize(currentSize);
+			}
+		}
+	}
+	,initWithTMXFile: function(tmxFile,resourcePath) {
+		cc.platform.CCCommon.assert(tmxFile != null && tmxFile.length > 0,"TMXTiledMap: tmx file should not be nil");
+		this.setContentSize(new cc.cocoa.CCSize(0,0));
+		var mapInfo = cc.tilemapparallaxnodes.CCTMXMapInfo.create(tmxFile,resourcePath);
+		var _g = 0, _g1 = mapInfo.getLayers();
+		while(_g < _g1.length) {
+			var l = _g1[_g];
+			++_g;
+		}
+		if(mapInfo == null) return false;
+		cc.platform.CCCommon.assert(mapInfo.getTilesets().length != 0,"TMXTiledMap: Map not found. Please check the filename.");
+		this._buildWithMapInfo(mapInfo);
+		return true;
+	}
+	,__class__: cc.tilemapparallaxnodes.CCTMXTiledMap
+});
+cc.tilemapparallaxnodes.CCTMXXMLParser = function() { }
+cc.tilemapparallaxnodes.CCTMXXMLParser.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXLayerInfo = function() {
+	this._maxGID = 0;
+	this._minGID = 100000;
+	this.name = "";
+	this.offset = new flambe.math.Point();
+	this._properties = new haxe.ds.StringMap();
+	this._tiles = new Array();
+};
+cc.tilemapparallaxnodes.CCTMXLayerInfo.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXLayerInfo.prototype = {
+	setProperties: function(name,value) {
+		this._properties.set(name,value);
+	}
+	,getProperties: function() {
+		return this._properties;
+	}
+	,__class__: cc.tilemapparallaxnodes.CCTMXLayerInfo
+}
+cc.tilemapparallaxnodes.CCTMXTilesetInfo = function() {
+	this.firstGid = 0;
+	this.name = "";
+	this._tileSize = new cc.cocoa.CCSize();
+};
+cc.tilemapparallaxnodes.CCTMXTilesetInfo.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXTilesetInfo.prototype = {
+	rectForGID: function(gid) {
+		var rect = new flambe.math.Rectangle();
+		rect.width = this._tileSize.width;
+		rect.height = this._tileSize.height;
+		gid = gid - this.firstGid;
+		var max_x = (this.imageSize.width - this.margin * 2 + this.spacing) / (this._tileSize.width + this.spacing);
+		rect.x = gid % max_x * (this._tileSize.width + this.spacing) + this.margin;
+		rect.y = (gid / max_x | 0) * (this._tileSize.height + this.spacing) + this.margin;
+		return rect;
+	}
+	,__class__: cc.tilemapparallaxnodes.CCTMXTilesetInfo
+}
+cc.tilemapparallaxnodes.CCTMXMapInfo = function() {
+	this._storingCharacters = false;
+	this._tileProperties = new haxe.ds.IntMap();
+	this._properties = new Array();
+	this.pack = cc.CCLoader.pack;
+};
+cc.tilemapparallaxnodes.CCTMXMapInfo.__name__ = true;
+cc.tilemapparallaxnodes.CCTMXMapInfo.csvToArray = function(input) {
+	var result = new Array();
+	var rows = input.split("\n");
+	var row;
+	var _g = 0;
+	while(_g < rows.length) {
+		var row1 = rows[_g];
+		++_g;
+		if(row1 == "") continue;
+		var resultRow = new Array();
+		var entries = row1.split(",");
+		var entry;
+		var _g1 = 0;
+		while(_g1 < entries.length) {
+			var entry1 = entries[_g1];
+			++_g1;
+			var t = Std.parseInt(entry1);
+			if(t != null) result.push(t);
+		}
+	}
+	return result;
+}
+cc.tilemapparallaxnodes.CCTMXMapInfo.create = function(tmxFile,resourcePath) {
+	var ret = new cc.tilemapparallaxnodes.CCTMXMapInfo();
+	ret.initWithTMXFile(tmxFile,resourcePath);
+	return ret;
+}
+cc.tilemapparallaxnodes.CCTMXMapInfo.prototype = {
+	_initernalInit: function(tmxFileName,resourcePath) {
+		this._tileSets = new Array();
+		this._layers = new Array();
+		this._TMXFileName = tmxFileName;
+		if(resourcePath != null) this._resources = resourcePath;
+		this._objectGroups = new Array();
+		this._currentString = "";
+		this._storingCharacters = false;
+		this._layerAttribs = cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_LAYER_ATTRIB_NONE;
+		this._parentElement = cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_PROPERTY_NONE;
+	}
+	,getTileProperties: function() {
+		return this._tileProperties;
+	}
+	,loadObjectGroup: function(xml) {
+		var objectGroup = new cc.tilemapparallaxnodes.CCTMXObjectGroup();
+		objectGroup.setGroupName(xml.get("name"));
+		var x;
+		var y;
+		var xStr = xml.get("x");
+		var yStr = xml.get("y");
+		if(xStr == null) x = 0; else x = Std.parseFloat(xStr);
+		if(yStr == null) y = 0; else y = Std.parseFloat(yStr);
+		objectGroup.setPositionOffset(new flambe.math.Point(x * this.getTileSize().width,y * this.getTileSize().height));
+		var $it0 = xml.elements();
+		while( $it0.hasNext() ) {
+			var elem = $it0.next();
+			var object = new cc.tilemapparallaxnodes.CCTMXObject();
+			var _g = elem.get_nodeName();
+			switch(_g) {
+			case "object":
+				object.name = elem.get("name");
+				object.type = elem.get("type");
+				object.x = Std.parseInt(elem.get("x"));
+				object.y = Std.parseInt(elem.get("y"));
+				object.width = Std.parseInt(elem.get("width"));
+				object.height = Std.parseInt(elem.get("height"));
+				break;
+			case "properties":
+				object.properties.set(elem.get("name"),elem.get("value"));
+				break;
+			}
+			objectGroup.setObjects(object);
+		}
+		this.setObjectGroups(objectGroup);
+	}
+	,loadLayerPros: function(xml,layer) {
+		var $it0 = xml.elements();
+		while( $it0.hasNext() ) {
+			var elem = $it0.next();
+			layer.setProperties(elem.get("name"),elem.get("value"));
+		}
+	}
+	,loadData: function(xml,layer) {
+		var encoding = xml.get("encoding");
+		var compression = xml.get("compression");
+		if(compression == null) compression = "";
+		var isCompression = false;
+		switch(compression) {
+		case "gzip":
+			layer._tiles = cc.platform.CCZipUtils.unzipBase64AsArray(xml.firstChild().get_nodeValue(),layer._layerSize.width | 0,4);
+			break;
+		case "zlib":
+			layer._tiles = cc.platform.CCBase64.unzip(xml.firstChild().get_nodeValue(),layer._layerSize.width | 0);
+			break;
+		case "":
+			if(encoding == "base64") layer._tiles = cc.platform.CCBase64.decodeAsArray(xml.firstChild().get_nodeValue(),layer._layerSize.width | 0); else if(encoding == "csv") layer._tiles = cc.tilemapparallaxnodes.CCTMXMapInfo.csvToArray(xml.firstChild().get_nodeValue()); else {
+				var indexX = 0;
+				var indexY = 0;
+				var widthMap = this._mapSize.width;
+				var heightMap = this._mapSize.height;
+				var tilesRow = new Array();
+				var $it0 = xml.elements();
+				while( $it0.hasNext() ) {
+					var elem = $it0.next();
+					var _g = elem.get_nodeName();
+					switch(_g) {
+					case "tile":
+						layer._tiles.push(Std.parseInt(elem.get("gid")));
+						break;
+					default:
+						null;
+					}
+				}
+			}
+			break;
+		default:
+			null;
+		}
+	}
+	,loadLayer: function(elem) {
+		var layer = new cc.tilemapparallaxnodes.CCTMXLayerInfo();
+		layer.name = elem.get("name");
+		var layerSize = new cc.cocoa.CCSize();
+		layerSize.width = Std.parseFloat(elem.get("width"));
+		layerSize.height = Std.parseFloat(elem.get("height"));
+		layer._layerSize = layerSize;
+		var visible = elem.get("visible");
+		if(visible == "0") layer.visible = false; else layer.visible = true;
+		var opacity = elem.get("opacity");
+		if(opacity == null) opacity = "1";
+		layer._opacity = Std.parseInt(Std.string(255 * Std.parseFloat(opacity)));
+		var x = elem.get("x");
+		var y = elem.get("y");
+		if(x == null) x = "0";
+		if(y == null) y = "0";
+		layer.offset = new flambe.math.Point(Std.parseFloat(x),Std.parseFloat(y));
+		var nodeValue = "";
+		var $it0 = elem.elements();
+		while( $it0.hasNext() ) {
+			var e = $it0.next();
+			var _g = e.get_nodeName();
+			switch(_g) {
+			case "data":
+				this.loadData(e,layer);
+				break;
+			case "properties":
+				this.loadLayerPros(e,layer);
+				break;
+			}
+		}
+		this.setLayers(layer);
+	}
+	,loadTileset: function(elem) {
+		var tileset = new cc.tilemapparallaxnodes.CCTMXTilesetInfo();
+		tileset.name = elem.get("name");
+		tileset.firstGid = Std.parseInt(elem.get("firstgid"));
+		var marginStr = elem.get("margin");
+		if(marginStr == null) marginStr = "0";
+		var spacingStr = elem.get("spacing");
+		if(spacingStr == null) spacingStr = "0";
+		tileset.margin = Std.parseInt(marginStr);
+		tileset.spacing = Std.parseInt(spacingStr);
+		var tilesetSize = new cc.cocoa.CCSize();
+		tilesetSize.width = Std.parseFloat(elem.get("tilewidth"));
+		tilesetSize.height = Std.parseFloat(elem.get("tileheight"));
+		tileset._tileSize = tilesetSize;
+		var $it0 = elem.elements();
+		while( $it0.hasNext() ) {
+			var e = $it0.next();
+			var _g = e.get_nodeName();
+			switch(_g) {
+			case "image":
+				var imgSource = e.get("source");
+				imgSource = imgSource.split(".")[0];
+				if(imgSource != null) {
+					if(this._resources != null) imgSource = this._resources + "/" + imgSource; else {
+					}
+				}
+				tileset.sourceImage = imgSource;
+				tileset.texture = this.pack.getTexture(tileset.sourceImage);
+				tileset.sourceImageWidth = Std.parseFloat(e.get("width"));
+				tileset.sourceImageHeight = Std.parseFloat(e.get("height"));
+				tileset.imageSize = new cc.cocoa.CCSize(tileset.sourceImageWidth,tileset.sourceImageHeight);
+				this.setTilesets(tileset);
+				break;
+			case "tile":
+				var info = this._tileSets[0];
+				var id = Std.parseInt(e.get("id"));
+				if(id == null) id = 0;
+				this.setParentGID(info.firstGid + id);
+				var dict = new haxe.ds.StringMap();
+				var $it1 = e.elements();
+				while( $it1.hasNext() ) {
+					var p = $it1.next();
+					var _g1 = p.get_nodeName();
+					switch(_g1) {
+					case "properties":
+						var name = p.get("name");
+						var value = p.get("value");
+						dict.set(name,value);
+						break;
+					}
+				}
+				this._tileProperties.set(this.getParentGID(),dict);
+				break;
+			default:
+				null;
+			}
+		}
+	}
+	,loadProperties: function(elem) {
+		var $it0 = elem.elements();
+		while( $it0.hasNext() ) {
+			var e = $it0.next();
+			var _g = e.get_nodeName();
+			switch(_g) {
+			case "property":
+				var map = new haxe.ds.StringMap();
+				var v = e.get("value");
+				map.set(e.get("name"),v);
+				v;
+				this.setProperties(map);
+				break;
+			default:
+				null;
+			}
+		}
+	}
+	,parseXMLFile: function(tmxFile) {
+		var map = Xml.parse(cc.CCLoader.pack.getFile(tmxFile).toString()).firstElement();
+		var version = map.get("version");
+		var orientationStd = map.get("orientation");
+		var mapSize = new cc.cocoa.CCSize();
+		mapSize.width = Std.parseFloat(map.get("width"));
+		mapSize.height = Std.parseFloat(map.get("height"));
+		this.setMapSize(mapSize);
+		mapSize = new cc.cocoa.CCSize();
+		mapSize.width = Std.parseFloat(map.get("tilewidth"));
+		mapSize.height = Std.parseFloat(map.get("tileheight"));
+		this.setTileSize(mapSize);
+		switch(orientationStd) {
+		case "orthogonal":
+			this.setOrientation(cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ORTHO);
+			break;
+		case "isometric":
+			this.setOrientation(cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ISO);
+			break;
+		case "hexagonal":
+			this.setOrientation(cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_HEX);
+			break;
+		default:
+			cc.platform.CCCommon.log("cocos2d: TMXFomat: Unsupported orientation:" + this.getOrientation());
+		}
+		var $it0 = map.elements();
+		while( $it0.hasNext() ) {
+			var elem = $it0.next();
+			var _g = elem.get_nodeName();
+			switch(_g) {
+			case "tileset":
+				this.loadTileset(elem);
+				break;
+			case "layer":
+				this.loadLayer(elem);
+				break;
+			case "objectgroup":
+				this.loadObjectGroup(elem);
+				break;
+			case "properties":
+				this.loadProperties(elem);
+				break;
+			}
+		}
+	}
+	,initWithTMXFile: function(tmxFile,resourcePath) {
+		this._initernalInit(tmxFile,resourcePath);
+		return this.parseXMLFile(this._TMXFileName);
+	}
+	,setProperties: function(v) {
+		this._properties.push(v);
+	}
+	,getProperties: function() {
+		return this._properties;
+	}
+	,setParentGID: function(v) {
+		this._parentGID = v;
+	}
+	,getParentGID: function() {
+		return this._parentGID;
+	}
+	,setObjectGroups: function(v) {
+		this._objectGroups.push(v);
+	}
+	,getObjectGroups: function() {
+		return this._objectGroups;
+	}
+	,setTilesets: function(v) {
+		this._tileSets.push(v);
+	}
+	,getTilesets: function() {
+		return this._tileSets;
+	}
+	,setLayers: function(v) {
+		this._layers.push(v);
+	}
+	,getLayers: function() {
+		return this._layers;
+	}
+	,setTileSize: function(v) {
+		this._tileSize = v;
+	}
+	,getTileSize: function() {
+		return this._tileSize;
+	}
+	,setMapSize: function(v) {
+		this._mapSize = v;
+	}
+	,getMapSize: function() {
+		return this._mapSize;
+	}
+	,setOrientation: function(v) {
+		this._orientation = v;
+	}
+	,getOrientation: function() {
+		return this._orientation;
+	}
+	,__class__: cc.tilemapparallaxnodes.CCTMXMapInfo
 }
 cc.touchdispatcher.CCPointer = function(x,y,id) {
 	if(id == null) id = 0;
@@ -2790,21 +4178,23 @@ cc.touchdispatcher.CCPointerDispatcher.prototype = {
 		var a = 0;
 		var b = 3;
 		var c = 1;
+		var b1 = false;
 		var _g = 0, _g1 = this._pointerDelegateHandlers;
 		while(_g < _g1.length) {
 			var h = _g1[_g];
 			++_g;
 			switch(index) {
 			case 0:
-				h.getDelegate().onPointerDown(pointerObj);
+				Reflect.field(h.getDelegate(),"onPointerDown").apply(h.getDelegate(),[pointerObj]);
 				break;
 			case 3:
-				h.getDelegate().onPointerUp(pointerObj);
+				Reflect.field(h.getDelegate(),"onPointerUp").apply(h.getDelegate(),[pointerObj]);
 				break;
 			case 1:
-				if(this._pointerPressed) h.getDelegate().onPointerDragged(pointerObj); else h.getDelegate().onPointerMoved(pointerObj);
+				if(this._pointerPressed) Reflect.field(h.getDelegate(),"onPointerDragged").apply(h.getDelegate(),[pointerObj]); else if(Reflect.field(h.getDelegate(),"onPointerMoved") == null) null; else Reflect.field(h.getDelegate(),"onPointerMoved").apply(h.getDelegate(),[pointerObj]);
 				break;
 			}
+			if(b1) return;
 		}
 	}
 	,removePointerDelegate: function(delegate) {
@@ -2854,6 +4244,7 @@ cc.touchdispatcher.CCPointerHandler.prototype = {
 	initWithDelegate: function(delegate,priority) {
 		this._delegate = delegate;
 		this._priority = priority;
+		this._claimedPointers = new Array();
 	}
 	,getPriority: function() {
 		return this._priority;
@@ -2864,7 +4255,6 @@ cc.touchdispatcher.CCPointerHandler.prototype = {
 	,__class__: cc.touchdispatcher.CCPointerHandler
 }
 flambe.Entity = function() {
-	this.isZOrderChanged = false;
 	this.zOrder = 0;
 	this.firstComponent = null;
 	this.next = null;
@@ -2908,9 +4298,7 @@ flambe.Entity.prototype = {
 				p = p.next;
 			}
 			if(tail != null) {
-				if(zOrder == null) {
-					if(entity.isZOrderChanged) zOrder = entity.zOrder; else zOrder = tail.zOrder;
-				}
+				if(zOrder == null) zOrder = tail.zOrder;
 				if(tail.zOrder <= zOrder) tail.next = entity; else {
 					var p1 = this.firstChild;
 					var pre = null;
@@ -2930,7 +4318,7 @@ flambe.Entity.prototype = {
 				}
 			} else {
 				this.firstChild = entity;
-				if(zOrder == null) zOrder = this.zOrder;
+				if(zOrder == null) zOrder = 0;
 			}
 		} else {
 			if(this.firstChild == null) zOrder = 0; else zOrder = this.firstChild.zOrder - 1;
@@ -3005,6 +4393,25 @@ flambe.platform.html.HtmlPlatform.prototype = {
 	}
 	,getRenderer: function() {
 		return this._renderer;
+	}
+	,getKeyboard: function() {
+		var _g = this;
+		if(this._keyboard == null) {
+			this._keyboard = new flambe.platform.BasicKeyboard();
+			var onKey = function(event) {
+				switch(event.type) {
+				case "keydown":
+					if(_g._keyboard.submitDown(event.keyCode)) event.preventDefault();
+					break;
+				case "keyup":
+					_g._keyboard.submitUp(event.keyCode);
+					break;
+				}
+			};
+			this._canvas.addEventListener("keydown",onKey,false);
+			this._canvas.addEventListener("keyup",onKey,false);
+		}
+		return this._keyboard;
 	}
 	,getPointer: function() {
 		return this._pointer;
@@ -4007,6 +5414,319 @@ flambe.display.Texture.prototype = {
 	__class__: flambe.display.Texture
 }
 flambe.input = {}
+flambe.input.Key = { __ename__ : true, __constructs__ : ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","Number0","Number1","Number2","Number3","Number4","Number5","Number6","Number7","Number8","Number9","Numpad0","Numpad1","Numpad2","Numpad3","Numpad4","Numpad5","Numpad6","Numpad7","Numpad8","Numpad9","NumpadAdd","NumpadDecimal","NumpadDivide","NumpadEnter","NumpadMultiply","NumpadSubtract","F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12","F13","F14","F15","Left","Up","Right","Down","Alt","Backquote","Backslash","Backspace","CapsLock","Comma","Command","Control","Delete","End","Enter","Equals","Escape","Home","Insert","LeftBracket","Minus","PageDown","PageUp","Period","Quote","RightBracket","Semicolon","Shift","Slash","Space","Tab","Menu","Search","Unknown"] }
+flambe.input.Key.A = ["A",0];
+flambe.input.Key.A.toString = $estr;
+flambe.input.Key.A.__enum__ = flambe.input.Key;
+flambe.input.Key.B = ["B",1];
+flambe.input.Key.B.toString = $estr;
+flambe.input.Key.B.__enum__ = flambe.input.Key;
+flambe.input.Key.C = ["C",2];
+flambe.input.Key.C.toString = $estr;
+flambe.input.Key.C.__enum__ = flambe.input.Key;
+flambe.input.Key.D = ["D",3];
+flambe.input.Key.D.toString = $estr;
+flambe.input.Key.D.__enum__ = flambe.input.Key;
+flambe.input.Key.E = ["E",4];
+flambe.input.Key.E.toString = $estr;
+flambe.input.Key.E.__enum__ = flambe.input.Key;
+flambe.input.Key.F = ["F",5];
+flambe.input.Key.F.toString = $estr;
+flambe.input.Key.F.__enum__ = flambe.input.Key;
+flambe.input.Key.G = ["G",6];
+flambe.input.Key.G.toString = $estr;
+flambe.input.Key.G.__enum__ = flambe.input.Key;
+flambe.input.Key.H = ["H",7];
+flambe.input.Key.H.toString = $estr;
+flambe.input.Key.H.__enum__ = flambe.input.Key;
+flambe.input.Key.I = ["I",8];
+flambe.input.Key.I.toString = $estr;
+flambe.input.Key.I.__enum__ = flambe.input.Key;
+flambe.input.Key.J = ["J",9];
+flambe.input.Key.J.toString = $estr;
+flambe.input.Key.J.__enum__ = flambe.input.Key;
+flambe.input.Key.K = ["K",10];
+flambe.input.Key.K.toString = $estr;
+flambe.input.Key.K.__enum__ = flambe.input.Key;
+flambe.input.Key.L = ["L",11];
+flambe.input.Key.L.toString = $estr;
+flambe.input.Key.L.__enum__ = flambe.input.Key;
+flambe.input.Key.M = ["M",12];
+flambe.input.Key.M.toString = $estr;
+flambe.input.Key.M.__enum__ = flambe.input.Key;
+flambe.input.Key.N = ["N",13];
+flambe.input.Key.N.toString = $estr;
+flambe.input.Key.N.__enum__ = flambe.input.Key;
+flambe.input.Key.O = ["O",14];
+flambe.input.Key.O.toString = $estr;
+flambe.input.Key.O.__enum__ = flambe.input.Key;
+flambe.input.Key.P = ["P",15];
+flambe.input.Key.P.toString = $estr;
+flambe.input.Key.P.__enum__ = flambe.input.Key;
+flambe.input.Key.Q = ["Q",16];
+flambe.input.Key.Q.toString = $estr;
+flambe.input.Key.Q.__enum__ = flambe.input.Key;
+flambe.input.Key.R = ["R",17];
+flambe.input.Key.R.toString = $estr;
+flambe.input.Key.R.__enum__ = flambe.input.Key;
+flambe.input.Key.S = ["S",18];
+flambe.input.Key.S.toString = $estr;
+flambe.input.Key.S.__enum__ = flambe.input.Key;
+flambe.input.Key.T = ["T",19];
+flambe.input.Key.T.toString = $estr;
+flambe.input.Key.T.__enum__ = flambe.input.Key;
+flambe.input.Key.U = ["U",20];
+flambe.input.Key.U.toString = $estr;
+flambe.input.Key.U.__enum__ = flambe.input.Key;
+flambe.input.Key.V = ["V",21];
+flambe.input.Key.V.toString = $estr;
+flambe.input.Key.V.__enum__ = flambe.input.Key;
+flambe.input.Key.W = ["W",22];
+flambe.input.Key.W.toString = $estr;
+flambe.input.Key.W.__enum__ = flambe.input.Key;
+flambe.input.Key.X = ["X",23];
+flambe.input.Key.X.toString = $estr;
+flambe.input.Key.X.__enum__ = flambe.input.Key;
+flambe.input.Key.Y = ["Y",24];
+flambe.input.Key.Y.toString = $estr;
+flambe.input.Key.Y.__enum__ = flambe.input.Key;
+flambe.input.Key.Z = ["Z",25];
+flambe.input.Key.Z.toString = $estr;
+flambe.input.Key.Z.__enum__ = flambe.input.Key;
+flambe.input.Key.Number0 = ["Number0",26];
+flambe.input.Key.Number0.toString = $estr;
+flambe.input.Key.Number0.__enum__ = flambe.input.Key;
+flambe.input.Key.Number1 = ["Number1",27];
+flambe.input.Key.Number1.toString = $estr;
+flambe.input.Key.Number1.__enum__ = flambe.input.Key;
+flambe.input.Key.Number2 = ["Number2",28];
+flambe.input.Key.Number2.toString = $estr;
+flambe.input.Key.Number2.__enum__ = flambe.input.Key;
+flambe.input.Key.Number3 = ["Number3",29];
+flambe.input.Key.Number3.toString = $estr;
+flambe.input.Key.Number3.__enum__ = flambe.input.Key;
+flambe.input.Key.Number4 = ["Number4",30];
+flambe.input.Key.Number4.toString = $estr;
+flambe.input.Key.Number4.__enum__ = flambe.input.Key;
+flambe.input.Key.Number5 = ["Number5",31];
+flambe.input.Key.Number5.toString = $estr;
+flambe.input.Key.Number5.__enum__ = flambe.input.Key;
+flambe.input.Key.Number6 = ["Number6",32];
+flambe.input.Key.Number6.toString = $estr;
+flambe.input.Key.Number6.__enum__ = flambe.input.Key;
+flambe.input.Key.Number7 = ["Number7",33];
+flambe.input.Key.Number7.toString = $estr;
+flambe.input.Key.Number7.__enum__ = flambe.input.Key;
+flambe.input.Key.Number8 = ["Number8",34];
+flambe.input.Key.Number8.toString = $estr;
+flambe.input.Key.Number8.__enum__ = flambe.input.Key;
+flambe.input.Key.Number9 = ["Number9",35];
+flambe.input.Key.Number9.toString = $estr;
+flambe.input.Key.Number9.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad0 = ["Numpad0",36];
+flambe.input.Key.Numpad0.toString = $estr;
+flambe.input.Key.Numpad0.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad1 = ["Numpad1",37];
+flambe.input.Key.Numpad1.toString = $estr;
+flambe.input.Key.Numpad1.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad2 = ["Numpad2",38];
+flambe.input.Key.Numpad2.toString = $estr;
+flambe.input.Key.Numpad2.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad3 = ["Numpad3",39];
+flambe.input.Key.Numpad3.toString = $estr;
+flambe.input.Key.Numpad3.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad4 = ["Numpad4",40];
+flambe.input.Key.Numpad4.toString = $estr;
+flambe.input.Key.Numpad4.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad5 = ["Numpad5",41];
+flambe.input.Key.Numpad5.toString = $estr;
+flambe.input.Key.Numpad5.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad6 = ["Numpad6",42];
+flambe.input.Key.Numpad6.toString = $estr;
+flambe.input.Key.Numpad6.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad7 = ["Numpad7",43];
+flambe.input.Key.Numpad7.toString = $estr;
+flambe.input.Key.Numpad7.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad8 = ["Numpad8",44];
+flambe.input.Key.Numpad8.toString = $estr;
+flambe.input.Key.Numpad8.__enum__ = flambe.input.Key;
+flambe.input.Key.Numpad9 = ["Numpad9",45];
+flambe.input.Key.Numpad9.toString = $estr;
+flambe.input.Key.Numpad9.__enum__ = flambe.input.Key;
+flambe.input.Key.NumpadAdd = ["NumpadAdd",46];
+flambe.input.Key.NumpadAdd.toString = $estr;
+flambe.input.Key.NumpadAdd.__enum__ = flambe.input.Key;
+flambe.input.Key.NumpadDecimal = ["NumpadDecimal",47];
+flambe.input.Key.NumpadDecimal.toString = $estr;
+flambe.input.Key.NumpadDecimal.__enum__ = flambe.input.Key;
+flambe.input.Key.NumpadDivide = ["NumpadDivide",48];
+flambe.input.Key.NumpadDivide.toString = $estr;
+flambe.input.Key.NumpadDivide.__enum__ = flambe.input.Key;
+flambe.input.Key.NumpadEnter = ["NumpadEnter",49];
+flambe.input.Key.NumpadEnter.toString = $estr;
+flambe.input.Key.NumpadEnter.__enum__ = flambe.input.Key;
+flambe.input.Key.NumpadMultiply = ["NumpadMultiply",50];
+flambe.input.Key.NumpadMultiply.toString = $estr;
+flambe.input.Key.NumpadMultiply.__enum__ = flambe.input.Key;
+flambe.input.Key.NumpadSubtract = ["NumpadSubtract",51];
+flambe.input.Key.NumpadSubtract.toString = $estr;
+flambe.input.Key.NumpadSubtract.__enum__ = flambe.input.Key;
+flambe.input.Key.F1 = ["F1",52];
+flambe.input.Key.F1.toString = $estr;
+flambe.input.Key.F1.__enum__ = flambe.input.Key;
+flambe.input.Key.F2 = ["F2",53];
+flambe.input.Key.F2.toString = $estr;
+flambe.input.Key.F2.__enum__ = flambe.input.Key;
+flambe.input.Key.F3 = ["F3",54];
+flambe.input.Key.F3.toString = $estr;
+flambe.input.Key.F3.__enum__ = flambe.input.Key;
+flambe.input.Key.F4 = ["F4",55];
+flambe.input.Key.F4.toString = $estr;
+flambe.input.Key.F4.__enum__ = flambe.input.Key;
+flambe.input.Key.F5 = ["F5",56];
+flambe.input.Key.F5.toString = $estr;
+flambe.input.Key.F5.__enum__ = flambe.input.Key;
+flambe.input.Key.F6 = ["F6",57];
+flambe.input.Key.F6.toString = $estr;
+flambe.input.Key.F6.__enum__ = flambe.input.Key;
+flambe.input.Key.F7 = ["F7",58];
+flambe.input.Key.F7.toString = $estr;
+flambe.input.Key.F7.__enum__ = flambe.input.Key;
+flambe.input.Key.F8 = ["F8",59];
+flambe.input.Key.F8.toString = $estr;
+flambe.input.Key.F8.__enum__ = flambe.input.Key;
+flambe.input.Key.F9 = ["F9",60];
+flambe.input.Key.F9.toString = $estr;
+flambe.input.Key.F9.__enum__ = flambe.input.Key;
+flambe.input.Key.F10 = ["F10",61];
+flambe.input.Key.F10.toString = $estr;
+flambe.input.Key.F10.__enum__ = flambe.input.Key;
+flambe.input.Key.F11 = ["F11",62];
+flambe.input.Key.F11.toString = $estr;
+flambe.input.Key.F11.__enum__ = flambe.input.Key;
+flambe.input.Key.F12 = ["F12",63];
+flambe.input.Key.F12.toString = $estr;
+flambe.input.Key.F12.__enum__ = flambe.input.Key;
+flambe.input.Key.F13 = ["F13",64];
+flambe.input.Key.F13.toString = $estr;
+flambe.input.Key.F13.__enum__ = flambe.input.Key;
+flambe.input.Key.F14 = ["F14",65];
+flambe.input.Key.F14.toString = $estr;
+flambe.input.Key.F14.__enum__ = flambe.input.Key;
+flambe.input.Key.F15 = ["F15",66];
+flambe.input.Key.F15.toString = $estr;
+flambe.input.Key.F15.__enum__ = flambe.input.Key;
+flambe.input.Key.Left = ["Left",67];
+flambe.input.Key.Left.toString = $estr;
+flambe.input.Key.Left.__enum__ = flambe.input.Key;
+flambe.input.Key.Up = ["Up",68];
+flambe.input.Key.Up.toString = $estr;
+flambe.input.Key.Up.__enum__ = flambe.input.Key;
+flambe.input.Key.Right = ["Right",69];
+flambe.input.Key.Right.toString = $estr;
+flambe.input.Key.Right.__enum__ = flambe.input.Key;
+flambe.input.Key.Down = ["Down",70];
+flambe.input.Key.Down.toString = $estr;
+flambe.input.Key.Down.__enum__ = flambe.input.Key;
+flambe.input.Key.Alt = ["Alt",71];
+flambe.input.Key.Alt.toString = $estr;
+flambe.input.Key.Alt.__enum__ = flambe.input.Key;
+flambe.input.Key.Backquote = ["Backquote",72];
+flambe.input.Key.Backquote.toString = $estr;
+flambe.input.Key.Backquote.__enum__ = flambe.input.Key;
+flambe.input.Key.Backslash = ["Backslash",73];
+flambe.input.Key.Backslash.toString = $estr;
+flambe.input.Key.Backslash.__enum__ = flambe.input.Key;
+flambe.input.Key.Backspace = ["Backspace",74];
+flambe.input.Key.Backspace.toString = $estr;
+flambe.input.Key.Backspace.__enum__ = flambe.input.Key;
+flambe.input.Key.CapsLock = ["CapsLock",75];
+flambe.input.Key.CapsLock.toString = $estr;
+flambe.input.Key.CapsLock.__enum__ = flambe.input.Key;
+flambe.input.Key.Comma = ["Comma",76];
+flambe.input.Key.Comma.toString = $estr;
+flambe.input.Key.Comma.__enum__ = flambe.input.Key;
+flambe.input.Key.Command = ["Command",77];
+flambe.input.Key.Command.toString = $estr;
+flambe.input.Key.Command.__enum__ = flambe.input.Key;
+flambe.input.Key.Control = ["Control",78];
+flambe.input.Key.Control.toString = $estr;
+flambe.input.Key.Control.__enum__ = flambe.input.Key;
+flambe.input.Key.Delete = ["Delete",79];
+flambe.input.Key.Delete.toString = $estr;
+flambe.input.Key.Delete.__enum__ = flambe.input.Key;
+flambe.input.Key.End = ["End",80];
+flambe.input.Key.End.toString = $estr;
+flambe.input.Key.End.__enum__ = flambe.input.Key;
+flambe.input.Key.Enter = ["Enter",81];
+flambe.input.Key.Enter.toString = $estr;
+flambe.input.Key.Enter.__enum__ = flambe.input.Key;
+flambe.input.Key.Equals = ["Equals",82];
+flambe.input.Key.Equals.toString = $estr;
+flambe.input.Key.Equals.__enum__ = flambe.input.Key;
+flambe.input.Key.Escape = ["Escape",83];
+flambe.input.Key.Escape.toString = $estr;
+flambe.input.Key.Escape.__enum__ = flambe.input.Key;
+flambe.input.Key.Home = ["Home",84];
+flambe.input.Key.Home.toString = $estr;
+flambe.input.Key.Home.__enum__ = flambe.input.Key;
+flambe.input.Key.Insert = ["Insert",85];
+flambe.input.Key.Insert.toString = $estr;
+flambe.input.Key.Insert.__enum__ = flambe.input.Key;
+flambe.input.Key.LeftBracket = ["LeftBracket",86];
+flambe.input.Key.LeftBracket.toString = $estr;
+flambe.input.Key.LeftBracket.__enum__ = flambe.input.Key;
+flambe.input.Key.Minus = ["Minus",87];
+flambe.input.Key.Minus.toString = $estr;
+flambe.input.Key.Minus.__enum__ = flambe.input.Key;
+flambe.input.Key.PageDown = ["PageDown",88];
+flambe.input.Key.PageDown.toString = $estr;
+flambe.input.Key.PageDown.__enum__ = flambe.input.Key;
+flambe.input.Key.PageUp = ["PageUp",89];
+flambe.input.Key.PageUp.toString = $estr;
+flambe.input.Key.PageUp.__enum__ = flambe.input.Key;
+flambe.input.Key.Period = ["Period",90];
+flambe.input.Key.Period.toString = $estr;
+flambe.input.Key.Period.__enum__ = flambe.input.Key;
+flambe.input.Key.Quote = ["Quote",91];
+flambe.input.Key.Quote.toString = $estr;
+flambe.input.Key.Quote.__enum__ = flambe.input.Key;
+flambe.input.Key.RightBracket = ["RightBracket",92];
+flambe.input.Key.RightBracket.toString = $estr;
+flambe.input.Key.RightBracket.__enum__ = flambe.input.Key;
+flambe.input.Key.Semicolon = ["Semicolon",93];
+flambe.input.Key.Semicolon.toString = $estr;
+flambe.input.Key.Semicolon.__enum__ = flambe.input.Key;
+flambe.input.Key.Shift = ["Shift",94];
+flambe.input.Key.Shift.toString = $estr;
+flambe.input.Key.Shift.__enum__ = flambe.input.Key;
+flambe.input.Key.Slash = ["Slash",95];
+flambe.input.Key.Slash.toString = $estr;
+flambe.input.Key.Slash.__enum__ = flambe.input.Key;
+flambe.input.Key.Space = ["Space",96];
+flambe.input.Key.Space.toString = $estr;
+flambe.input.Key.Space.__enum__ = flambe.input.Key;
+flambe.input.Key.Tab = ["Tab",97];
+flambe.input.Key.Tab.toString = $estr;
+flambe.input.Key.Tab.__enum__ = flambe.input.Key;
+flambe.input.Key.Menu = ["Menu",98];
+flambe.input.Key.Menu.toString = $estr;
+flambe.input.Key.Menu.__enum__ = flambe.input.Key;
+flambe.input.Key.Search = ["Search",99];
+flambe.input.Key.Search.toString = $estr;
+flambe.input.Key.Search.__enum__ = flambe.input.Key;
+flambe.input.Key.Unknown = function(keyCode) { var $x = ["Unknown",100,keyCode]; $x.__enum__ = flambe.input.Key; $x.toString = $estr; return $x; }
+flambe.input.KeyboardEvent = function() {
+	this.init(0,null);
+};
+flambe.input.KeyboardEvent.__name__ = true;
+flambe.input.KeyboardEvent.prototype = {
+	init: function(id,key) {
+		this.id = id;
+		this.key = key;
+	}
+	,__class__: flambe.input.KeyboardEvent
+}
 flambe.input.MouseButton = { __ename__ : true, __constructs__ : ["Left","Middle","Right","Unknown"] }
 flambe.input.MouseButton.Left = ["Left",0];
 flambe.input.MouseButton.Left.toString = $estr;
@@ -4152,42 +5872,6 @@ flambe.math.Matrix.prototype = {
 		this.m12 = m12;
 	}
 	,__class__: flambe.math.Matrix
-}
-flambe.math.Rectangle = function(x,y,width,height) {
-	if(height == null) height = 0;
-	if(width == null) width = 0;
-	if(y == null) y = 0;
-	if(x == null) x = 0;
-	this.set(x,y,width,height);
-};
-flambe.math.Rectangle.__name__ = true;
-flambe.math.Rectangle.prototype = {
-	equals: function(other) {
-		return this.x == other.x && this.y == other.y && this.width == other.width && this.height == other.height;
-	}
-	,clone: function(result) {
-		if(result == null) result = new flambe.math.Rectangle();
-		result.set(this.x,this.y,this.width,this.height);
-		return result;
-	}
-	,contains: function(x,y) {
-		x -= this.x;
-		if(this.width >= 0) {
-			if(x < 0 || x > this.width) return false;
-		} else if(x > 0 || x < this.width) return false;
-		y -= this.y;
-		if(this.height >= 0) {
-			if(y < 0 || y > this.height) return false;
-		} else if(y > 0 || y < this.height) return false;
-		return true;
-	}
-	,set: function(x,y,width,height) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-	}
-	,__class__: flambe.math.Rectangle
 }
 flambe.platform.BasicAsset = function() {
 	this._disposed = false;
@@ -4442,6 +6126,44 @@ flambe.platform.BasicFile.prototype = $extend(flambe.platform.BasicAsset.prototy
 	,__class__: flambe.platform.BasicFile
 });
 flambe.subsystem = {}
+flambe.subsystem.KeyboardSystem = function() { }
+flambe.subsystem.KeyboardSystem.__name__ = true;
+flambe.subsystem.KeyboardSystem.prototype = {
+	__class__: flambe.subsystem.KeyboardSystem
+}
+flambe.platform.BasicKeyboard = function() {
+	this.down = new flambe.util.Signal1();
+	this.up = new flambe.util.Signal1();
+	this.backButton = new flambe.util.Signal0();
+	this._keyStates = new haxe.ds.IntMap();
+};
+flambe.platform.BasicKeyboard.__name__ = true;
+flambe.platform.BasicKeyboard.__interfaces__ = [flambe.subsystem.KeyboardSystem];
+flambe.platform.BasicKeyboard.prototype = {
+	submitUp: function(keyCode) {
+		if(this._keyStates.exists(keyCode)) {
+			this._keyStates.remove(keyCode);
+			flambe.platform.BasicKeyboard._sharedEvent.init(flambe.platform.BasicKeyboard._sharedEvent.id + 1,flambe.platform.KeyCodes.toKey(keyCode));
+			this.up.emit1(flambe.platform.BasicKeyboard._sharedEvent);
+		}
+	}
+	,submitDown: function(keyCode) {
+		if(keyCode == 16777238) {
+			if(this.backButton._head != null) {
+				this.backButton.emit0();
+				return true;
+			}
+			return false;
+		}
+		if(!this._keyStates.exists(keyCode)) {
+			this._keyStates.set(keyCode,true);
+			flambe.platform.BasicKeyboard._sharedEvent.init(flambe.platform.BasicKeyboard._sharedEvent.id + 1,flambe.platform.KeyCodes.toKey(keyCode));
+			this.down.emit1(flambe.platform.BasicKeyboard._sharedEvent);
+		}
+		return true;
+	}
+	,__class__: flambe.platform.BasicKeyboard
+}
 flambe.subsystem.MouseSystem = function() { }
 flambe.subsystem.MouseSystem.__name__ = true;
 flambe.platform.BasicMouse = function(pointer) {
@@ -4526,7 +6248,7 @@ flambe.platform.BasicPointer.prototype = {
 		if(hit != null) {
 			var entity = hit.owner;
 			do {
-				var sprite = entity._compMap.Sprite_4;
+				var sprite = entity._compMap.Sprite_2;
 				if(sprite != null) chain.push(sprite);
 				entity = entity.parent;
 			} while(entity != null);
@@ -4550,7 +6272,7 @@ flambe.platform.BasicPointer.prototype = {
 		if(hit != null) {
 			var entity = hit.owner;
 			do {
-				var sprite = entity._compMap.Sprite_4;
+				var sprite = entity._compMap.Sprite_2;
 				if(sprite != null) chain.push(sprite);
 				entity = entity.parent;
 			} while(entity != null);
@@ -4576,7 +6298,7 @@ flambe.platform.BasicPointer.prototype = {
 		if(hit != null) {
 			var entity = hit.owner;
 			do {
-				var sprite = entity._compMap.Sprite_4;
+				var sprite = entity._compMap.Sprite_2;
 				if(sprite != null) chain.push(sprite);
 				entity = entity.parent;
 			} while(entity != null);
@@ -4749,6 +6471,207 @@ flambe.platform.InternalGraphics.__name__ = true;
 flambe.platform.InternalGraphics.__interfaces__ = [flambe.display.Graphics];
 flambe.platform.InternalGraphics.prototype = {
 	__class__: flambe.platform.InternalGraphics
+}
+flambe.platform.KeyCodes = function() { }
+flambe.platform.KeyCodes.__name__ = true;
+flambe.platform.KeyCodes.toKey = function(keyCode) {
+	switch(keyCode) {
+	case 65:
+		return flambe.input.Key.A;
+	case 66:
+		return flambe.input.Key.B;
+	case 67:
+		return flambe.input.Key.C;
+	case 68:
+		return flambe.input.Key.D;
+	case 69:
+		return flambe.input.Key.E;
+	case 70:
+		return flambe.input.Key.F;
+	case 71:
+		return flambe.input.Key.G;
+	case 72:
+		return flambe.input.Key.H;
+	case 73:
+		return flambe.input.Key.I;
+	case 74:
+		return flambe.input.Key.J;
+	case 75:
+		return flambe.input.Key.K;
+	case 76:
+		return flambe.input.Key.L;
+	case 77:
+		return flambe.input.Key.M;
+	case 78:
+		return flambe.input.Key.N;
+	case 79:
+		return flambe.input.Key.O;
+	case 80:
+		return flambe.input.Key.P;
+	case 81:
+		return flambe.input.Key.Q;
+	case 82:
+		return flambe.input.Key.R;
+	case 83:
+		return flambe.input.Key.S;
+	case 84:
+		return flambe.input.Key.T;
+	case 85:
+		return flambe.input.Key.U;
+	case 86:
+		return flambe.input.Key.V;
+	case 87:
+		return flambe.input.Key.W;
+	case 88:
+		return flambe.input.Key.X;
+	case 89:
+		return flambe.input.Key.Y;
+	case 90:
+		return flambe.input.Key.Z;
+	case 48:
+		return flambe.input.Key.Number0;
+	case 49:
+		return flambe.input.Key.Number1;
+	case 50:
+		return flambe.input.Key.Number2;
+	case 51:
+		return flambe.input.Key.Number3;
+	case 52:
+		return flambe.input.Key.Number4;
+	case 53:
+		return flambe.input.Key.Number5;
+	case 54:
+		return flambe.input.Key.Number6;
+	case 55:
+		return flambe.input.Key.Number7;
+	case 56:
+		return flambe.input.Key.Number8;
+	case 57:
+		return flambe.input.Key.Number9;
+	case 96:
+		return flambe.input.Key.Numpad0;
+	case 97:
+		return flambe.input.Key.Numpad1;
+	case 98:
+		return flambe.input.Key.Numpad2;
+	case 99:
+		return flambe.input.Key.Numpad3;
+	case 100:
+		return flambe.input.Key.Numpad4;
+	case 101:
+		return flambe.input.Key.Numpad5;
+	case 102:
+		return flambe.input.Key.Numpad6;
+	case 103:
+		return flambe.input.Key.Numpad7;
+	case 104:
+		return flambe.input.Key.Numpad8;
+	case 105:
+		return flambe.input.Key.Numpad9;
+	case 107:
+		return flambe.input.Key.NumpadAdd;
+	case 110:
+		return flambe.input.Key.NumpadDecimal;
+	case 111:
+		return flambe.input.Key.NumpadDivide;
+	case 108:
+		return flambe.input.Key.NumpadEnter;
+	case 106:
+		return flambe.input.Key.NumpadMultiply;
+	case 109:
+		return flambe.input.Key.NumpadSubtract;
+	case 112:
+		return flambe.input.Key.F1;
+	case 113:
+		return flambe.input.Key.F2;
+	case 114:
+		return flambe.input.Key.F3;
+	case 115:
+		return flambe.input.Key.F4;
+	case 116:
+		return flambe.input.Key.F5;
+	case 117:
+		return flambe.input.Key.F6;
+	case 118:
+		return flambe.input.Key.F7;
+	case 119:
+		return flambe.input.Key.F8;
+	case 120:
+		return flambe.input.Key.F9;
+	case 121:
+		return flambe.input.Key.F10;
+	case 122:
+		return flambe.input.Key.F11;
+	case 123:
+		return flambe.input.Key.F12;
+	case 37:
+		return flambe.input.Key.Left;
+	case 38:
+		return flambe.input.Key.Up;
+	case 39:
+		return flambe.input.Key.Right;
+	case 40:
+		return flambe.input.Key.Down;
+	case 18:
+		return flambe.input.Key.Alt;
+	case 192:
+		return flambe.input.Key.Backquote;
+	case 220:
+		return flambe.input.Key.Backslash;
+	case 8:
+		return flambe.input.Key.Backspace;
+	case 20:
+		return flambe.input.Key.CapsLock;
+	case 188:
+		return flambe.input.Key.Comma;
+	case 15:
+		return flambe.input.Key.Command;
+	case 17:
+		return flambe.input.Key.Control;
+	case 46:
+		return flambe.input.Key.Delete;
+	case 35:
+		return flambe.input.Key.End;
+	case 13:
+		return flambe.input.Key.Enter;
+	case 187:
+		return flambe.input.Key.Equals;
+	case 27:
+		return flambe.input.Key.Escape;
+	case 36:
+		return flambe.input.Key.Home;
+	case 45:
+		return flambe.input.Key.Insert;
+	case 219:
+		return flambe.input.Key.LeftBracket;
+	case 189:
+		return flambe.input.Key.Minus;
+	case 34:
+		return flambe.input.Key.PageDown;
+	case 33:
+		return flambe.input.Key.PageUp;
+	case 190:
+		return flambe.input.Key.Period;
+	case 222:
+		return flambe.input.Key.Quote;
+	case 221:
+		return flambe.input.Key.RightBracket;
+	case 186:
+		return flambe.input.Key.Semicolon;
+	case 16:
+		return flambe.input.Key.Shift;
+	case 191:
+		return flambe.input.Key.Slash;
+	case 32:
+		return flambe.input.Key.Space;
+	case 9:
+		return flambe.input.Key.Tab;
+	case 16777234:
+		return flambe.input.Key.Menu;
+	case 16777247:
+		return flambe.input.Key.Search;
+	}
+	return flambe.input.Key.Unknown(keyCode);
 }
 flambe.platform.MainLoop = function() {
 	this._tickables = [];
@@ -5262,16 +7185,6 @@ flambe.platform.html.HtmlStage = function(canvas) {
 flambe.platform.html.HtmlStage.__name__ = true;
 flambe.platform.html.HtmlStage.__interfaces__ = [flambe.subsystem.StageSystem];
 flambe.platform.html.HtmlStage.computeScaleFactor = function() {
-	var devicePixelRatio = js.Browser.window.devicePixelRatio;
-	if(devicePixelRatio == null) devicePixelRatio = 1;
-	var canvas = js.Browser.document.createElement("canvas");
-	var ctx = canvas.getContext("2d");
-	var backingStorePixelRatio = flambe.platform.html.HtmlUtil.loadExtension("backingStorePixelRatio",ctx).value;
-	if(backingStorePixelRatio == null) backingStorePixelRatio = 1;
-	var scale = devicePixelRatio / backingStorePixelRatio;
-	var screenWidth = js.Browser.window.screen.width;
-	var screenHeight = js.Browser.window.screen.height;
-	if(scale * screenWidth > 1136 || scale * screenHeight > 1136) return 1;
 	return 1;
 }
 flambe.platform.html.HtmlStage.prototype = {
@@ -6143,7 +8056,7 @@ flambe.scene.Director.prototype = $extend(flambe.Component.prototype,{
 		var ii = this.scenes.length;
 		while(ii > 0) {
 			var scene = this.scenes[--ii];
-			var comp = scene._compMap.Scene_2;
+			var comp = scene._compMap.Scene_3;
 			if(comp == null || comp.opaque) break;
 		}
 		this.occludedScenes = this.scenes.length > 0?this.scenes.slice(ii,this.scenes.length - 1):[];
@@ -6151,7 +8064,7 @@ flambe.scene.Director.prototype = $extend(flambe.Component.prototype,{
 		if(scene != null) this.show(scene);
 	}
 	,show: function(scene) {
-		var events = scene._compMap.Scene_2;
+		var events = scene._compMap.Scene_3;
 		if(events != null) events.shown.emit0();
 	}
 	,hideAndDispose: function(scene) {
@@ -6159,7 +8072,7 @@ flambe.scene.Director.prototype = $extend(flambe.Component.prototype,{
 		scene.dispose();
 	}
 	,hide: function(scene) {
-		var events = scene._compMap.Scene_2;
+		var events = scene._compMap.Scene_3;
 		if(events != null) events.hidden.emit0();
 	}
 	,add: function(scene) {
@@ -6285,16 +8198,16 @@ flambe.scene.FadeTransition.__name__ = true;
 flambe.scene.FadeTransition.__super__ = flambe.scene.TweenTransition;
 flambe.scene.FadeTransition.prototype = $extend(flambe.scene.TweenTransition.prototype,{
 	complete: function() {
-		this._to._compMap.Sprite_4.alpha.set__(1);
+		this._to._compMap.Sprite_2.alpha.set__(1);
 	}
 	,update: function(dt) {
 		var done = flambe.scene.TweenTransition.prototype.update.call(this,dt);
-		this._to._compMap.Sprite_4.alpha.set__(this.interp(0,1));
+		this._to._compMap.Sprite_2.alpha.set__(this.interp(0,1));
 		return done;
 	}
 	,init: function(director,from,to) {
 		flambe.scene.TweenTransition.prototype.init.call(this,director,from,to);
-		var sprite = this._to._compMap.Sprite_4;
+		var sprite = this._to._compMap.Sprite_2;
 		if(sprite == null) this._to.add(sprite = new flambe.display.Sprite());
 		sprite.alpha.set__(0);
 	}
@@ -6305,7 +8218,7 @@ flambe.scene.Scene.__name__ = true;
 flambe.scene.Scene.__super__ = flambe.Component;
 flambe.scene.Scene.prototype = $extend(flambe.Component.prototype,{
 	get_name: function() {
-		return "Scene_2";
+		return "Scene_3";
 	}
 	,__class__: flambe.scene.Scene
 });
@@ -6417,6 +8330,40 @@ flambe.util.Strings.withFields = function(message,fields) {
 	return message;
 }
 var haxe = {}
+haxe.crypto = {}
+haxe.crypto.Adler32 = function() {
+	this.a1 = 1;
+	this.a2 = 0;
+};
+haxe.crypto.Adler32.__name__ = true;
+haxe.crypto.Adler32.read = function(i) {
+	var a = new haxe.crypto.Adler32();
+	var a2a = i.readByte();
+	var a2b = i.readByte();
+	var a1a = i.readByte();
+	var a1b = i.readByte();
+	a.a1 = a1a << 8 | a1b;
+	a.a2 = a2a << 8 | a2b;
+	return a;
+}
+haxe.crypto.Adler32.prototype = {
+	equals: function(a) {
+		return a.a1 == this.a1 && a.a2 == this.a2;
+	}
+	,update: function(b,pos,len) {
+		var a1 = this.a1, a2 = this.a2;
+		var _g1 = pos, _g = pos + len;
+		while(_g1 < _g) {
+			var p = _g1++;
+			var c = b.b[p];
+			a1 = (a1 + c) % 65521;
+			a2 = (a2 + a1) % 65521;
+		}
+		this.a1 = a1;
+		this.a2 = a2;
+	}
+	,__class__: haxe.crypto.Adler32
+}
 haxe.ds = {}
 haxe.ds.IntMap = function() {
 	this.h = { };
@@ -6473,8 +8420,158 @@ haxe.ds.StringMap.prototype = {
 	,__class__: haxe.ds.StringMap
 }
 haxe.io = {}
-haxe.io.Bytes = function() { }
+haxe.io.Bytes = function(length,b) {
+	this.length = length;
+	this.b = b;
+};
 haxe.io.Bytes.__name__ = true;
+haxe.io.Bytes.alloc = function(length) {
+	var a = new Array();
+	var _g = 0;
+	while(_g < length) {
+		var i = _g++;
+		a.push(0);
+	}
+	return new haxe.io.Bytes(length,a);
+}
+haxe.io.Bytes.ofData = function(b) {
+	return new haxe.io.Bytes(b.length,b);
+}
+haxe.io.Bytes.prototype = {
+	blit: function(pos,src,srcpos,len) {
+		if(pos < 0 || srcpos < 0 || len < 0 || pos + len > this.length || srcpos + len > src.length) throw haxe.io.Error.OutsideBounds;
+		var b1 = this.b;
+		var b2 = src.b;
+		if(b1 == b2 && pos > srcpos) {
+			var i = len;
+			while(i > 0) {
+				i--;
+				b1[i + pos] = b2[i + srcpos];
+			}
+			return;
+		}
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			b1[i + pos] = b2[i + srcpos];
+		}
+	}
+	,__class__: haxe.io.Bytes
+}
+haxe.io.BytesBuffer = function() {
+	this.b = new Array();
+};
+haxe.io.BytesBuffer.__name__ = true;
+haxe.io.BytesBuffer.prototype = {
+	getBytes: function() {
+		var bytes = new haxe.io.Bytes(this.b.length,this.b);
+		this.b = null;
+		return bytes;
+	}
+	,addBytes: function(src,pos,len) {
+		if(pos < 0 || len < 0 || pos + len > src.length) throw haxe.io.Error.OutsideBounds;
+		var b1 = this.b;
+		var b2 = src.b;
+		var _g1 = pos, _g = pos + len;
+		while(_g1 < _g) {
+			var i = _g1++;
+			this.b.push(b2[i]);
+		}
+	}
+	,__class__: haxe.io.BytesBuffer
+}
+haxe.io.Input = function() { }
+haxe.io.Input.__name__ = true;
+haxe.io.Input.prototype = {
+	readUInt16: function() {
+		var ch1 = this.readByte();
+		var ch2 = this.readByte();
+		return this.bigEndian?ch2 | ch1 << 8:ch1 | ch2 << 8;
+	}
+	,read: function(nbytes) {
+		var s = haxe.io.Bytes.alloc(nbytes);
+		var p = 0;
+		while(nbytes > 0) {
+			var k = this.readBytes(s,p,nbytes);
+			if(k == 0) throw haxe.io.Error.Blocked;
+			p += k;
+			nbytes -= k;
+		}
+		return s;
+	}
+	,readBytes: function(s,pos,len) {
+		var k = len;
+		var b = s.b;
+		if(pos < 0 || len < 0 || pos + len > s.length) throw haxe.io.Error.OutsideBounds;
+		while(k > 0) {
+			b[pos] = this.readByte();
+			pos++;
+			k--;
+		}
+		return len;
+	}
+	,readByte: function() {
+		return (function($this) {
+			var $r;
+			throw "Not implemented";
+			return $r;
+		}(this));
+	}
+	,__class__: haxe.io.Input
+}
+haxe.io.BytesInput = function(b,pos,len) {
+	if(pos == null) pos = 0;
+	if(len == null) len = b.length - pos;
+	if(pos < 0 || len < 0 || pos + len > b.length) throw haxe.io.Error.OutsideBounds;
+	this.b = b.b;
+	this.pos = pos;
+	this.len = len;
+};
+haxe.io.BytesInput.__name__ = true;
+haxe.io.BytesInput.__super__ = haxe.io.Input;
+haxe.io.BytesInput.prototype = $extend(haxe.io.Input.prototype,{
+	readBytes: function(buf,pos,len) {
+		if(pos < 0 || len < 0 || pos + len > buf.length) throw haxe.io.Error.OutsideBounds;
+		if(this.len == 0 && len > 0) throw new haxe.io.Eof();
+		if(this.len < len) len = this.len;
+		var b1 = this.b;
+		var b2 = buf.b;
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			b2[pos + i] = b1[this.pos + i];
+		}
+		this.pos += len;
+		this.len -= len;
+		return len;
+	}
+	,readByte: function() {
+		if(this.len == 0) throw new haxe.io.Eof();
+		this.len--;
+		return this.b[this.pos++];
+	}
+	,__class__: haxe.io.BytesInput
+});
+haxe.io.Eof = function() {
+};
+haxe.io.Eof.__name__ = true;
+haxe.io.Eof.prototype = {
+	toString: function() {
+		return "Eof";
+	}
+	,__class__: haxe.io.Eof
+}
+haxe.io.Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] }
+haxe.io.Error.Blocked = ["Blocked",0];
+haxe.io.Error.Blocked.toString = $estr;
+haxe.io.Error.Blocked.__enum__ = haxe.io.Error;
+haxe.io.Error.Overflow = ["Overflow",1];
+haxe.io.Error.Overflow.toString = $estr;
+haxe.io.Error.Overflow.__enum__ = haxe.io.Error;
+haxe.io.Error.OutsideBounds = ["OutsideBounds",2];
+haxe.io.Error.OutsideBounds.toString = $estr;
+haxe.io.Error.OutsideBounds.__enum__ = haxe.io.Error;
+haxe.io.Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe.io.Error; $x.toString = $estr; return $x; }
 haxe.rtti = {}
 haxe.rtti.Meta = function() { }
 haxe.rtti.Meta.__name__ = true;
@@ -6728,6 +8825,478 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 	}
 	throw "Unexpected end";
 }
+haxe.zip = {}
+haxe.zip.Huffman = { __ename__ : true, __constructs__ : ["Found","NeedBit","NeedBits"] }
+haxe.zip.Huffman.Found = function(i) { var $x = ["Found",0,i]; $x.__enum__ = haxe.zip.Huffman; $x.toString = $estr; return $x; }
+haxe.zip.Huffman.NeedBit = function(left,right) { var $x = ["NeedBit",1,left,right]; $x.__enum__ = haxe.zip.Huffman; $x.toString = $estr; return $x; }
+haxe.zip.Huffman.NeedBits = function(n,table) { var $x = ["NeedBits",2,n,table]; $x.__enum__ = haxe.zip.Huffman; $x.toString = $estr; return $x; }
+haxe.zip.HuffTools = function() {
+};
+haxe.zip.HuffTools.__name__ = true;
+haxe.zip.HuffTools.prototype = {
+	make: function(lengths,pos,nlengths,maxbits) {
+		var counts = new Array();
+		var tmp = new Array();
+		if(maxbits > 32) throw "Invalid huffman";
+		var _g = 0;
+		while(_g < maxbits) {
+			var i = _g++;
+			counts.push(0);
+			tmp.push(0);
+		}
+		var _g = 0;
+		while(_g < nlengths) {
+			var i = _g++;
+			var p = lengths[i + pos];
+			if(p >= maxbits) throw "Invalid huffman";
+			counts[p]++;
+		}
+		var code = 0;
+		var _g1 = 1, _g = maxbits - 1;
+		while(_g1 < _g) {
+			var i = _g1++;
+			code = code + counts[i] << 1;
+			tmp[i] = code;
+		}
+		var bits = new haxe.ds.IntMap();
+		var _g = 0;
+		while(_g < nlengths) {
+			var i = _g++;
+			var l = lengths[i + pos];
+			if(l != 0) {
+				var n = tmp[l - 1];
+				tmp[l - 1] = n + 1;
+				bits.set(n << 5 | l,i);
+			}
+		}
+		return this.treeCompress(haxe.zip.Huffman.NeedBit(this.treeMake(bits,maxbits,0,1),this.treeMake(bits,maxbits,1,1)));
+	}
+	,treeMake: function(bits,maxbits,v,len) {
+		if(len > maxbits) throw "Invalid huffman";
+		var idx = v << 5 | len;
+		if(bits.exists(idx)) return haxe.zip.Huffman.Found(bits.get(idx));
+		v <<= 1;
+		len += 1;
+		return haxe.zip.Huffman.NeedBit(this.treeMake(bits,maxbits,v,len),this.treeMake(bits,maxbits,v | 1,len));
+	}
+	,treeWalk: function(table,p,cd,d,t) {
+		var $e = (t);
+		switch( $e[1] ) {
+		case 1:
+			var b = $e[3], a = $e[2];
+			if(d > 0) {
+				this.treeWalk(table,p,cd + 1,d - 1,a);
+				this.treeWalk(table,p | 1 << cd,cd + 1,d - 1,b);
+			} else table[p] = this.treeCompress(t);
+			break;
+		default:
+			table[p] = this.treeCompress(t);
+		}
+	}
+	,treeCompress: function(t) {
+		var d = this.treeDepth(t);
+		if(d == 0) return t;
+		if(d == 1) return (function($this) {
+			var $r;
+			var $e = (t);
+			switch( $e[1] ) {
+			case 1:
+				var b = $e[3], a = $e[2];
+				$r = haxe.zip.Huffman.NeedBit($this.treeCompress(a),$this.treeCompress(b));
+				break;
+			default:
+				$r = (function($this) {
+					var $r;
+					throw "assert";
+					return $r;
+				}($this));
+			}
+			return $r;
+		}(this));
+		var size = 1 << d;
+		var table = new Array();
+		var _g = 0;
+		while(_g < size) {
+			var i = _g++;
+			table.push(haxe.zip.Huffman.Found(-1));
+		}
+		this.treeWalk(table,0,0,d,t);
+		return haxe.zip.Huffman.NeedBits(d,table);
+	}
+	,treeDepth: function(t) {
+		return (function($this) {
+			var $r;
+			var $e = (t);
+			switch( $e[1] ) {
+			case 0:
+				$r = 0;
+				break;
+			case 2:
+				$r = (function($this) {
+					var $r;
+					throw "assert";
+					return $r;
+				}($this));
+				break;
+			case 1:
+				var b = $e[3], a = $e[2];
+				$r = (function($this) {
+					var $r;
+					var da = $this.treeDepth(a);
+					var db = $this.treeDepth(b);
+					$r = 1 + (da < db?da:db);
+					return $r;
+				}($this));
+				break;
+			}
+			return $r;
+		}(this));
+	}
+	,__class__: haxe.zip.HuffTools
+}
+haxe.zip._InflateImpl = {}
+haxe.zip._InflateImpl.Window = function(hasCrc) {
+	this.buffer = haxe.io.Bytes.alloc(65536);
+	this.pos = 0;
+	if(hasCrc) this.crc = new haxe.crypto.Adler32();
+};
+haxe.zip._InflateImpl.Window.__name__ = true;
+haxe.zip._InflateImpl.Window.prototype = {
+	checksum: function() {
+		if(this.crc != null) this.crc.update(this.buffer,0,this.pos);
+		return this.crc;
+	}
+	,available: function() {
+		return this.pos;
+	}
+	,getLastChar: function() {
+		return this.buffer.b[this.pos - 1];
+	}
+	,addByte: function(c) {
+		if(this.pos == 65536) this.slide();
+		this.buffer.b[this.pos] = c & 255;
+		this.pos++;
+	}
+	,addBytes: function(b,p,len) {
+		if(this.pos + len > 65536) this.slide();
+		this.buffer.blit(this.pos,b,p,len);
+		this.pos += len;
+	}
+	,slide: function() {
+		if(this.crc != null) this.crc.update(this.buffer,0,32768);
+		var b = haxe.io.Bytes.alloc(65536);
+		this.pos -= 32768;
+		b.blit(0,this.buffer,32768,this.pos);
+		this.buffer = b;
+	}
+	,__class__: haxe.zip._InflateImpl.Window
+}
+haxe.zip._InflateImpl.State = { __ename__ : true, __constructs__ : ["Head","Block","CData","Flat","Crc","Dist","DistOne","Done"] }
+haxe.zip._InflateImpl.State.Head = ["Head",0];
+haxe.zip._InflateImpl.State.Head.toString = $estr;
+haxe.zip._InflateImpl.State.Head.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.Block = ["Block",1];
+haxe.zip._InflateImpl.State.Block.toString = $estr;
+haxe.zip._InflateImpl.State.Block.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.CData = ["CData",2];
+haxe.zip._InflateImpl.State.CData.toString = $estr;
+haxe.zip._InflateImpl.State.CData.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.Flat = ["Flat",3];
+haxe.zip._InflateImpl.State.Flat.toString = $estr;
+haxe.zip._InflateImpl.State.Flat.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.Crc = ["Crc",4];
+haxe.zip._InflateImpl.State.Crc.toString = $estr;
+haxe.zip._InflateImpl.State.Crc.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.Dist = ["Dist",5];
+haxe.zip._InflateImpl.State.Dist.toString = $estr;
+haxe.zip._InflateImpl.State.Dist.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.DistOne = ["DistOne",6];
+haxe.zip._InflateImpl.State.DistOne.toString = $estr;
+haxe.zip._InflateImpl.State.DistOne.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip._InflateImpl.State.Done = ["Done",7];
+haxe.zip._InflateImpl.State.Done.toString = $estr;
+haxe.zip._InflateImpl.State.Done.__enum__ = haxe.zip._InflateImpl.State;
+haxe.zip.InflateImpl = function(i,header,crc) {
+	if(crc == null) crc = true;
+	if(header == null) header = true;
+	this["final"] = false;
+	this.htools = new haxe.zip.HuffTools();
+	this.huffman = this.buildFixedHuffman();
+	this.huffdist = null;
+	this.len = 0;
+	this.dist = 0;
+	this.state = header?haxe.zip._InflateImpl.State.Head:haxe.zip._InflateImpl.State.Block;
+	this.input = i;
+	this.bits = 0;
+	this.nbits = 0;
+	this.needed = 0;
+	this.output = null;
+	this.outpos = 0;
+	this.lengths = new Array();
+	var _g = 0;
+	while(_g < 19) {
+		var i1 = _g++;
+		this.lengths.push(-1);
+	}
+	this.window = new haxe.zip._InflateImpl.Window(crc);
+};
+haxe.zip.InflateImpl.__name__ = true;
+haxe.zip.InflateImpl.run = function(i,bufsize) {
+	if(bufsize == null) bufsize = 65536;
+	var buf = haxe.io.Bytes.alloc(bufsize);
+	var output = new haxe.io.BytesBuffer();
+	var inflate = new haxe.zip.InflateImpl(i);
+	while(true) {
+		var len = inflate.readBytes(buf,0,bufsize);
+		output.addBytes(buf,0,len);
+		if(len < bufsize) break;
+	}
+	return output.getBytes();
+}
+haxe.zip.InflateImpl.prototype = {
+	inflateLoop: function() {
+		var _g = this;
+		switch( (_g.state)[1] ) {
+		case 0:
+			var cmf = this.input.readByte();
+			var cm = cmf & 15;
+			var cinfo = cmf >> 4;
+			if(cm != 8 || cinfo != 7) throw "Invalid data";
+			var flg = this.input.readByte();
+			var fdict = (flg & 32) != 0;
+			if(((cmf << 8) + flg) % 31 != 0) throw "Invalid data";
+			if(fdict) throw "Unsupported dictionary";
+			this.state = haxe.zip._InflateImpl.State.Block;
+			return true;
+		case 4:
+			var calc = this.window.checksum();
+			if(calc == null) {
+				this.state = haxe.zip._InflateImpl.State.Done;
+				return true;
+			}
+			var crc = haxe.crypto.Adler32.read(this.input);
+			if(!calc.equals(crc)) throw "Invalid CRC";
+			this.state = haxe.zip._InflateImpl.State.Done;
+			return true;
+		case 7:
+			return false;
+		case 1:
+			this["final"] = this.getBit();
+			var _g1 = this.getBits(2);
+			switch(_g1) {
+			case 0:
+				this.len = this.input.readUInt16();
+				var nlen = this.input.readUInt16();
+				if(nlen != 65535 - this.len) throw "Invalid data";
+				this.state = haxe.zip._InflateImpl.State.Flat;
+				var r = this.inflateLoop();
+				this.resetBits();
+				return r;
+			case 1:
+				this.huffman = this.buildFixedHuffman();
+				this.huffdist = null;
+				this.state = haxe.zip._InflateImpl.State.CData;
+				return true;
+			case 2:
+				var hlit = this.getBits(5) + 257;
+				var hdist = this.getBits(5) + 1;
+				var hclen = this.getBits(4) + 4;
+				var _g2 = 0;
+				while(_g2 < hclen) {
+					var i = _g2++;
+					this.lengths[haxe.zip.InflateImpl.CODE_LENGTHS_POS[i]] = this.getBits(3);
+				}
+				var _g2 = hclen;
+				while(_g2 < 19) {
+					var i = _g2++;
+					this.lengths[haxe.zip.InflateImpl.CODE_LENGTHS_POS[i]] = 0;
+				}
+				this.huffman = this.htools.make(this.lengths,0,19,8);
+				var lengths = new Array();
+				var _g3 = 0, _g2 = hlit + hdist;
+				while(_g3 < _g2) {
+					var i = _g3++;
+					lengths.push(0);
+				}
+				this.inflateLengths(lengths,hlit + hdist);
+				this.huffdist = this.htools.make(lengths,hlit,hdist,16);
+				this.huffman = this.htools.make(lengths,0,hlit,16);
+				this.state = haxe.zip._InflateImpl.State.CData;
+				return true;
+			default:
+				throw "Invalid data";
+			}
+			break;
+		case 3:
+			var rlen = this.len < this.needed?this.len:this.needed;
+			var bytes = this.input.read(rlen);
+			this.len -= rlen;
+			this.addBytes(bytes,0,rlen);
+			if(this.len == 0) this.state = this["final"]?haxe.zip._InflateImpl.State.Crc:haxe.zip._InflateImpl.State.Block;
+			return this.needed > 0;
+		case 6:
+			var rlen = this.len < this.needed?this.len:this.needed;
+			this.addDistOne(rlen);
+			this.len -= rlen;
+			if(this.len == 0) this.state = haxe.zip._InflateImpl.State.CData;
+			return this.needed > 0;
+		case 5:
+			while(this.len > 0 && this.needed > 0) {
+				var rdist = this.len < this.dist?this.len:this.dist;
+				var rlen = this.needed < rdist?this.needed:rdist;
+				this.addDist(this.dist,rlen);
+				this.len -= rlen;
+			}
+			if(this.len == 0) this.state = haxe.zip._InflateImpl.State.CData;
+			return this.needed > 0;
+		case 2:
+			var n = this.applyHuffman(this.huffman);
+			if(n < 256) {
+				this.addByte(n);
+				return this.needed > 0;
+			} else if(n == 256) {
+				this.state = this["final"]?haxe.zip._InflateImpl.State.Crc:haxe.zip._InflateImpl.State.Block;
+				return true;
+			} else {
+				n -= 257;
+				var extra_bits = haxe.zip.InflateImpl.LEN_EXTRA_BITS_TBL[n];
+				if(extra_bits == -1) throw "Invalid data";
+				this.len = haxe.zip.InflateImpl.LEN_BASE_VAL_TBL[n] + this.getBits(extra_bits);
+				var dist_code = this.huffdist == null?this.getRevBits(5):this.applyHuffman(this.huffdist);
+				extra_bits = haxe.zip.InflateImpl.DIST_EXTRA_BITS_TBL[dist_code];
+				if(extra_bits == -1) throw "Invalid data";
+				this.dist = haxe.zip.InflateImpl.DIST_BASE_VAL_TBL[dist_code] + this.getBits(extra_bits);
+				if(this.dist > this.window.available()) throw "Invalid data";
+				this.state = this.dist == 1?haxe.zip._InflateImpl.State.DistOne:haxe.zip._InflateImpl.State.Dist;
+				return true;
+			}
+			break;
+		}
+	}
+	,inflateLengths: function(a,max) {
+		var i = 0;
+		var prev = 0;
+		while(i < max) {
+			var n = this.applyHuffman(this.huffman);
+			switch(n) {
+			case 0:case 1:case 2:case 3:case 4:case 5:case 6:case 7:case 8:case 9:case 10:case 11:case 12:case 13:case 14:case 15:
+				prev = n;
+				a[i] = n;
+				i++;
+				break;
+			case 16:
+				var end = i + 3 + this.getBits(2);
+				if(end > max) throw "Invalid data";
+				while(i < end) {
+					a[i] = prev;
+					i++;
+				}
+				break;
+			case 17:
+				i += 3 + this.getBits(3);
+				if(i > max) throw "Invalid data";
+				break;
+			case 18:
+				i += 11 + this.getBits(7);
+				if(i > max) throw "Invalid data";
+				break;
+			default:
+				throw "Invalid data";
+			}
+		}
+	}
+	,applyHuffman: function(h) {
+		return (function($this) {
+			var $r;
+			var $e = (h);
+			switch( $e[1] ) {
+			case 0:
+				var n = $e[2];
+				$r = n;
+				break;
+			case 1:
+				var b = $e[3], a = $e[2];
+				$r = $this.applyHuffman($this.getBit()?b:a);
+				break;
+			case 2:
+				var tbl = $e[3], n = $e[2];
+				$r = $this.applyHuffman(tbl[$this.getBits(n)]);
+				break;
+			}
+			return $r;
+		}(this));
+	}
+	,addDist: function(d,len) {
+		this.addBytes(this.window.buffer,this.window.pos - d,len);
+	}
+	,addDistOne: function(n) {
+		var c = this.window.getLastChar();
+		var _g = 0;
+		while(_g < n) {
+			var i = _g++;
+			this.addByte(c);
+		}
+	}
+	,addByte: function(b) {
+		this.window.addByte(b);
+		this.output.b[this.outpos] = b & 255;
+		this.needed--;
+		this.outpos++;
+	}
+	,addBytes: function(b,p,len) {
+		this.window.addBytes(b,p,len);
+		this.output.blit(this.outpos,b,p,len);
+		this.needed -= len;
+		this.outpos += len;
+	}
+	,resetBits: function() {
+		this.bits = 0;
+		this.nbits = 0;
+	}
+	,getRevBits: function(n) {
+		return n == 0?0:this.getBit()?1 << n - 1 | this.getRevBits(n - 1):this.getRevBits(n - 1);
+	}
+	,getBit: function() {
+		if(this.nbits == 0) {
+			this.nbits = 8;
+			this.bits = this.input.readByte();
+		}
+		var b = (this.bits & 1) == 1;
+		this.nbits--;
+		this.bits >>= 1;
+		return b;
+	}
+	,getBits: function(n) {
+		while(this.nbits < n) {
+			this.bits |= this.input.readByte() << this.nbits;
+			this.nbits += 8;
+		}
+		var b = this.bits & (1 << n) - 1;
+		this.nbits -= n;
+		this.bits >>= n;
+		return b;
+	}
+	,readBytes: function(b,pos,len) {
+		this.needed = len;
+		this.outpos = pos;
+		this.output = b;
+		if(len > 0) while(this.inflateLoop()) {
+		}
+		return len - this.needed;
+	}
+	,buildFixedHuffman: function() {
+		if(haxe.zip.InflateImpl.FIXED_HUFFMAN != null) return haxe.zip.InflateImpl.FIXED_HUFFMAN;
+		var a = new Array();
+		var _g = 0;
+		while(_g < 288) {
+			var n = _g++;
+			a.push(n <= 143?8:n <= 255?9:n <= 279?7:8);
+		}
+		haxe.zip.InflateImpl.FIXED_HUFFMAN = this.htools.make(a,0,288,10);
+		return haxe.zip.InflateImpl.FIXED_HUFFMAN;
+	}
+	,__class__: haxe.zip.InflateImpl
+}
 js.Boot = function() { }
 js.Boot.__name__ = true;
 js.Boot.__string_rec = function(o,s) {
@@ -6862,7 +9431,7 @@ sample.AboutLayer = function() {
 sample.AboutLayer.__name__ = true;
 sample.AboutLayer.create = function() {
 	var sg = new sample.AboutLayer();
-	if(sg != null && sg.init()) return sg;
+	if(sg != null) return sg;
 	return null;
 }
 sample.AboutLayer.__super__ = cc.layersscenestransitionsnodes.CCLayer;
@@ -6876,14 +9445,14 @@ sample.AboutLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pr
 		var bRet = false;
 		if(cc.layersscenestransitionsnodes.CCLayer.prototype.init.call(this)) {
 			var sp = cc.spritenodes.CCSprite.create("Sample/loading");
+			sp.setAnchorPoint(new flambe.math.Point(0,0));
 			this.addChild(sp,0,1);
 			var cacheImage = cc.texture.CCTextureCache.getInstance().addImage("Sample/menuTitle");
 			var title = cc.spritenodes.CCSprite.createWithTexture(cacheImage,new flambe.math.Rectangle(0,36,100,34));
 			if(title == null) null;
-			title.setCenterAnchor();
 			title.setPosition(160,60);
 			this.addChild(title);
-			var label = cc.labelnodes.CCLabelBMFont.create("Go back","Sample/arial-14");
+			var label = cc.labelnodes.CCLabelBMFont.create("GoBack","Sample/arial-14");
 			var back = cc.menunodes.CCMenuItemLabel.create(label,$bind(this,this.backCallback),this);
 			var menu = cc.menunodes.CCMenu.create([back]);
 			menu.alignVerticallyWithPadding(0);
@@ -7111,7 +9680,7 @@ sample.GameLayer = function() {
 sample.GameLayer.__name__ = true;
 sample.GameLayer.create = function() {
 	var sg = new sample.GameLayer();
-	if(sg != null && sg.init()) return sg;
+	if(sg != null) return sg;
 	return null;
 }
 sample.GameLayer.__super__ = cc.layersscenestransitionsnodes.CCLayer;
@@ -7127,7 +9696,7 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 		cc.CCDirector.getInstance().replaceScene(scene);
 	}
 	,movingBackground: function() {
-		this._backSky.runAction(cc.action.CCMoveBy.create(3,new flambe.math.Point(0,-192)));
+		this._backSky.runAction(cc.action.CCMoveBy.create(3,new flambe.math.Point(0,this._backgroundSpeed)));
 		this._backSkyHeight = this._backSkyHeight + this._backgroundSpeed;
 		if(this._backSkyHeight <= sample.GameLayer.winSize.height) {
 			if(!this._isBackSkyReload) {
@@ -7261,11 +9830,11 @@ sample.GameLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.pro
 	}
 	,onPointerDragged: function(event) {
 		this.processEvent(event);
-		return cc.layersscenestransitionsnodes.CCLayer.prototype.onPointerMoved.call(this,event);
+		return true;
 	}
 	,onPointerMoved: function(event) {
 		this.processEvent(event);
-		return cc.layersscenestransitionsnodes.CCLayer.prototype.onPointerMoved.call(this,event);
+		return true;
 	}
 	,scoreCounter: function() {
 		if(this._state == sample.GameLayer.STATE_PLAYING) {
@@ -7327,7 +9896,7 @@ sample.GameOver = function() {
 sample.GameOver.__name__ = true;
 sample.GameOver.create = function() {
 	var sg = new sample.GameOver();
-	if(sg != null && sg.init()) return sg;
+	if(sg != null) return sg;
 	return null;
 }
 sample.GameOver.__super__ = cc.layersscenestransitionsnodes.CCLayer;
@@ -7478,7 +10047,7 @@ sample.SettingsLayer = function() {
 sample.SettingsLayer.__name__ = true;
 sample.SettingsLayer.create = function() {
 	var sg = new sample.SettingsLayer();
-	if(sg != null && sg.init()) return sg;
+	if(sg != null) return sg;
 	return null;
 }
 sample.SettingsLayer.__super__ = cc.layersscenestransitionsnodes.CCLayer;
@@ -7488,37 +10057,22 @@ sample.SettingsLayer.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer
 		scene.addChild(sample.SysMenu.create());
 		cc.CCDirector.getInstance().replaceScene(scene);
 	}
-	,soundControl: function() {
-		sample.config.GameConfig.SOUND = sample.config.GameConfig.SOUND?false:true;
-		if(!sample.config.GameConfig.SOUND) cc.denshion.CCAudioEngine.getInstance().stopMusic();
-	}
 	,init: function() {
 		var bRet = false;
 		if(cc.layersscenestransitionsnodes.CCLayer.prototype.init.call(this)) {
 			var sp = cc.spritenodes.CCSprite.create("Sample/loading");
+			sp.setAnchorPoint(new flambe.math.Point(0,0));
 			this.addChild(sp,0,1);
 			var cacheImage = cc.texture.CCTextureCache.getInstance().addImage("Sample/menuTitle");
 			var title = cc.spritenodes.CCSprite.createWithTexture(cacheImage,new flambe.math.Rectangle(0,0,134,34));
 			title.setCenterAnchor();
 			title.setPosition(160,60);
 			this.addChild(title);
-			var label1 = cc.labelnodes.CCLabelBMFont.create("Sound","Sample/arial-14");
-			label1.setScale(2);
-			var title1 = cc.menunodes.CCMenuItemLabel.create(label1);
-			title1.setEnabled(false);
-			var on = cc.labelnodes.CCLabelBMFont.create("On","Sample/arial-14");
-			var off = cc.labelnodes.CCLabelBMFont.create("Off","Sample/arial-14");
-			var item1 = cc.menunodes.CCMenuItemToggle.create([cc.menunodes.CCMenuItemLabel.create(on),cc.menunodes.CCMenuItemLabel.create(off)]);
-			item1.setCallback($bind(this,this.soundControl),this);
-			var menu = cc.menunodes.CCMenu.create([title1,item1]);
-			this.addChild(menu);
-			menu.alignVerticallyWithPadding(30);
-			menu.setPosition(140,200);
-			var label = cc.labelnodes.CCLabelBMFont.create("Go back","Sample/arial-14");
+			var label = cc.labelnodes.CCLabelBMFont.create("GoBack","Sample/arial-14");
 			var back = cc.menunodes.CCMenuItemLabel.create(label,$bind(this,this.backCallback),this);
-			var menu1 = cc.menunodes.CCMenu.create([back]);
-			menu1.setPosition(134,360);
-			this.addChild(menu1);
+			var menu = cc.menunodes.CCMenu.create([back]);
+			menu.setPosition(134,360);
+			this.addChild(menu);
 			bRet = true;
 		}
 		return bRet;
@@ -7608,7 +10162,7 @@ sample.SysMenu = function() {
 sample.SysMenu.__name__ = true;
 sample.SysMenu.create = function() {
 	var sg = new sample.SysMenu();
-	if(sg != null && sg.init()) return sg;
+	if(sg != null) return sg;
 	return null;
 }
 sample.SysMenu.scene = function() {
@@ -7646,9 +10200,11 @@ sample.SysMenu.prototype = $extend(cc.layersscenestransitionsnodes.CCLayer.proto
 			this.winSize = cc.CCDirector.getInstance().getWinSize();
 			sample.GameLayer.winSize = this.winSize;
 			var logo = cc.spritenodes.CCSprite.create("Sample/logo");
+			logo.setAnchorPoint(new flambe.math.Point(0,0));
 			logo.setPosition(0,100);
 			this.addChild(logo,10,2);
 			var sp = cc.spritenodes.CCSprite.create("Sample/loading");
+			sp.setAnchorPoint(new flambe.math.Point(0,0));
 			this.addChild(sp,1,1);
 			var newGameNormal = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(0,0,126,33));
 			var newGameSelected = cc.spritenodes.CCSprite.create("Sample/menu",new flambe.math.Rectangle(0,33,126,33));
@@ -7791,18 +10347,35 @@ cc.CCDirector.DIRECTOR_PROJECTION_DEFAULT = cc.CCDirector.DIRECTOR_PROJECTION_3D
 cc.CCDirector.defaultFPS = 60;
 cc.CCDirector.firstUseDirector = true;
 cc.action.CCAction.ACTION_TAG_INVALID = -1;
-cc.basenodes.CCNode.NODE_TAG_INVALID = -1;
 cc.menunodes.CCMenu.MENU_STATE_WAITING = 0;
 cc.menunodes.CCMenu.MENU_STATE_TRACKING_TOUCH = 1;
 cc.menunodes.CCMenu.MENU_HANDLER_PRIORITY = -128;
-cc.menunodes.CCMenuItem.CURRENT_ITEM = -1061138431;
 cc.menunodes.CCMenuItem.ZOOM_ACTION_TAG = -1061138430;
 cc.menunodes.CCMenuItem.NORMAL_TAG = 8801;
 cc.menunodes.CCMenuItem.SELECTED_TAG = 8802;
 cc.menunodes.CCMenuItem.DISABLE_TAG = 8803;
 cc.platform.CCConfig.NODE_TRANSFORM_USING_AFFINE_MATRIX = 1;
-cc.platform.CCMacro.UINT_MAX = -1;
+cc.platform.CCGZip.LITERALS = 288;
+cc.platform.CCGZip.NAMEMAX = 256;
+cc.platform.CCGZip.bitReverse = [0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,240,8,136,72,200,40,168,104,232,24,152,88,216,56,184,120,248,4,132,68,196,36,164,100,228,20,148,84,212,52,180,116,244,12,140,76,204,44,172,108,236,28,156,92,220,60,188,124,252,2,130,66,194,34,162,98,226,18,146,82,210,50,178,114,242,10,138,74,202,42,170,106,234,26,154,90,218,58,186,122,250,6,134,70,198,38,166,102,230,22,150,86,214,54,182,118,246,14,142,78,206,46,174,110,238,30,158,94,222,62,190,126,254,1,129,65,193,33,161,97,225,17,145,81,209,49,177,113,241,9,137,73,201,41,169,105,233,25,153,89,217,57,185,121,249,5,133,69,197,37,165,101,229,21,149,85,213,53,181,117,245,13,141,77,205,45,173,109,237,29,157,93,221,61,189,125,253,3,131,67,195,35,163,99,227,19,147,83,211,51,179,115,243,11,139,75,203,43,171,107,235,27,155,91,219,59,187,123,251,7,135,71,199,39,167,103,231,23,151,87,215,55,183,119,247,15,143,79,207,47,175,111,239,31,159,95,223,63,191,127,255];
+cc.platform.CCGZip.cplens = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,0,0];
+cc.platform.CCGZip.cplext = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,99,99];
+cc.platform.CCGZip.cpdist = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+cc.platform.CCGZip.cpdext = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+cc.platform.CCGZip.border = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
 flambe.display.Sprite._scratchPoint = new flambe.math.Point();
+cc.tilemapparallaxnodes.CCTMXTiledMap.useViewPort = false;
+cc.tilemapparallaxnodes.CCTMXTiledMap.viewPort = new flambe.math.Rectangle();
+cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ORTHO = 0;
+cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_HEX = 1;
+cc.tilemapparallaxnodes.CCTMXTiledMap.TMX_ORIENTATION_ISO = 2;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_LAYER_ATTRIB_NONE = 1;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_PROPERTY_NONE = 0;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_HORIZONTAL_FLAG = -2147483648;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_VERTICAL_FLAG = 1073741824;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_DIAGONAL_FLAG = 536870912;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_FLIPPED_ALL = (cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_HORIZONTAL_FLAG | cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_VERTICAL_FLAG | cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_DIAGONAL_FLAG) >>> 0;
+cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_FLIPPED_MASK = ~cc.tilemapparallaxnodes.CCTMXXMLParser.TMX_TILE_FLIPPED_ALL >>> 0;
 cc.touchdispatcher.CCPointerDispatcher.POINTER_DOWN = 0;
 cc.touchdispatcher.CCPointerDispatcher.POINTER_UP = 3;
 cc.touchdispatcher.CCPointerDispatcher.POINTER_MOVED = 1;
@@ -7827,6 +10400,7 @@ flambe.asset.Manifest._supportsCrossOrigin = (function() {
 	return xhr.withCredentials != null;
 })();
 flambe.display.Font.NEWLINE = new flambe.display.Glyph(10);
+flambe.platform.BasicKeyboard._sharedEvent = new flambe.input.KeyboardEvent();
 flambe.platform.BasicMouse._sharedEvent = new flambe.input.MouseEvent();
 flambe.platform.BasicPointer._sharedEvent = new flambe.input.PointerEvent();
 flambe.platform.html.CanvasRenderer.CANVAS_TEXTURES = (function() {
@@ -7851,6 +10425,11 @@ haxe.xml.Parser.escapes = (function($this) {
 	$r = h;
 	return $r;
 }(this));
+haxe.zip.InflateImpl.LEN_EXTRA_BITS_TBL = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,-1,-1];
+haxe.zip.InflateImpl.LEN_BASE_VAL_TBL = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+haxe.zip.InflateImpl.DIST_EXTRA_BITS_TBL = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,-1,-1];
+haxe.zip.InflateImpl.DIST_BASE_VAL_TBL = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+haxe.zip.InflateImpl.CODE_LENGTHS_POS = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
 sample.GameLayer.STATE_PLAYING = 0;
 sample.config.GameConfig.LIFE = 1;
 sample.config.GameConfig.SCORE = 0;

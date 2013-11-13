@@ -5,8 +5,8 @@ import cc.cocoa.CCGeometry;
 import flambe.math.Rectangle;
 
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 class CCAffineTransform
 {

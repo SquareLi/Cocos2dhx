@@ -10,7 +10,7 @@ import cc.CCScheduler;
 import cc.layersscenestransitionsnodes.CCLayerRGBA
 /**
  * ...
- * @author Ang Li
+ * @author
  */
  
 class CCControl extends CCLayerRGBA

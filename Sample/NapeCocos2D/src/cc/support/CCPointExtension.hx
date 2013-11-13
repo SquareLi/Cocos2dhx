@@ -25,7 +25,7 @@ import flambe.math.Point;
 import cc.cocoa.CCGeometry;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCPointExtension 

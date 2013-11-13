@@ -436,11 +436,12 @@ class CCMenu extends CCLayer
 
 					var tempNode : CCNode = child.getCurrentNode();
 					if (tempNode != null) {
+						
 						isContain = tempNode.getSprite().contains(touch.getLocation().x, touch.getLocation().y);
 					}
 					
 					if (isContain) {
-						//trace(touch.getLocation().x);
+						//trace(Sprite.getBounds(tempNode.getEntity()));
 						return child;
 					}
 				}

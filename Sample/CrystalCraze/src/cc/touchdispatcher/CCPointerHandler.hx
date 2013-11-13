@@ -24,7 +24,7 @@ package cc.touchdispatcher;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCPointerHandler

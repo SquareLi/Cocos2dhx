@@ -25,7 +25,7 @@ package cc.touchdispatcher;
 import flambe.math.Point;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCPointer

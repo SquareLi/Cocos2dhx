@@ -28,6 +28,7 @@ import cc.menunodes.CCMenu;
 import cc.menunodes.CCMenuItem;
 import cc.spritenodes.CCSprite;
 import cc.texture.CCTextureCache;
+import flambe.math.Point;
 import flambe.math.Rectangle;
 import cc.CCDirector;
 import cc.layersscenestransitionsnodes.CCTransitionFade;
@@ -50,34 +51,35 @@ class SettingsLayer extends CCLayer
 		var bRet = false;
 		if (super.init()) {
 			var sp = CCSprite.create("Sample/loading");
+			sp.setAnchorPoint(new Point(0, 0));
 			this.addChild(sp, 0, 1);
 			
 			var cacheImage = CCTextureCache.getInstance().addImage("Sample/menuTitle");
-			var title = CCSprite.createWithTexture(cacheImage, new Rectangle(0, 0, 134, 34));
+			var title : CCSprite= CCSprite.createWithTexture(cacheImage, new Rectangle(0, 0, 134, 34));
 			title.setCenterAnchor();
 			title.setPosition(160, 60);
 			this.addChild(title);
 			
-			var label1 : CCLabelBMFont = CCLabelBMFont.create("Sound", "Sample/arial-14");
-			label1.setScale(2);
-			var title1 = CCMenuItemLabel.create(label1);
-			title1.setEnabled(false);
+			//var label1 : CCLabelBMFont = CCLabelBMFont.create("Sound", "Sample/arial-14");
+			//label1.setScale(2);
+			//var title1 = CCMenuItemLabel.create(label1);
+			//title1.setEnabled(false);
 			
 			
-			var on = CCLabelBMFont.create("On", "Sample/arial-14");
-			var off = CCLabelBMFont.create("Off", "Sample/arial-14");
-			var item1 :CCMenuItemToggle = CCMenuItemToggle.create([
-				CCMenuItemLabel.create(on), 
-				CCMenuItemLabel.create(off)]);
-			item1.setCallback(this.soundControl, this);
+			//var on = CCLabelBMFont.create("On", "Sample/arial-14");
+			//var off = CCLabelBMFont.create("Off", "Sample/arial-14");
+			//var item1 :CCMenuItemToggle = CCMenuItemToggle.create([
+				//CCMenuItemLabel.create(on), 
+				//CCMenuItemLabel.create(off)]);
+			//item1.setCallback(this.soundControl, this);
+			//
+			//
+			//var menu = CCMenu.create([title1, item1]);
+			//this.addChild(menu);
+			//menu.alignVerticallyWithPadding(30);
+			//menu.setPosition(140, 200);
 			
-			
-			var menu = CCMenu.create([title1, item1]);
-			this.addChild(menu);
-			menu.alignVerticallyWithPadding(30);
-			menu.setPosition(140, 200);
-			
-			var label : CCLabelBMFont = CCLabelBMFont.create("Go back", "Sample/arial-14");
+			var label : CCLabelBMFont = CCLabelBMFont.create("GoBack", "Sample/arial-14");
 			var back : CCMenuItemLabel = CCMenuItemLabel.create(label, this.backCallback, this);
 			var menu : CCMenu = CCMenu.create([back]);
 			menu.setPosition(134, 360);
@@ -102,7 +104,7 @@ class SettingsLayer extends CCLayer
 	
 	public static function create() : SettingsLayer {
 		var sg = new SettingsLayer();
-		if (sg != null && sg.init()) {
+		if (sg != null) {
 			return sg;
 		}
 		

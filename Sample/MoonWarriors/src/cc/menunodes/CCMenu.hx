@@ -30,8 +30,12 @@ import cc.CCDirector;
 import cc.platform.CCMacro;
 import cc.platform.CCCommon;
 import cc.touchdispatcher.CCPointer;
+import flambe.display.FillSprite;
 import flambe.display.Sprite;
+import flambe.input.PointerEvent;
+import flambe.math.Point;
 import flambe.math.Rectangle;
+import cc.menunodes.CCMenuItem;
 /**
  * <p> Features and Limitation:<br/>
  *  - You can add MenuItem objects in runtime using addChild:<br/>
@@ -53,26 +57,11 @@ class CCMenu extends CCLayer
 	public function new() 
 	{
 		super();
-		this.sprite = new Sprite();
-		this.entity.add(sprite);
-		this.component = new CCComponent(this);
-		this.entity.add(component);
-		//_color = new CCColor3B();
+		this.setContentSize(new CCSize(0, 0));
+		//trace(this._contentSize.height);
 	}
 	
-	//public function getColor() : CCColor3B {
-		//return this._color;
-	//}
-	//
-	//public function setColor(color : CCColor3B) {
-		//this._color = color;
-		//
-		//if (this._children != null && this._children.length > 0) {
-			//for (i in this._children) {
-				//i.setColor
-			//}
-		//}
-	//}
+	
 	
 	var _enabled : Bool = false;
 	
@@ -105,18 +94,18 @@ class CCMenu extends CCLayer
      * initializes a cc.Menu with a Array of cc.MenuItem objects
      */
 	public function initWithArray(arrayOfItems : Array<CCMenuItem>) : Bool{
-		if (this.init()) {
-			this.registerWithTouchDispatcher();
+		if (true) {
+			//this.registerWithTouchDispatcher();
 			this._enabled = true;
 			
 			//menu in the center of the screen
 			var winSize : CCSize = CCDirector.getInstance().getWinSize();
-			this.ignoreAnchorPointForPosition(true);
+			//this.ignoreAnchorPointForPosition(true);
 			
 			//this.sprite.getNaturalHeight
 			//this.setCenterAnchor();
 			
-			this.setContentSize(winSize);
+			//this.setContentSize(winSize);
 			//this.sprite.centerAnchor();
 			//this.setPosition(winSize.width / 2, winSize.height / 2);
 			
@@ -160,14 +149,7 @@ class CCMenu extends CCLayer
 				height += this._children[i].getContentSize().height * this._children[i].getScaleY() + padding;
 			}
 		}
-		
-		//var y = height;
-		//if (this._children != null && this._children.length > 0) {
-			//for (i in 0..._children.length) {
-				//this._children[i].setPosition(0, y - this._children[i].getContentSize().height * this._children[i].getScaleY() / 2);
-				//y -= this._children[i].getContentSize().height * this._children[i].getScaleY() + padding;
-			//}
-		//}
+
 	}
 	
 	/**
@@ -355,15 +337,16 @@ class CCMenu extends CCLayer
 	
 	override public function registerWithTouchDispatcher()
 	{
-		super.registerWithTouchDispatcher();
+		//super.registerWithTouchDispatcher();
 		CCDirector.getInstance().getPointerDispatcher().addPointerDelegate(this, MENU_HANDLER_PRIORITY);
 	}
 	
-	override public function onPointerDown(event:CCPointer):Bool 
+	@:keep override public function onPointerDown(event:CCPointer):Bool 
 	{
 
 		if (this._state != MENU_STATE_WAITING || !this._visible || !this._enabled) {
-			return false;
+			//trace("false");
+			return true;
 		}
 		
 		var c : CCNode = this._parent;
@@ -385,8 +368,11 @@ class CCMenu extends CCLayer
 		return false;
 	}
 	
-	override public function onPointerUp(event:CCPointer):Bool 
+	@:keep override public function onPointerUp(event:CCPointer):Bool 
 	{
+		if (!_enabled) {
+			return true;
+		}
 		//CCCommon.assert(this._state == MENU_STATE_TRACKING_TOUCH, "[Menu onTouchEnded] -- invalid state");
 		if (this._selectedItem != null) {
 			this._selectedItem.unselected();
@@ -397,8 +383,11 @@ class CCMenu extends CCLayer
 		return true;
 	}
 	
-	override public function onPointerDragged(event:CCPointer):Bool 
+	@:keep override public function onPointerDragged(event:CCPointer):Bool 
 	{
+		if (!_enabled) {
+			return true;
+		}
 		//CCCommon.assert(this._state == MENU_STATE_TRACKING_TOUCH, "[Menu onTouchMoved] -- invalid state");
 		var currentItem : CCMenuItem = this._itemForTouch(event);
 		if (currentItem != this._selectedItem) {
@@ -413,6 +402,11 @@ class CCMenu extends CCLayer
 		return true;
 	}
 	
+	@:keep override public function onPointerMoved(event:CCPointer):Bool 
+	{
+		return true;
+	}
+	
 	override public function onExit()
 	{
 		if (this._state == MENU_STATE_TRACKING_TOUCH) {
@@ -420,6 +414,7 @@ class CCMenu extends CCLayer
 			this._state = MENU_STATE_WAITING;
 			this._selectedItem = null;
 		}
+		//trace("CCMenu onExit");
 		super.onExit();
 	}
 	
@@ -432,8 +427,21 @@ class CCMenu extends CCLayer
 				if (child.isVisible() && child.isEnabled()) {
 					var r : Rectangle = child.rect();
 					//trace(r.toString());
-					if (r.contains(touch.getLocation().x, touch.getLocation().y)) {
-						//trace(touch.getLocation().x);
+					//r.x = r.x + this._position.x;
+					//r.y = r.y + this._position.y;
+					//trace(r.toString());
+					
+					var temp : CCMenuItemImage = null;
+					var isContain : Bool = false;
+
+					var tempNode : CCNode = child.getCurrentNode();
+					if (tempNode != null) {
+						
+						isContain = tempNode.getSprite().contains(touch.getLocation().x, touch.getLocation().y);
+					}
+					
+					if (isContain) {
+						//trace(Sprite.getBounds(tempNode.getEntity()));
 						return child;
 					}
 				}
@@ -446,14 +454,20 @@ class CCMenu extends CCLayer
 		CCDirector.getInstance().getPointerDispatcher().setPriority(newPriority, this);
 	}
 	
-	public static function create(args : Array<CCMenuItem>) : CCMenu {
+	public static function create(?args : Array<CCMenuItem>) : CCMenu {
 		var ret : CCMenu = new CCMenu();
+		if (args == null) {
+			ret.initWithItems(null);
+			//ret.initWithArray([]);
+			return ret;
+		}
 		
 		if (args.length == 0) {
 			ret.initWithItems(null);
 		} 
 		
 		ret.initWithArray(args);
+		
 		return ret;
 	}
 }

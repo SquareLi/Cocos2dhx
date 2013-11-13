@@ -24,8 +24,8 @@ import cc.basenodes.CCNode;
 import cc.spritenodes.CCSprite;
 
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 
 class CCActionManager 

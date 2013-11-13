@@ -4,7 +4,7 @@ import cc.basenodes.CCNode;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCControlLoader extends CCNodeLoader
 {

@@ -2,7 +2,7 @@ package cc.miscnodes;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCProgressTimer
 {

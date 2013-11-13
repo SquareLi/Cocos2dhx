@@ -21,7 +21,7 @@ import cc.platform.CCMacro;
 import cc.extensions.ccbreader.CCBAnimationManager;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCNodeLoader
 {

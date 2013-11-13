@@ -25,7 +25,7 @@ import flambe.asset.AssetPack;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCLoader 

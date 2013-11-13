@@ -39,7 +39,7 @@ import cc.CCLoader;
 import cc.texture.CCTextureCache;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCSprite extends CCNode
@@ -92,8 +92,6 @@ class CCSprite extends CCNode
 		_offsetPosition = new Point(0, 0);
 		_unflippedOffsetPositionFromCenter = CCGeometry.p(0, 0);
 		this._shouldBeHidden = false;
-		
-
 	}
 	
 	public function isDirty() : Bool {
@@ -219,15 +217,17 @@ class CCSprite extends CCNode
 			rect.width = texture.getPixelsWide();
 			rect.height = texture.getPixelsHigh();
 			this.sprite = new ImageSprite(texture.getTexture());
+			this.setAnchorPoint(this.getAnchorPoint());
 			this._contentSize = new CCSize(sprite.getNaturalWidth(), sprite.getNaturalHeight());
 			this.entity.add(sprite);
 		
 			this.component = new CCComponent(this);
 			this.entity.add(component);
 		} else {
-			this.sprite = new CCSpriteSheet();
+			this.sprite = new CCSpriteSheet(this.isTiledMap);
 			var s : CCSpriteSheet = cast (this.sprite, CCSpriteSheet);
 			var f : CCSpriteFrame = CCSpriteFrame.createWithTexture(texture, rect, rotated, _position, new CCSize());
+			
 			s.updateFrame(f);
 			this.entity.add(s);
 			this.component = new CCComponent(this);
@@ -236,7 +236,7 @@ class CCSprite extends CCNode
 			this._contentSize = new CCSize(rect.width, rect.height);
 			
 			this._isAdded = true;
-			//trace(f.toString());
+			this.setAnchorPoint(this.getAnchorPoint());
 		}
 		
 		this.setTexture(texture);
@@ -400,13 +400,16 @@ class CCSprite extends CCNode
 		return null;
 	}
 	
-	public static function createWithTexture(texture : CCTexture2D, ?rect : Rectangle) : CCSprite {
+	public var isTiledMap : Bool = false;
+	public static function createWithTexture(texture : CCTexture2D, ?rect : Rectangle, ?isTiledMap : Bool = false) : CCSprite {
 		var sprite : CCSprite = new CCSprite();
+		sprite.isTiledMap = isTiledMap;
 		if (rect == null) {
 			sprite.initWithTexture(texture);
 		} else {
 			sprite.initWithTexture(texture, rect);
 		}
+		
 		
 		return sprite;
 	}

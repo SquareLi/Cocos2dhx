@@ -33,8 +33,8 @@ import flambe.swf.MovieSprite;
 
 import cc.support.CCPointExtension;
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 
 class CCActionInterval extends CCFiniteTimeAction
@@ -201,16 +201,18 @@ class CCSequence extends CCActionInterval {
 	{
 		return CCSequence._actionOneTwo(cast(this._actions[0].copy(), CCFiniteTimeAction), cast (this._actions[1].copy(), CCFiniteTimeAction));
 	}
-	public static function create(?tempArray : Array<CCFiniteTimeAction>) : CCFiniteTimeAction {
+	public static function create(?tempArray : Array<CCFiniteTimeAction>) : CCSequence {
 		var paraArray : Array<CCFiniteTimeAction> = tempArray;
 		var prev : CCFiniteTimeAction = paraArray[0];
+		var ret : CCSequence = null;
 		for (i in 1...paraArray.length) {
 			if (paraArray[i] != null) {
 				prev = CCSequence._actionOneTwo(prev, paraArray[i]);
+				ret = cast (prev, CCSequence);
 			}
 		}
 		
-		return prev;
+		return ret;
 	}
 	
 	public static function _actionOneTwo(actionOne : CCFiniteTimeAction, actionTwo : CCFiniteTimeAction) : CCSequence {
@@ -620,7 +622,6 @@ class CCMoveTo extends CCActionInterval {
                            this._startPosition.y + this._delta.y * time);
 			this._target.setPosition(newPos.x, newPos.y);
 			this._previousPosition = newPos;
-			//trace(this._delta.y);
 		}
 	}
 	

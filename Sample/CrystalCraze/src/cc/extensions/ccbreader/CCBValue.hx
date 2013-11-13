@@ -2,7 +2,7 @@ package cc.extensions.ccbreader;
 import cc.platform.CCTypes;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBValue
 {

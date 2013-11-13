@@ -36,7 +36,7 @@ import cc.cocoa.CCGeometry;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCSpriteFrameCache 

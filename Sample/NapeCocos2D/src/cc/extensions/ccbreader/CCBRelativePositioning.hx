@@ -6,7 +6,7 @@ import cc.platform.CCCommon;
 import cc.extensions.ccbreader.CCBReader;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBRelativePositioning
 {

@@ -24,7 +24,7 @@ package cc.platform;
 import cc.CCLoader;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCSAXParser
 {

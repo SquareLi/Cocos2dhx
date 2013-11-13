@@ -25,8 +25,8 @@ import flambe.math.Point;
 import flambe.math.Rectangle;
 
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 
 class CCGeometry 

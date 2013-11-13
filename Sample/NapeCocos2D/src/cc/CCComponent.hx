@@ -28,7 +28,7 @@ import flambe.display.Sprite;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCComponent extends Component

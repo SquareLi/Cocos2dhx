@@ -3,17 +3,20 @@ import cc.basenodes.CCNode;
 import cc.spritenodes.CCSprite;
 import flambe.display.Sprite;
 import flambe.Entity;
-import flambe.tmx.data.TiledMap;
 import cc.cocoa.CCGeometry;
 import cc.platform.CCCommon;
 import cc.tilemapparallaxnodes.CCTMXXMLParser;
+import flambe.math.Point;
+import flambe.math.Rectangle;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXTiledMap extends CCSprite
 {
+	public static var useViewPort : Bool = false;
+	public static var viewPort : Rectangle = new Rectangle();
 	/**
 	 Orthogonal orientation
 	 * @constant
@@ -55,6 +58,7 @@ class CCTMXTiledMap extends CCSprite
 		_tileSize = new CCSize();
 		_objectGroups = new Array<CCTMXObjectGroup>();
 		_TMXLayers = new Array<CCTMXLayer>();
+
 	}
 	
 	public function getMapSize() : CCSize {
@@ -99,7 +103,12 @@ class CCTMXTiledMap extends CCSprite
 	public function initWithTMXFile(tmxFile : String, ?resourcePath : String) : Bool {
 		CCCommon.assert(tmxFile != null && tmxFile.length > 0, "TMXTiledMap: tmx file should not be nil");
 		this.setContentSize(new CCSize(0, 0));
-		var mapInfo = CCTMXMapInfo.create(tmxFile, resourcePath);
+		var mapInfo : CCTMXMapInfo = CCTMXMapInfo.create(tmxFile, resourcePath);
+		for (l in mapInfo.getLayers()) {
+			//trace(l.name);
+			//trace(l._tiles);
+			//trace(l._tiles.length);
+		}
 		if (mapInfo == null) {
 			return false;
 		}
@@ -121,9 +130,12 @@ class CCTMXTiledMap extends CCSprite
 		var layers = mapInfo.getLayers();
 		if (layers != null) {
 			for (l in layers) {
-				var child = CCTMXLayer.create(l, mapInfo);
+				var child : CCTMXLayer = this._parseLayer(l, mapInfo);
+				child.setAnchorPoint(new Point(0, 0));
+				child.setPosition(0, 0);
 				this.addChild(child, idx, idx);
 				idx++;
+				
 				
 				var childSize = child.getContentSize();
 				var currentSize = this.getContentSize();
@@ -134,6 +146,43 @@ class CCTMXTiledMap extends CCSprite
 				
 			}
 		}
+	}
+	
+	private function _parseLayer(layerInfo, mapInfo) : CCTMXLayer {
+		var tileset = this._tilesetForLayer(layerInfo, mapInfo);
+		var layer : CCTMXLayer = CCTMXLayer.create(tileset, layerInfo, mapInfo);
+		layer.setupTiles();
+		return layer;
+	}
+	
+	private function _tilesetForLayer(layerInfo : CCTMXLayerInfo, mapInfo : CCTMXMapInfo) : CCTMXTilesetInfo {
+		var size = layerInfo._layerSize;
+        var tilesets = mapInfo.getTilesets();
+        if (tilesets != null) {
+			var i = tilesets.length - 1;
+			while ( i >= 0) {
+            //for (var i = tilesets.length - 1; i >= 0; i--) {
+                var tileset = tilesets[i];
+                if (tileset != null) {
+                    for (y in 0...Std.int(size.height)) {
+                        for (x in 0...Std.int(size.width)) {
+                            //var pos = x + size.width * y;
+                            var gid = layerInfo._tiles[Std.int(y * size.width) + x];
+                            if (gid != 0) {
+                                // Optimization: quick return
+                                // if the layer is invalid (more than 1 tileset per layer) an cc.Assert will be thrown later
+                                if (((gid & CCTMXXMLParser.TMX_TILE_FLIPPED_MASK)>>>0) >= tileset.firstGid) {
+                                    return tileset;
+                                }
+                            }
+
+                        }
+                    }
+                }
+				i--;
+            }
+		}
+		return null;
 	}
 	
 	/** return the TMXLayer for the specific layer
@@ -167,7 +216,7 @@ class CCTMXTiledMap extends CCSprite
 		}
 		return null;
 	}
-	public static function create(tmxFile : String, resourcePath : String) : CCTMXTiledMap {
+	public static function create(tmxFile : String, ?resourcePath : String) : CCTMXTiledMap {
 		var ret = new CCTMXTiledMap();
 		if (ret.initWithTMXFile(tmxFile, resourcePath)) {
 			return ret;

@@ -2,11 +2,12 @@ package cc.tilemapparallaxnodes;
 import flambe.display.Graphics;
 import flambe.display.Sprite;
 import cc.tilemapparallaxnodes.CCTMXXMLParser;
+import flambe.math.Point;
 import flambe.math.Rectangle;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXSprite extends Sprite
 {
@@ -24,7 +25,7 @@ class CCTMXSprite extends Sprite
 	override public function draw(g:Graphics)
 	{
 		var count : Int = 0;
-		//trace(_layerInfo._tiles.length);
+
 		for (row in 0..._layerInfo._tiles.length) {
 			for (col in 0..._layerInfo._tiles[0].length) {
 				var gid = _layerInfo._tiles[row][col];
@@ -32,17 +33,26 @@ class CCTMXSprite extends Sprite
 					continue;
 				} else {
 					var tilesetInfo : CCTMXTilesetInfo = getTilesetInfo(gid);
-					var x = col * _mapInfo.getTileSize().width;
-					var y = row * _mapInfo.getTileSize().height;
+					var o : Int = _mapInfo.getOrientation();
+					var x : Float = 0;
+					var y : Float = 0;
+					if (o == CCTMXTiledMap.TMX_ORIENTATION_ORTHO) {
+						x = col * _mapInfo.getTileSize().width;
+						y = row * _mapInfo.getTileSize().height;
+						//trace("ortho");
+					} else if (o == CCTMXTiledMap.TMX_ORIENTATION_ISO) {
+						x = _mapInfo.getTileSize().width / 2 
+							* ( this._layerInfo._layerSize.width + col - row);
+						y = _mapInfo.getTileSize().height / 2 
+							* (row + col) - tilesetInfo._tileSize.height;
+					}
+					
 					
 					var rect : Rectangle = tilesetInfo.rectForGID(gid);
-					//trace(rect.toString());
 					
 					g.drawSubImage(tilesetInfo.texture, x, y, rect.x, rect.y, rect.width, rect.height);
 				}
-				
 			}
-			flag = false;
 		}
 	}
 	
@@ -63,6 +73,8 @@ class CCTMXSprite extends Sprite
 		}
 		return null;
 	}
+	
+	 
 	
 	override public function getNaturalWidth():Float 
 	{

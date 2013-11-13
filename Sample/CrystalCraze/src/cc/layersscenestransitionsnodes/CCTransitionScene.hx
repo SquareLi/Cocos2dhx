@@ -25,7 +25,7 @@ import flambe.scene.Transition;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCTransitionScene extends CCScene

@@ -31,8 +31,8 @@ import flambe.math.Point;
 import flambe.math.Rectangle;
 import cc.CCDirector;
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 
 class CCAction 

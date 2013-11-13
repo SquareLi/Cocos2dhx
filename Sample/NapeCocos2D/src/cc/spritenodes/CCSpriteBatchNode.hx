@@ -27,7 +27,7 @@ import flambe.display.Sprite;
 import cc.texture.CCTextureCache;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
  
@@ -37,10 +37,14 @@ class CCSpriteBatchNode extends CCNode
 	public static inline var DEFAULT_SPRITE_BATCH_CAPACITY : Int = 29;
 	var _originalTexture : CCTexture2D;
 	var _texture : CCTexture2D;
+	//var _opacity : Int;
 	public function new() 
 	{
 		super();
+		this.entity.add(this.sprite);
+		//sprite.alpha._ = 0;
 	}
+	
 	
 	public function initBatchNode(fileImage : String, capacity : Int) : Bool{
 		var texture2D : CCTexture2D = CCTextureCache.getInstance().addImage(fileImage);

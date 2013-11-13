@@ -2,7 +2,7 @@ package com.angli.mycocos.denshion;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class SimpleAudioEngine 

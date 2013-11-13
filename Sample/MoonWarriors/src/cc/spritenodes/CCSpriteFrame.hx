@@ -6,10 +6,11 @@ import flambe.math.Rectangle;
 import flambe.swf.Library;
 import flambe.swf.MovieSprite;
 import cc.cocoa.CCGeometry;
+import cc.CCLoader;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
  //Point pixels to points has not finished
@@ -131,7 +132,7 @@ class CCSpriteFrame
 	}
 	
 	public function initWithTextureFilename(filename : String, rect : Rectangle, rotated : Bool, offset : Point, originalSize : CCSize) : Bool {
-		this._texture = null;
+		this._texture = new CCTexture2D();
 		this._textureFilname = filename;
 		this._rectInPixels = rect;
 		this._rect = rect;
@@ -140,6 +141,8 @@ class CCSpriteFrame
 		this._offset = offset;
 		this._originalSize = originalSize;
 		this._originalSizeInPixels = originalSize;
+		
+		this._texture.setTexture(CCLoader.pack.getTexture(filename));
 		return true;
 	}
 	
@@ -180,7 +183,7 @@ class CCSpriteFrame
 	 * //Create a cc.SpriteFrame with a texture, rect, rotated, offset and originalSize in pixels.
 	 * var frame2 = cc.SpriteFrame.createWithTexture(texture, frameRect, rotated, offset, sourceSize);
 	 */
-	public static function createWithTexture(texture : CCTexture2D, rect : Rectangle, rotated : Bool, offset : Point, originalSize : CCSize) : CCSpriteFrame {
+	public static function createWithTexture(texture : CCTexture2D, rect : Rectangle, ?rotated : Bool, ?offset : Point, ?originalSize : CCSize) : CCSpriteFrame {
 		var spriteFrame : CCSpriteFrame = new CCSpriteFrame();
 		spriteFrame.initWithTexture(texture, rect, rotated, offset, originalSize);
 		return spriteFrame;

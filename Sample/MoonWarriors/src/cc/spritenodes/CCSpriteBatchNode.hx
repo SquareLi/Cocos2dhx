@@ -21,20 +21,54 @@
  ****************************************************************************/
 
 package cc.spritenodes;
+import cc.basenodes.CCNode;
+import cc.texture.CCTexture2D;
 import flambe.display.Sprite;
-
+import cc.texture.CCTextureCache;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
-class CCSpriteBatchNode 
+ 
+class CCSpriteBatchNode extends CCNode
 {
 	//var _offset : Sprite
-	
+	public static inline var DEFAULT_SPRITE_BATCH_CAPACITY : Int = 29;
+	var _originalTexture : CCTexture2D;
+	var _texture : CCTexture2D;
+	//var _opacity : Int;
 	public function new() 
 	{
+		super();
+		this.entity.add(this.sprite);
+		//sprite.alpha._ = 0;
+	}
+	
+	
+	public function initBatchNode(fileImage : String, capacity : Int) : Bool{
+		var texture2D : CCTexture2D = CCTextureCache.getInstance().addImage(fileImage);
+		return this.initWithTexture(texture2D, capacity);
+	}
+	
+	public function initWithTexture(tex : CCTexture2D, capacity : Int) : Bool {
+		this._originalTexture = tex;
+		_texture = tex;
 		
+		return true;
+	}
+	
+	public function getTexture() : CCTexture2D {
+		return this._texture;
+	}
+	
+	public static function create(fileImage : String, ?capacity : Int) : CCSpriteBatchNode {
+		if (capacity == null) {
+			capacity = DEFAULT_SPRITE_BATCH_CAPACITY;
+		}
+		var batchNode : CCSpriteBatchNode  = new CCSpriteBatchNode();
+		batchNode.initBatchNode(fileImage, capacity);
+		return batchNode;
 	}
 	
 }

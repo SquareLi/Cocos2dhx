@@ -29,7 +29,7 @@ import cc.CCDirector;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCScene extends CCNode

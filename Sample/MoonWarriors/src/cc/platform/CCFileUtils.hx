@@ -21,10 +21,18 @@
  ****************************************************************************/
 
 package cc.platform;
+import cc.CCLoader;
 
+#if js
+import haxe.Http;
+import js.Browser;
+import js.html.*;
+import js.html.XMLHttpRequest;
+import js.html.Event;
+#end
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCFileUtils
 {
@@ -49,5 +57,50 @@ class CCFileUtils
 		}
 		
 		return s_SharedFileUtils;
+	}
+	
+	public function getFileData(fileName : String, ?mode : String, ?size : Int) : Dynamic {
+		#if flash
+			return this._loadBinaryFileData(fileName);
+		#elseif js
+			fileName = "assets/bootstrap/" + fileName;
+			return this.jsLoad(fileName);
+		#end
+		
+	}
+	//
+	private function _loadBinaryFileData(fileUrl : String) : Array<Int>{
+		var str : String = CCLoader.pack.getFile(fileUrl).toString();
+		var arrayInfo : Array<Int> = this._stringConvertToArray(str);
+		return arrayInfo;
+	}
+	
+	private function _stringConvertToArray(strData : String) : Array<Int> {
+		if (strData == null) {
+			return null;
+		}
+		var arrData : Array<Int> = new Array<Int>();
+		
+		for (i in 0...strData.length) {
+				arrData[i] = strData.charCodeAt(i) & 0xff;
+		}
+		return arrData;
+	}
+	
+	private function jsLoad(fileUrl : String) : Array<Int> {
+		
+		var ret : Array<Int> = new Array<Int>();
+		#if js
+		var xhr : XMLHttpRequest = new XMLHttpRequest();
+		xhr.open("GET", fileUrl, false);
+		
+		xhr.overrideMimeType("text/plain; charset=x-user-defined");
+		xhr.send(null);
+		if (xhr.status != 200) {
+			return null;
+		}
+		ret = this._stringConvertToArray(xhr.responseText);
+		#end
+		return ret;
 	}
 }

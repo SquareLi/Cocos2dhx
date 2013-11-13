@@ -50,6 +50,7 @@ class AboutLayer extends CCLayer
 		var bRet = false;
 		if (super.init()) {
 			var sp = CCSprite.create("Sample/loading");
+			sp.setAnchorPoint(new Point(0, 0));
 			this.addChild(sp, 0, 1);
 			
 			var cacheImage = CCTextureCache.getInstance().addImage("Sample/menuTitle");
@@ -57,12 +58,12 @@ class AboutLayer extends CCLayer
 			if (title == null) {
 				trace("null");
 			}
-			title.setCenterAnchor();
+			//title.setCenterAnchor();
 			title.setPosition(160, 60);
 			this.addChild(title);
 			
 			//var about =
-			var label : CCLabelBMFont = CCLabelBMFont.create("Go back", "Sample/arial-14");
+			var label : CCLabelBMFont = CCLabelBMFont.create("GoBack", "Sample/arial-14");
 			var back : CCMenuItemLabel = CCMenuItemLabel.create(label, this.backCallback, this);
 			var menu : CCMenu = CCMenu.create([back]);
 			//menu.setCenterAnchor();
@@ -82,7 +83,7 @@ class AboutLayer extends CCLayer
 	
 	public static function create() : AboutLayer {
 		var sg = new AboutLayer();
-		if (sg != null && sg.init()) {
+		if (sg != null) {
 			return sg;
 		}
 		

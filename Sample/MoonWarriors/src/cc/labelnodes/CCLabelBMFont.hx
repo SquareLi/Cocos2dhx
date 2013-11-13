@@ -31,7 +31,7 @@ import cc.CCLoader;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCLabelBMFont extends CCNode
 {
@@ -93,26 +93,41 @@ class CCLabelBMFont extends CCNode
      * @param {cc.Point} imageOffset
      * @return {Boolean}
      */
-	public function initWithString(str : String, fntFile : String, ?width : Float = 0, ?alignment : Int = 0, ?imageOffset : Point) : Bool {
+	public function initWithString(str : String, fntFile : String, ?width, ?alignment, ?imageOffset) : Bool {
 		if (imageOffset == null) {
 			imageOffset = new Point(0, 0);
 		}
 		
 		var theString : String = str;
 		this._initialString = str;
-		_font = new Font(CCLoader.pack, fntFile);
-		this.sprite = new TextSprite(_font, theString);
-		this._spriteText = cast(sprite, TextSprite);
-		this._spriteText.align = getAlign(alignment);
-		this._spriteText.wrapWidth._ = width;
+		
+		if (fntFile != null) {
+
+			_font = new Font(CCLoader.pack, fntFile);
+			this.sprite = new TextSprite(_font, theString);
+
+			this._spriteText = cast(sprite, TextSprite);
+			if (alignment != null) {
+				this._spriteText.align = getAlign(alignment);
+			}
+			
+			if (width != null) {
+				this._spriteText.wrapWidth._ = width;
+			}
+			
+			
+			this._contentSize.width = this.sprite.getNaturalWidth();
+			this._contentSize.height = this.sprite.getNaturalHeight();
+		}
+		
+		
 		this._imageOffset = imageOffset;
 		
 		this.component = new CCComponent(this);
 		this.entity.add(this.sprite);
 		this.entity.add(this.component);
 		
-		this._contentSize.width = this.sprite.getNaturalWidth();
-		this._contentSize.height = this.sprite.getNaturalHeight();
+		
 		
 		//this._spriteText.setAnchor(0, 0);
 		
@@ -148,6 +163,9 @@ class CCLabelBMFont extends CCNode
         //}
         if (!fromUpdate) {
 			this._spriteText.text = this._string;
+			this._contentSize.width = this._spriteText.getNaturalWidth();
+			this._contentSize.height = this._spriteText.getNaturalHeight();
+			this.setAnchorPoint(this._anchorPoint);
         }
     }
 
@@ -228,6 +246,26 @@ class CCLabelBMFont extends CCNode
      */
     public function setFntFile(fntFile : String) {
         this._font = new Font(CCLoader.pack, fntFile);
+		if (this._spriteText == null) {
+		
+			this.sprite = new TextSprite(_font);
+			this._spriteText = cast(sprite, TextSprite);
+			//this._spriteText.align = getAlign(alignment);
+			//this._spriteText.wrapWidth._ = width;
+			
+			this._contentSize.width = this._spriteText.getNaturalWidth();
+			this._contentSize.height = this._spriteText.getNaturalHeight();
+			this.setAnchorPoint(this._anchorPoint);
+			this.setPosition(this._position.x, this._position.y);
+			//trace(this._anchorPoint);
+			//trace(this._position);
+			//trace(this._contentSize);
+			
+			
+			this.component = new CCComponent(this);
+			this.entity.add(this.sprite);
+			this.entity.add(this.component);
+		}
 		this._spriteText.font = this._font;
     }
 
@@ -249,12 +287,24 @@ class CCLabelBMFont extends CCNode
         //}
     //}
 	
-	public static function create(str : String, fntFile : String, ?width : Float = 0, ?alignment : Int = 0, ?imageOffset : Point) : CCLabelBMFont{
+	public static function create(?str : String, ?fntFile : String, ?width, ?alignment, ?imageOffset) : CCLabelBMFont{
 		var ret : CCLabelBMFont = new CCLabelBMFont();
+		
+		if (str == null && fntFile == null && width == null && alignment == null && imageOffset == null) {
+			if (ret != null) {
+				return ret;
+			}
+			return null;
+		}
 		
 		if (imageOffset == null) {
 			imageOffset = new Point(0, 0);
 		}
+		
+		//if (fntFile == null) {
+			//return ret;
+		//}
+		
 		ret.initWithString(str, fntFile, width, alignment, imageOffset);
 		return ret;
 	}

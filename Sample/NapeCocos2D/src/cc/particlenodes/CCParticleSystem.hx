@@ -8,7 +8,7 @@ import flambe.display.EmitterSprite;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCParticleSystem extends CCNode
 {

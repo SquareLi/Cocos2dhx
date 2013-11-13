@@ -25,7 +25,7 @@ import flambe.display.FillSprite;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTypes {
 	/**

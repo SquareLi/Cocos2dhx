@@ -34,7 +34,7 @@ import cc.layersscenestransitionsnodes.CCTransitionScene;
 import cc.touchdispatcher.CCPointerDispatcher;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCDirector 

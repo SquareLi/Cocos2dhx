@@ -67,6 +67,7 @@ class GameLayer extends CCLayer
 	
 	public function new() 
 	{
+		//trace("ctor in GameLayer");
 		super();
 		
 	}
@@ -76,6 +77,7 @@ class GameLayer extends CCLayer
 		var bRet = false;
 		this.registerWithTouchDispatcher();
 		if (super.init()) {
+			//trace("init");
 			GameConfig.ENEMIES = [];
 			GameConfig.ENEMY_BULLETS = [];
 			GameConfig.PLAYER_BULLETS = [];
@@ -148,13 +150,13 @@ class GameLayer extends CCLayer
 	override public function onPointerMoved(event:CCPointer):Bool 
 	{
 		this.processEvent(event);
-		return super.onPointerMoved(event);
+		return true;
 	}
 	
 	override public function onPointerDragged(event:CCPointer):Bool 
 	{
 		this.processEvent(event);
-		return super.onPointerMoved(event);
+		return true;
 	}
 	
 	public function processEvent(event : CCPointer) {
@@ -170,9 +172,7 @@ class GameLayer extends CCLayer
 		this.checkIsCollide();
 		this.removeInactiveUnit(dt);
 		this.checkIsReborn();
-		this.updateUI();
-
-		
+		this.updateUI();	
 	}
 	
 	public function checkIsCollide() {
@@ -186,27 +186,15 @@ class GameLayer extends CCLayer
 		var eh : Array<Int> = new Array<Int>();
 		for (i in 0...GameConfig.ENEMIES.length) {
 			selChild = GameConfig.ENEMIES[i];
-			//trace(GameConfig.PLAYER_BULLETS.length);
 			for (j in 0...GameConfig.PLAYER_BULLETS.length) {
-				//trace("123");
 				bulletChild = GameConfig.PLAYER_BULLETS[j];
 				if (bulletChild != null) {
 					
 					if (this.collide(selChild.collideRect(), bulletChild.collideRect())) {
-						//trace("hit");
 						pbh.push(j);
 						eh.push(i);
-						//bulletChild.hurt();
-						//selChild.hurt();
 					} else {
-						//trace(selChild.collideRect()
 					}
-					//trace(bulletChild.getBoundingBox().toString());
-					//if (bulletChild.getPositionY() < -100 || bulletChild.getPositionY() > 600) {
-						//trace("destroy player bullet");
-					   //bulletChild.destroy();
-					   //pb.push(j);
-					//}
 				}
 			}
 			
@@ -218,23 +206,13 @@ class GameLayer extends CCLayer
 				}
 			}
 			}
-			
-			
-			//if (!CCGeometry.rectIntersectsRect(this.screenRect, selChild.getBoundingBox())) {
-				//selChild.destroy();
-			//}
 		}
 		
 		for (i in pbh) {
 			GameConfig.PLAYER_BULLETS[i].hurt();
 		}
 		pbh = [];
-		//for (i in pb) {
-			//if (GameConfig.PLAYER_BULLETS[i] != null) {
-				//GameConfig.PLAYER_BULLETS[i].destroy();
-			//}
-			//
-		//}
+
 		pb = [];
 		for (i in eh) {
 			GameConfig.ENEMIES[i].hurt();
@@ -333,18 +311,19 @@ class GameLayer extends CCLayer
 		this._backSkyHeight = this._backSky.getContentSize().height;
 		this.addChild(this._backSky, -10);
 		winSize = _backSky.getContentSize();
-		
+		//this._backSky.runAction(CCMoveBy.create(3, new Point(0, _backgroundSpeed)));
 		this.schedule(movingBackground, 3);
+		//trace("initBackground");
 	}
 	
 	var _backgroundSpeed : Float = -192;
 	var _temp : CCSprite;
 	public function movingBackground() {
+
 		//trace(this._backSkyHeight);
 		//trace("moving");
-		this._backSky.runAction(CCMoveBy.create(3, new Point(0, -192)));
+		this._backSky.runAction(CCMoveBy.create(3, new Point(0, _backgroundSpeed)));
 		this._backSkyHeight = this._backSkyHeight + this._backgroundSpeed;
-	//	this._backSkyHeight -= 48;
 		
 		if (this._backSkyHeight <= winSize.height) {
 			if (!this._isBackSkyReload) {
@@ -385,7 +364,7 @@ class GameLayer extends CCLayer
 	}
 	public static function create() : GameLayer {
 		var sg = new GameLayer();
-		if (sg != null && sg.init()) {
+		if (sg != null) {
 			return sg;
 		} 
 		return null;

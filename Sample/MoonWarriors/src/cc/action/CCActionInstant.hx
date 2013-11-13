@@ -24,8 +24,8 @@ import cc.spritenodes.CCSprite;
 import cc.action.CCAction;
 import cc.basenodes.CCNode;
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 class CCActionInstant extends CCFiniteTimeAction
 {
@@ -51,10 +51,42 @@ class CCActionInstant extends CCFiniteTimeAction
 	}
 }
 
+class CCShow extends CCActionInstant {
+	private function new() {
+		super();
+	}
+	
+	override public function update(time:Float)
+	{
+		this._target.setVisible(true);
+	}
+	
+	public static function create() : CCShow{
+		return new CCShow();
+	}
+}
+
+class CCHide extends CCActionInstant {
+	private function new() {
+		super();
+	}
+	
+	override public function update(time:Float)
+	{
+		this._target.setVisible(false);
+	}
+	
+	public static function create() : CCHide {
+		return new CCHide();
+	}
+}
+
 class CCCallFunc extends CCActionInstant
 {
 	var _data : Dynamic;
 	var _callFunc : Void -> Void;
+	
+	var _callFuncWithParams : Dynamic -> Void;
 	var _selectorTarget : CCNode;
 	private function new() {
 		super();
@@ -70,6 +102,12 @@ class CCCallFunc extends CCActionInstant
 	public function execute() {
 		if (this._callFunc != null) {
 			this._callFunc();
+			return;
+		}
+		
+		if (this._callFuncWithParams != null) {
+			this._callFuncWithParams(_data);
+			return;
 		}
 	}
 	
@@ -91,10 +129,21 @@ class CCCallFunc extends CCActionInstant
 		}
 	}
 	
-	public static function create(selector : Void -> Void, selectorTarget : CCNode, ?data : Dynamic) {
+	public static function create(selector : Void -> Void, selectorTarget : CCNode, ?data : Dynamic) : CCCallFunc{
 		var ret : CCCallFunc = new CCCallFunc();
 		if (ret != null) {
 			ret._callFunc = selector;
+			return ret;
+		}
+		
+		return null;
+	}
+	
+	public static function createWithParams(selector : Dynamic -> Void, selectorTarget : CCNode, ?data : Dynamic) : CCCallFunc {
+		var ret : CCCallFunc = new CCCallFunc();
+		if (ret != null) {
+			ret._callFuncWithParams = selector;
+			ret._data = data;
 			return ret;
 		}
 		

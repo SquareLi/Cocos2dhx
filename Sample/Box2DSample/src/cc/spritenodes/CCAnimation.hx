@@ -27,7 +27,7 @@ import flambe.swf.MovieSprite;
 import cc.platform.CCPlistEntry;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCAnimation 

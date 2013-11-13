@@ -17,7 +17,7 @@ import cc.CCScheduler;
 import cc.extensions.ccbreader.CCBReader;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCBAnimationManager
 {

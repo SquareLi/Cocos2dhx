@@ -28,10 +28,12 @@ import flambe.display.Sprite;
 import flambe.display.TextSprite;
 import flambe.display.Texture;
 import cc.CCDirector;
-
+import cc.tilemapparallaxnodes.CCTMXTiledMap;
+import cc.cocoa.CCGeometry;
+import flambe.math.Rectangle;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCSpriteSheet extends Sprite
 {
@@ -43,13 +45,15 @@ class CCSpriteSheet extends Sprite
 	var _actionManager : CCActionManager;
 	var c : Int = 2;
 	public var frame : CCSpriteFrame;
+	var isTiledMap : Bool;
 	
-	public function new() 
+	public function new(?isTiledMap : Bool = false) 
 	{
 		super();
 		//texture = Pack.pack.getTexture("plist/explosion");
 		//var x : TestXML = new TestXML();
 		//frames = x.parse();
+		this.isTiledMap = isTiledMap;
 		_actionManager = CCDirector.getInstance().getActionManager();
 	}
 	
@@ -57,6 +61,7 @@ class CCSpriteSheet extends Sprite
 		this.frame = frame;
 	}
 	
+	var flag : Bool = true;
 	override public function draw(g:Graphics)
 	{
 		//super.draw(g);
@@ -70,9 +75,23 @@ class CCSpriteSheet extends Sprite
 			frame.getRect().height, frame.getRect().width);
 			
 		} else {
-			g.translate(frame.getOffset().x, frame.getOffset().y);
-			g.drawSubImage(frame.getTexture().getTexture(), 0, 0, frame.getRect().x, frame.getRect().y, 
-			frame.getRect().width, frame.getRect().height);
+			if (isTiledMap) {
+				var t : Rectangle = new Rectangle(this.x._, this.y._, frame.getRect().width, frame.getRect().height);
+				if (CCGeometry.rectIntersectsRect(t, CCTMXTiledMap.viewPort)) {
+					g.translate(frame.getOffset().x, frame.getOffset().y);
+					g.drawSubImage(frame.getTexture().getTexture(), 0, 0, frame.getRect().x, frame.getRect().y, 
+					frame.getRect().width, frame.getRect().height);
+					//trace("draw");
+				} else {
+					//trace("notdraw");
+				}
+			} else {
+				g.translate(frame.getOffset().x, frame.getOffset().y);
+				g.drawSubImage(frame.getTexture().getTexture(), 0, 0, frame.getRect().x, frame.getRect().y, 
+				frame.getRect().width, frame.getRect().height);
+			}
+			
+			
 			
 		}
 		

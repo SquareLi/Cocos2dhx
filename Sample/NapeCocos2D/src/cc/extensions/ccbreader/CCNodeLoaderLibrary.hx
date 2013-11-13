@@ -2,7 +2,7 @@ package cc.extensions.ccbreader;
 import cc.extensions.ccbreader.CCSpriteLoader;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCNodeLoaderLibrary
 {

@@ -75,7 +75,7 @@ class GameOver extends CCLayer
 	
 	public static function create() : GameOver{
 		var sg = new GameOver();
-		if (sg != null && sg.init()) {
+		if (sg != null) {
 			return sg;
 		}
 		return null;

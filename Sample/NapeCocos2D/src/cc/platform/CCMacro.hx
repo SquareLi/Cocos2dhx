@@ -27,16 +27,15 @@ import cc.CCDirector;
 import flambe.math.Point;
 import cc.cocoa.CCGeometry;
 import flambe.math.Rectangle;
-import flambe.math.FMath;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCMacro 
 {
 	public static var INVALID_INDEX : Int = -1;
-	public static var PI : Float = FMath.PI;
+	public static var PI : Float = Math.PI;
 	public static var FLT_MAX = Std.parseFloat("3.402823466e+38F");
 	public static var RAD : Float = PI / 180;
 	public static var DEG : Float = 180 / PI;

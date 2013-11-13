@@ -29,7 +29,7 @@ import cc.cocoa.CCGeometry;
 import flambe.math.Rectangle;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCMacro 
@@ -109,7 +109,7 @@ class CCMacro
 	 * @return {Number}
 	 * @function
 	 */
-	 public function RADIANS_TO_DEGREES(angle : Float) : Float{
+	 public static function RADIANS_TO_DEGREES(angle : Float) : Float{
 		return angle * CCMacro.DEG;
 	}
 

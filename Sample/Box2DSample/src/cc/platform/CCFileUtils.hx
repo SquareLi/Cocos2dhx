@@ -32,7 +32,7 @@ import js.html.Event;
 #end
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCFileUtils
 {

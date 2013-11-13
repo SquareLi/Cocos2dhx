@@ -28,7 +28,7 @@ import flambe.display.Sprite;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCComponent extends Component
@@ -49,7 +49,6 @@ class CCComponent extends Component
 	{
 		
 		super.onUpdate(dt);
-		//trace("Update");
 		_node.update(dt);
 	}
 	
@@ -57,6 +56,7 @@ class CCComponent extends Component
 	{
 		super.onRemoved();
 		_node.onExit();
+		//trace("onRemoved");
 	}
 	
 	

@@ -9,9 +9,10 @@ import flambe.math.Rectangle;
 import cc.CCLoader;
 import cc.platform.CCCommon;
 import cc.platform.CCBase64;
+import cc.platform.CCZipUtils;
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 class CCTMXXMLParser
 {
@@ -91,6 +92,18 @@ class CCTMXXMLParser
 	 */
 	public static var TMX_TILE_DIAGONAL_FLAG : Int = 0x20000000;
 	
+	/**
+	 * @constant
+	 * @type Number
+	 */
+	public static var TMX_TILE_FLIPPED_ALL : Int = (TMX_TILE_HORIZONTAL_FLAG | TMX_TILE_VERTICAL_FLAG | TMX_TILE_DIAGONAL_FLAG) >>> 0;
+
+	/**
+	 * @constant
+	 * @type Number
+	 */
+	public static var TMX_TILE_FLIPPED_MASK : Int = (~(TMX_TILE_FLIPPED_ALL)) >>> 0;
+	
 	public function new() 
 	{
 		
@@ -102,7 +115,7 @@ class CCTMXLayerInfo {
 	public var _properties : Map<String, String>;
 	public var name : String = "";
 	public var _layerSize : CCSize;
-	public var _tiles : Array<Array<Int>>;
+	public var _tiles : Array<Int>;
 	public var visible : Bool;
 	public var _opacity : Int;
 	public var ownTiles : Bool = true;
@@ -113,7 +126,7 @@ class CCTMXLayerInfo {
 	public function new() {
 		offset = new Point();
 		_properties = new Map<String, String>();
-		_tiles = new Array<Array<Int>>();
+		_tiles = new Array<Int>();
 	}
 	
 	public function getProperties() : Map < String, String > {
@@ -460,14 +473,15 @@ class CCTMXMapInfo {
 		
 		var isCompression : Bool = false;
 		switch(compression) {
-			//case "gzip" :
-				//layer._tiles = 
+			case "gzip" :
+				layer._tiles = CCZipUtils.unzipBase64AsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), 4);
 			case "zlib" :
 				//isCompression = true;
+				layer._tiles = CCBase64.unzip(xml.firstChild().nodeValue, Std.int(layer._layerSize.width));
 				//layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), isCompression);
 			case "":
 				if (encoding == "base64") {
-					//layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width), isCompression);
+					layer._tiles = CCBase64.decodeAsArray(xml.firstChild().nodeValue, Std.int(layer._layerSize.width));
 				} else if (encoding == "csv") {
 					layer._tiles = csvToArray(xml.firstChild().nodeValue);
 				} else {
@@ -480,17 +494,18 @@ class CCTMXMapInfo {
 					for (elem in xml.elements()) {
 						switch (elem.nodeName) {
 							case "tile" : 
-								var g : Int = Std.parseInt(elem.get("gid"));
-								tilesRow.push(g);
-								
-								if (indexX == widthMap - 1) {
-									indexX = 0;
-									indexY++;
-									layer._tiles.push(tilesRow);
-									tilesRow = [];
-								} else {
-									indexX++;
-								}
+								//var g : Int = Std.parseInt(elem.get("gid"));
+								//tilesRow.push(g);
+								//
+								//if (indexX == widthMap - 1) {
+									//indexX = 0;
+									//indexY++;
+									//layer._tiles.push(tilesRow);
+									//tilesRow = [];
+								//} else {
+									//indexX++;
+								//}
+								layer._tiles.push(Std.parseInt(elem.get("gid")));
 
 							default: null;
 						}
@@ -592,9 +607,9 @@ class CCTMXMapInfo {
 	 * @param	input
 	 * @return
 	 */
-	public static function csvToArray(input:String):Array<Array<Int>>
+	public static function csvToArray(input:String):Array<Int>
 	{
-		var result:Array<Array<Int>> = new Array<Array<Int>>();
+		var result:Array<Int> = new Array<Int>();
 		var rows:Array<String> = input.split("\n");
 		var row:String;
 		for (row in rows)
@@ -602,11 +617,19 @@ class CCTMXMapInfo {
 			if (row == "") continue;
 			var resultRow:Array<Int> = new Array<Int>();
 			var entries:Array<String> = row.split(",");
+			//trace(entries);
 			var entry:String;
-			for (entry in entries)
-				resultRow.push(Std.parseInt(entry)); //convert to int
-			result.push(resultRow);
+			for (entry in entries) {
+				var t = Std.parseInt(entry);
+				if (t != null) {
+					result.push(t); //convert to int
+				}
+			}
+			
+
 		}
+		
+		//trace(result);
 		return result;
 	}
 	

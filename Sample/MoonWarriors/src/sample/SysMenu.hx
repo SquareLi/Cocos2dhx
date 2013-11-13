@@ -27,6 +27,7 @@ import cc.CCDirector;
 import cc.spritenodes.CCSprite;
 import cc.layersscenestransitionsnodes.CCScene;
 import cc.layersscenestransitionsnodes.CCTransitionFade;
+import flambe.math.Point;
 import flambe.math.Rectangle;
 import cc.menunodes.CCMenu;
 import cc.menunodes.CCMenuItem;
@@ -51,12 +52,13 @@ class SysMenu extends CCLayer
 			winSize = CCDirector.getInstance().getWinSize();
 			GameLayer.winSize = winSize;
 			var logo = CCSprite.create("Sample/logo");
+			logo.setAnchorPoint(new Point(0, 0));
 			logo.setPosition(0, 100);
 			this.addChild(logo, 10, 2);
 			
 			
 			var sp = CCSprite.create("Sample/loading");
-
+			sp.setAnchorPoint(new Point(0, 0));
 			this.addChild(sp, 1, 1);
 			
 			
@@ -130,7 +132,7 @@ class SysMenu extends CCLayer
 	
 	public static function create() : SysMenu {
 		var sg = new SysMenu();
-		if (sg != null && sg.init()) {
+		if (sg != null) {
 			return sg;
 		}
 		return null;

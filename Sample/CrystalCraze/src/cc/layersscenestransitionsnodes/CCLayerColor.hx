@@ -29,7 +29,7 @@ import cc.CCComponent;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCLayerColor extends CCLayer

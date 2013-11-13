@@ -24,8 +24,8 @@ import cc.spritenodes.CCSprite;
 import cc.action.CCAction;
 import cc.basenodes.CCNode;
 /**
- * ...
- * @author Ang Li
+ * 
+ * @author Ang L1
  */
 class CCActionInstant extends CCFiniteTimeAction
 {

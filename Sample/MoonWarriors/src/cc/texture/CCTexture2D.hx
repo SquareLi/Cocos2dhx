@@ -29,7 +29,7 @@ import cc.platform.CCMacro;
 
 /**
  * ...
- * @author Ang Li
+ * @author
  */
 
 class CCTexture2D 
@@ -45,7 +45,7 @@ class CCTexture2D
 	var _hasPremultipliedAlpha : Bool;
 	public function new() 
 	{
-		
+		_contentSize = new CCSize();
 	}
 	
 	public function getTexture() : Texture {
@@ -54,6 +54,8 @@ class CCTexture2D
 	
 	public function setTexture(t : Texture) {
 		this._texture = t;
+		this._contentSize.width = Std.parseFloat(Std.string(this._texture.width));
+		this._contentSize.height = Std.parseFloat(Std.string(this._texture.height));
 	}
 	public function getPixelsWide() : Float {
 		return _texture.width;
@@ -67,6 +69,12 @@ class CCTexture2D
 		return this._name;
 	}
 	
+	public function getContentSize() : CCSize {
+		var ret = new CCSize(0, 0);
+		ret.width = this._contentSize.width;
+		ret.height = this._contentSize.height;
+		return ret;
+	}
 	public function getContentSizeInPixels() : CCSize {
 		var ret = new CCSize(0, 0);
 		ret.width = this._contentSize.width / CCMacro.CONTENT_SCALE_FACTOR();
